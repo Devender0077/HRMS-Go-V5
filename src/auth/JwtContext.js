@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 import { createContext, useEffect, useReducer, useCallback, useMemo } from 'react';
 // utils
-import axios from '../utils/axios';
+import axios from 'axios';
 import localStorageAvailable from '../utils/localStorageAvailable';
 //
 import { isValidToken, setSession } from './utils';
@@ -157,7 +157,8 @@ export function AuthProvider({ children }) {
   // LOGIN - Uses database credentials (no hardcoded mock data)
   const login = useCallback(async (email, password) => {
     try {
-      const response = await axios.post('/api/auth/login', {
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+      const response = await axios.post(`${API_URL}/api/auth/login`, {
         email,
         password,
       });
@@ -197,7 +198,8 @@ export function AuthProvider({ children }) {
   // REGISTER
   const register = useCallback(async (email, password, firstName, lastName) => {
     try {
-      const response = await axios.post('/api/auth/register', {
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+      const response = await axios.post(`${API_URL}/api/auth/register`, {
         name: `${firstName} ${lastName}`,
         email,
         password,
