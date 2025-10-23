@@ -196,22 +196,44 @@ export function AuthProvider({ children }) {
 
   // REGISTER
   const register = useCallback(async (email, password, firstName, lastName) => {
-    const response = await axios.post('/api/account/register', {
-      email,
-      password,
-      firstName,
-      lastName,
-    });
-    const { accessToken, user } = response.data;
+    try {
+      const response = await axios.post('/api/auth/register', {
+        name: `${firstName} ${lastName}`,
+        email,
+        password,
+        userType: 'employee',
+      });
 
-    localStorage.setItem('accessToken', accessToken);
+      const { success, token, user, message } = response.data;
 
-    dispatch({
-      type: 'REGISTER',
-      payload: {
-        user,
-      },
-    });
+      if (!success) {
+        throw new Error(message || 'Registration failed');
+      }
+
+      // Set session with token
+      setSession(token);
+
+      // Format user data
+      const formattedUser = {
+        id: user.id,
+        displayName: user.name,
+        email: user.email,
+        photoURL: user.avatar || '/assets/images/avatars/avatar_default.jpg',
+        role: user.userType || 'employee',
+        userType: user.userType,
+        status: user.status,
+      };
+
+      dispatch({
+        type: 'REGISTER',
+        payload: {
+          user: formattedUser,
+        },
+      });
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw new Error(error.response?.data?.message || error.message || 'Registration failed');
+    }
   }, []);
 
   // LOGOUT
