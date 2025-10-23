@@ -106,8 +106,12 @@ export default function EmployeeDetailsPage() {
           limit: 30,
         });
 
+        // Ensure records is always an array
+        const records = response.data?.records || response.data || [];
+        const recordsArray = Array.isArray(records) ? records : [];
+        
         setAttendanceData({
-          records: response.data?.records || response.data || [],
+          records: recordsArray,
           stats: response.data?.statistics || null,
         });
       } catch (err) {

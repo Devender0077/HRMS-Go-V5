@@ -24,6 +24,15 @@ class EmployeeService {
   }
 
   /**
+   * Get all employees (alias for backwards compatibility)
+   * @param {Object} params - Query parameters
+   * @returns {Promise} Employee list response
+   */
+  async getAllEmployees(params = {}) {
+    return this.getAll(params);
+  }
+
+  /**
    * Get employee by ID
    * @param {number} id - Employee ID
    * @returns {Promise} Employee response
