@@ -9,16 +9,7 @@ require('dotenv').config();
 
 // Database connection - Import MySQL2 pool (default) and Sequelize instance
 const db = require('./config/database'); // MySQL2 pool for raw queries
-const sequelize = require('./config/database2'); // Sequelize ORM for models
-
-// Import models to ensure they are registered
-require('./models/CalendarEvent');
-require('./models/Asset');
-require('./models/AssetCategory');
-require('./models/AssetAssignment');
-require('./models/AssetMaintenance');
-require('./models/Role');
-require('./models/Permission');
+const { sequelize, syncStrategies } = require('./config/syncDatabase'); // Sequelize ORM with all models loaded
 
 // Import routes
 const authRoutes = require('./routes/auth.routes');
@@ -100,6 +91,7 @@ app.use('/api/configuration', configurationRoutes);
 app.use('/api/general-settings', require('./routes/generalSettings.routes'));
 app.use('/api/organization', require('./routes/organization.routes'));
 app.use('/api/upload', require('./routes/upload.routes'));
+app.use('/api/dashboard', require('./routes/dashboard.routes'));
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -132,29 +124,35 @@ app.use((err, req, res, next) => {
 // Database connection and server start
 const PORT = process.env.PORT || 8000;
 
+// Choose sync strategy based on environment variable
+// DB_SYNC_STRATEGY options: 'development' (default), 'developmentAlter', 'fresh', 'production'
+const syncStrategy = process.env.DB_SYNC_STRATEGY || 'development';
+
 // Test database connection and start server
-sequelize
-  .authenticate()
-  .then(() => {
-    console.log('✅ Database connection established successfully');
-    
-    // Sync database models (creates tables if they don't exist)
-    return sequelize.sync({ alter: false }); // Set to true to auto-update schema
-  })
-  .then(() => {
-    console.log('✅ Database models synchronized');
+syncStrategies[syncStrategy]()
+  .then((result) => {
+    console.log(`✅ Database ready (${result.models.length} models registered)`);
     
     // Start server
     app.listen(PORT, () => {
-      console.log(`🚀 HRMS Go V5 API Server running on port ${PORT}`);
-      console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`🌐 API URL: http://localhost:${PORT}/api`);
-      console.log(`💾 Database: ${process.env.DB_NAME}`);
+      console.log('\n╔════════════════════════════════════════════════════════════════╗');
+      console.log('║         🚀 HRMS Go V5 API Server Started Successfully          ║');
+      console.log('╚════════════════════════════════════════════════════════════════╝');
+      console.log(`📊 Environment:    ${process.env.NODE_ENV || 'development'}`);
+      console.log(`🌐 API URL:        http://localhost:${PORT}/api`);
+      console.log(`💾 Database:       ${process.env.DB_NAME}`);
+      console.log(`🔄 Sync Strategy:  ${syncStrategy}`);
+      console.log(`📦 Models Loaded:  ${result.models.length}`);
+      console.log('════════════════════════════════════════════════════════════════\n');
     });
   })
   .catch((err) => {
-    console.error('❌ Unable to connect to database:', err.message);
-    console.error('Please make sure MySQL is running and database is created');
+    console.error('\n❌ Unable to start server:', err.message);
+    console.error('Please make sure:');
+    console.error('  1. MySQL is running (docker ps)');
+    console.error('  2. Database "hrms_go_v5" is created');
+    console.error('  3. Database credentials are correct in .env');
+    console.error('\nFull error:', err);
     process.exit(1);
   });
 

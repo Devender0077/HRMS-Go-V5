@@ -26,7 +26,15 @@ export default function EmployeeEditPage() {
     const fetchEmployee = async () => {
       setLoading(true);
       try {
-        const emp = await employeeService.getById(id);
+        const response = await employeeService.getById(id);
+        console.log('Employee API response:', response);
+        
+        // Extract employee from response
+        const emp = response.data || response;
+        
+        if (!emp || !emp.id) {
+          throw new Error('Employee data not found in response');
+        }
         
         // Map database fields (snake_case) to form fields (camelCase)
         const employeeData = {

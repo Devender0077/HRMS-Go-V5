@@ -6,8 +6,13 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "db:migrate": "node scripts/migrate.js",
-    "db:seed": "node scripts/seed.js",
+    "migrate": "node database/migrate.js",
+    "migrate:status": "node database/migrate.js status",
+    "migrate:alter": "node database/migrate.js alter",
+    "migrate:fresh": "node database/migrate.js fresh",
+    "db:seed": "node database/seedDashboardData.js",
+    "db:seed:general": "node database/seedGeneralSettings.js",
+    "db:seed:templates": "node database/addTemplateFields.js",
     "clean-install": "rm -rf node_modules package-lock.json && npm cache clean --force && npm install",
     "postinstall": "echo '✅ Backend dependencies installed successfully!'"
   },

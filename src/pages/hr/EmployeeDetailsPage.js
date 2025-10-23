@@ -67,8 +67,17 @@ export default function EmployeeDetailsPage() {
     const fetchEmployee = async () => {
       try {
         setLoading(true);
-        const data = await employeeService.getById(id);
-        setEmployee(data);
+        const response = await employeeService.getById(id);
+        console.log('Employee details API response:', response);
+        
+        // Extract employee from response
+        const empData = response.data || response;
+        
+        if (!empData || !empData.id) {
+          throw new Error('Employee not found');
+        }
+        
+        setEmployee(empData);
       } catch (err) {
         console.error('Fetch employee error:', err);
         setError(err.message || 'Failed to load employee details');
