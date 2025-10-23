@@ -74,8 +74,25 @@ exports.getAll = async (req, res) => {
 exports.getById = async (req, res) => {
   try {
     const { id } = req.params;
+    const db = require('../config/database');
 
-    const employee = await Employee.findByPk(id);
+    // Fetch employee with related data using SQL JOIN
+    const [[employee]] = await db.query(
+      `SELECT 
+        e.*,
+        d.name as department_name,
+        des.name as designation_name,
+        b.name as branch_name,
+        CONCAT(m.first_name, ' ', m.last_name) as manager_name
+       FROM employees e
+       LEFT JOIN departments d ON e.department_id = d.id
+       LEFT JOIN designations des ON e.designation_id = des.id
+       LEFT JOIN branches b ON e.branch_id = b.id
+       LEFT JOIN employees m ON e.manager_id = m.id
+       WHERE e.id = ?`,
+      [id]
+    );
+
     if (!employee) {
       return res.status(404).json({
         success: false,
@@ -83,17 +100,17 @@ exports.getById = async (req, res) => {
       });
     }
 
-    // Map database fields to frontend expectations
+    // Map database fields to frontend expectations (snake_case for consistency)
     const mappedEmployee = {
       id: employee.id,
-      employeeId: employee.employeeId,
-      first_name: employee.firstName,
-      last_name: employee.lastName,
+      employee_id: employee.employee_id,
+      first_name: employee.first_name,
+      last_name: employee.last_name,
       email: employee.email,
       phone: employee.phone,
-      date_of_birth: employee.dateOfBirth,
+      date_of_birth: employee.date_of_birth,
       gender: employee.gender,
-      marital_status: employee.maritalStatus,
+      marital_status: employee.marital_status,
       status: employee.status,
       
       // Address
@@ -101,34 +118,40 @@ exports.getById = async (req, res) => {
       city: employee.city,
       state: employee.state,
       country: employee.country,
-      postal_code: employee.postalCode,
+      postal_code: employee.postal_code,
       
-      // Employment
-      branch_id: employee.branchId,
-      department_id: employee.departmentId,
-      designation_id: employee.designationId,
-      manager_id: employee.managerId,
-      joining_date: employee.joiningDate,
-      employment_type: employee.employmentType,
+      // Employment (with names from JOINs)
+      branch_id: employee.branch_id,
+      branch_name: employee.branch_name,
+      department_id: employee.department_id,
+      department_name: employee.department_name,
+      designation_id: employee.designation_id,
+      designation_name: employee.designation_name,
+      manager_id: employee.manager_id,
+      manager_name: employee.manager_name,
+      joining_date: employee.joining_date,
+      employment_type: employee.employment_type,
       shift: employee.shift,
-      attendance_policy: employee.attendancePolicy,
+      attendance_policy: employee.attendance_policy,
+      payment_method: employee.payment_method || 'N/A',
       
       // Salary & Bank
-      basic_salary: employee.basicSalary,
-      bank_name: employee.bankName,
-      account_number: employee.accountNumber,
-      routing_number: employee.routingNumber,
-      swift_code: employee.swiftCode,
-      bank_address: employee.bankAddress,
+      basic_salary: employee.basic_salary,
+      bank_name: employee.bank_name,
+      account_number: employee.account_number,
+      routing_number: employee.routing_number,
+      swift_code: employee.swift_code,
+      bank_address: employee.bank_address,
       
       // Other
-      photo_url: employee.profilePhoto,
-      created_at: employee.createdAt,
-      updated_at: employee.updatedAt,
+      photo_url: employee.profile_photo,
+      created_at: employee.created_at,
+      updated_at: employee.updated_at,
     };
 
     res.json(mappedEmployee);
   } catch (error) {
+    console.error('Get employee by ID error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch employee',

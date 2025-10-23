@@ -99,7 +99,7 @@ export default function EmployeeDetailsPage() {
         const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
         const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
-        const records = await attendanceService.getAttendanceRecords({
+        const response = await attendanceService.getRecords({
           employeeId: id,
           startDate: fDate(firstDay, 'yyyy-MM-dd'),
           endDate: fDate(lastDay, 'yyyy-MM-dd'),
@@ -107,8 +107,8 @@ export default function EmployeeDetailsPage() {
         });
 
         setAttendanceData({
-          records: records.records || [],
-          stats: records.statistics || null,
+          records: response.data?.records || response.data || [],
+          stats: response.data?.statistics || null,
         });
       } catch (err) {
         console.error('Fetch attendance error:', err);
