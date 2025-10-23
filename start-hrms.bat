@@ -44,6 +44,25 @@ echo ━━━━━━━━━━━━━━━━━━━━━━━━━
 echo.
 
 cd backend
+
+REM Check if .env file exists
+if not exist .env (
+    echo ❌ Backend .env file not found!
+    echo Copying from .env.example...
+    copy .env.example .env
+    echo ✅ Created .env file
+)
+
+REM Check environment variables
+echo Checking environment variables...
+call npm run check:env
+if %ERRORLEVEL% NEQ 0 (
+    echo ❌ Environment check failed!
+    echo Please ensure backend/.env has all required variables
+    pause
+    exit /b 1
+)
+
 start "HRMS Backend" cmd /k npm run dev
 cd ..
 

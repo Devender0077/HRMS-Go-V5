@@ -59,6 +59,26 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 cd backend
+
+# Verify .env file exists
+if [ ! -f .env ]; then
+    echo "${RED}❌ Backend .env file not found!${NC}"
+    echo "Copying from .env.example..."
+    cp .env.example .env
+    echo "${GREEN}✅ Created .env file${NC}"
+fi
+
+# Check environment variables
+echo "Checking environment variables..."
+npm run check:env
+if [ $? -ne 0 ]; then
+    echo "${RED}❌ Environment check failed!${NC}"
+    echo "Please ensure backend/.env has all required variables"
+    echo "You can copy from: cp backend/.env.example backend/.env"
+    cd ..
+    exit 1
+fi
+
 npm run dev > ../backend.log 2>&1 &
 BACKEND_PID=$!
 cd ..

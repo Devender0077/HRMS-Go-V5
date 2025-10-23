@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
+    "check:env": "node checkEnv.js",
     "setup": "node database/setup.js",
     "setup:migrate": "node database/setup.js migrate",
     "setup:seed": "node database/setup.js seed",
