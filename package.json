@@ -67,7 +67,7 @@
     "@tensorflow/tfjs": "^4.11.0",
     "@tensorflow/tfjs-backend-webgl": "^4.11.0",
     "amazon-cognito-identity-js": "^6.0.1",
-    "apexcharts": "^3.36.3",
+    "apexcharts": "^4.2.0",
     "autosuggest-highlight": "^3.3.4",
     "axios": "^1.2.0",
     "bcryptjs": "^2.4.3",
@@ -99,7 +99,7 @@
     "prop-types": "^15.8.1",
     "qrcode.react": "^3.1.0",
     "react": "^18.2.0",
-    "react-apexcharts": "^1.4.0",
+    "react-apexcharts": "^1.8.0",
     "react-chartjs-2": "^5.2.0",
     "react-datepicker": "^4.21.0",
     "react-dom": "^18.2.0",
@@ -166,7 +166,7 @@
     "@types/react-dom": "^18.2.0"
   },
   "engines": {
-    "node": ">=16.0.0",
-    "npm": ">=8.0.0"
+    "node": ">=16.0.0 <=24.x",
+    "npm": ">=8.0.0 <=11.x"
   }
 }
