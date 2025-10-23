@@ -10,9 +10,29 @@ AuthLoginForm.js:51 Error: Route not found
 
 ---
 
-## ✅ **Root Cause:**
+## ✅ **Root Causes (TWO ISSUES):**
 
-**Backend server crashed during startup** because port 8000 is already in use. 
+### **Issue 1: Double `/api/` in URL ✅ FIXED (Latest Fix!)**
+
+**URL in console:**
+```
+POST http://localhost:8000/api/api/auth/login 404 (Not Found)
+                                ^^^^^^^^
+                                Double /api/!
+```
+
+**What happened:**
+- The code was creating URLs with double `/api/api/` instead of single `/api/`
+- This has been **FIXED in commit e4ad061**
+
+**Action Required:**
+1. Pull latest code: `git pull origin main`
+2. Restart frontend (Ctrl+C then `npm start`)
+3. Clear browser cache (Ctrl+Shift+R or Cmd+Shift+R)
+
+### **Issue 2: Backend Port Conflict**
+
+**Backend crashed during startup** because port 8000 is already in use. 
 
 When backend crashes, routes are never registered, so frontend gets 404 when trying to call `/api/auth/login`.
 
