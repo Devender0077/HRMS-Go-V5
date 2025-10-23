@@ -157,8 +157,8 @@ export function AuthProvider({ children }) {
   // LOGIN - Uses database credentials (no hardcoded mock data)
   const login = useCallback(async (email, password) => {
     try {
-      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-      const response = await axios.post(`${API_URL}/api/auth/login`, {
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+      const response = await axios.post(`${API_URL}/auth/login`, {
         email,
         password,
       });
@@ -198,8 +198,8 @@ export function AuthProvider({ children }) {
   // REGISTER
   const register = useCallback(async (email, password, firstName, lastName) => {
     try {
-      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-      const response = await axios.post(`${API_URL}/api/auth/register`, {
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+      const response = await axios.post(`${API_URL}/auth/register`, {
         name: `${firstName} ${lastName}`,
         email,
         password,
