@@ -1,0 +1,474 @@
+import { Helmet } from 'react-helmet-async';
+import { useState, useEffect } from 'react';
+import { useSnackbar } from 'notistack';
+import { Link as RouterLink } from 'react-router-dom';
+// @mui
+import {
+  Card,
+  Table,
+  Stack,
+  Button,
+  TableRow,
+  TableBody,
+  TableCell,
+  Container,
+  Typography,
+  TableContainer,
+  TablePagination,
+  IconButton,
+  MenuItem,
+  Chip,
+  TextField,
+  InputAdornment,
+  Box,
+  Avatar,
+  CircularProgress,
+} from '@mui/material';
+// components
+import Iconify from '../../components/iconify';
+import Scrollbar from '../../components/scrollbar';
+import CustomBreadcrumbs from '../../components/custom-breadcrumbs';
+import { useSettingsContext } from '../../components/settings';
+import { TableHeadCustom, TableNoData } from '../../components/table';
+import MenuPopover from '../../components/menu-popover';
+import ConfirmDialog from '../../components/confirm-dialog';
+import { PATH_DASHBOARD } from '../../routes/paths';
+// services
+import announcementService from '../../services/announcementService';
+// sections
+import AnnouncementDialog from '../../sections/@dashboard/announcement/AnnouncementDialog';
+
+// ----------------------------------------------------------------------
+
+const TABLE_HEAD = [
+  { id: 'title', label: 'Title', alignRight: false },
+  { id: 'type', label: 'Type', alignRight: false },
+  { id: 'priority', label: 'Priority', alignRight: false },
+  { id: 'author', label: 'Author', alignRight: false },
+  { id: 'status', label: 'Status', alignRight: false },
+  { id: 'publish_date', label: 'Publish Date', alignRight: false },
+  { id: 'actions', label: 'Actions', alignRight: true },
+];
+
+const MOCK_ANNOUNCEMENTS = [
+  {
+    id: 1,
+    title: 'Company Holiday Schedule 2024',
+    type: 'General',
+    priority: 'high',
+    author: 'HR Department',
+    author_avatar: '/assets/images/avatars/avatar_1.jpg',
+    status: 'published',
+    publish_date: '2024-01-15',
+    content: 'Please find attached the company holiday schedule for 2024...',
+    read_count: 45,
+    total_employees: 50,
+  },
+  {
+    id: 2,
+    title: 'New Office Policy Update',
+    type: 'Policy',
+    priority: 'medium',
+    author: 'John Doe',
+    author_avatar: '/assets/images/avatars/avatar_2.jpg',
+    status: 'published',
+    publish_date: '2024-01-14',
+    content: 'We have updated our office policy regarding remote work...',
+    read_count: 32,
+    total_employees: 50,
+  },
+  {
+    id: 3,
+    title: 'Team Building Event',
+    type: 'Event',
+    priority: 'low',
+    author: 'Jane Smith',
+    author_avatar: '/assets/images/avatars/avatar_3.jpg',
+    status: 'draft',
+    publish_date: '2024-01-16',
+    content: 'Join us for our monthly team building event...',
+    read_count: 0,
+    total_employees: 50,
+  },
+  {
+    id: 4,
+    title: 'System Maintenance Notice',
+    type: 'Technical',
+    priority: 'high',
+    author: 'IT Department',
+    author_avatar: '/assets/images/avatars/avatar_4.jpg',
+    status: 'published',
+    publish_date: '2024-01-13',
+    content: 'The system will be under maintenance from 2 AM to 4 AM...',
+    read_count: 48,
+    total_employees: 50,
+  },
+  {
+    id: 5,
+    title: 'Welcome New Employees',
+    type: 'Welcome',
+    priority: 'medium',
+    author: 'HR Department',
+    author_avatar: '/assets/images/avatars/avatar_1.jpg',
+    status: 'published',
+    publish_date: '2024-01-12',
+    content: 'Please welcome our new team members...',
+    read_count: 28,
+    total_employees: 50,
+  },
+];
+
+// ----------------------------------------------------------------------
+
+export default function AnnouncementsListPage() {
+  const { themeStretch } = useSettingsContext();
+  const { enqueueSnackbar } = useSnackbar();
+
+  const [announcements, setAnnouncements] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [order, setOrder] = useState('asc');
+  const [orderBy, setOrderBy] = useState('publish_date');
+  const [filterName, setFilterName] = useState('');
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [openPopover, setOpenPopover] = useState(null);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [openConfirm, setOpenConfirm] = useState(false);
+
+  useEffect(() => {
+    fetchAnnouncements();
+  }, []);
+
+  const fetchAnnouncements = async () => {
+    try {
+      setLoading(true);
+      const response = await announcementService.getAllAnnouncements();
+      if (response.success) {
+        setAnnouncements(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching announcements:', error);
+      enqueueSnackbar('Error loading announcements', { variant: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenDialog = () => {
+    setSelectedAnnouncement(null);
+    setOpenDialog(true);
+  };
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+    setSelectedAnnouncement(null);
+  };
+
+  const handleEditAnnouncement = () => {
+    setOpenDialog(true);
+    handleClosePopover();
+  };
+
+  const handleDeleteClick = () => {
+    setOpenConfirm(true);
+    handleClosePopover();
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      if (selectedAnnouncement) {
+        const response = await announcementService.deleteAnnouncement(selectedAnnouncement.id);
+        if (response.success) {
+          enqueueSnackbar('Announcement deleted successfully', { variant: 'success' });
+          fetchAnnouncements();
+          setOpenConfirm(false);
+          setSelectedAnnouncement(null);
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting announcement:', error);
+      enqueueSnackbar('Error deleting announcement', { variant: 'error' });
+    }
+  };
+
+  const handleDialogSuccess = () => {
+    fetchAnnouncements();
+  };
+
+  const handleOpenPopover = (event, announcement) => {
+    setOpenPopover(event.currentTarget);
+    setSelectedAnnouncement(announcement);
+  };
+
+  const handleClosePopover = () => {
+    setOpenPopover(null);
+    setSelectedAnnouncement(null);
+  };
+
+  const handleFilterName = (event) => {
+    setFilterName(event.target.value);
+  };
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case 'high':
+        return 'error';
+      case 'medium':
+        return 'warning';
+      case 'low':
+        return 'success';
+      default:
+        return 'default';
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'published':
+        return 'success';
+      case 'draft':
+        return 'warning';
+      case 'archived':
+        return 'error';
+      default:
+        return 'default';
+    }
+  };
+
+  const getTypeColor = (type) => {
+    switch (type) {
+      case 'General':
+        return 'primary';
+      case 'Policy':
+        return 'secondary';
+      case 'Event':
+        return 'success';
+      case 'Technical':
+        return 'warning';
+      case 'Welcome':
+        return 'info';
+      default:
+        return 'default';
+    }
+  };
+
+  const filteredAnnouncements = announcements.filter((announcement) =>
+    announcement.title.toLowerCase().includes(filterName.toLowerCase()) ||
+    announcement.type.toLowerCase().includes(filterName.toLowerCase()) ||
+    announcement.author.toLowerCase().includes(filterName.toLowerCase())
+  );
+
+  const isNotFound = !filteredAnnouncements.length && !!filterName;
+
+  return (
+    <>
+      <Helmet>
+        <title>Announcements | HRMS</title>
+      </Helmet>
+
+      <Container maxWidth={themeStretch ? false : 'xl'}>
+        <CustomBreadcrumbs
+          heading="Announcements"
+          links={[
+            { name: 'Dashboard', href: PATH_DASHBOARD.root },
+            { name: 'Announcements' },
+          ]}
+          action={
+            <Button
+              onClick={handleOpenDialog}
+              variant="contained"
+              startIcon={<Iconify icon="eva:plus-fill" />}
+            >
+              New Announcement
+            </Button>
+          }
+        />
+
+        <Card>
+          <Stack spacing={2} sx={{ p: 3 }}>
+            <TextField
+              fullWidth
+              placeholder="Search announcements..."
+              value={filterName}
+              onChange={handleFilterName}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Iconify icon="eva:search-fill" sx={{ color: 'text.disabled' }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Stack>
+
+          <Scrollbar>
+            <TableContainer sx={{ minWidth: 800 }}>
+              <Table>
+                <TableHeadCustom
+                  order={order}
+                  orderBy={orderBy}
+                  headLabel={TABLE_HEAD}
+                  rowCount={filteredAnnouncements.length}
+                />
+
+                <TableBody>
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={7} align="center" sx={{ py: 10 }}>
+                        <CircularProgress />
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredAnnouncements
+                      .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                      .map((row) => (
+                      <TableRow hover key={row.id}>
+                        <TableCell>
+                          <Box>
+                            <Typography variant="subtitle2" noWrap>
+                              {row.title}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" noWrap>
+                              {row.content.substring(0, 50)}...
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={row.type}
+                            color={getTypeColor(row.type)}
+                            size="small"
+                            variant="outlined"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={row.priority}
+                            color={getPriorityColor(row.priority)}
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Stack direction="row" alignItems="center" spacing={1}>
+                            <Avatar src={row.author_avatar} sx={{ width: 24, height: 24 }} />
+                            <Typography variant="body2">{row.author}</Typography>
+                          </Stack>
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={row.status}
+                            color={getStatusColor(row.status)}
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" color="text.secondary">
+                            {new Date(row.publish_date).toLocaleDateString()}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <IconButton onClick={(e) => handleOpenPopover(e, row)}>
+                            <Iconify icon="eva:more-vertical-fill" />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+
+                  {!loading && isNotFound && (
+                    <TableNoData
+                      isNotFound={isNotFound}
+                      message={`No results found for "${filterName}"`}
+                    />
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Scrollbar>
+
+          <TablePagination
+            rowsPerPageOptions={[5, 10, 25]}
+            component="div"
+            count={filteredAnnouncements.length}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+          />
+        </Card>
+      </Container>
+
+      <MenuPopover
+        open={openPopover}
+        onClose={handleClosePopover}
+        arrow="right-top"
+        sx={{ width: 160 }}
+      >
+        <MenuItem
+          onClick={() => {
+            console.log('View announcement:', selectedAnnouncement);
+            handleClosePopover();
+          }}
+        >
+          <Iconify icon="eva:eye-fill" />
+          View
+        </MenuItem>
+
+        <MenuItem onClick={handleEditAnnouncement}>
+          <Iconify icon="eva:edit-fill" />
+          Edit
+        </MenuItem>
+
+        <MenuItem
+          onClick={() => {
+            console.log('Duplicate announcement:', selectedAnnouncement);
+            handleClosePopover();
+          }}
+        >
+          <Iconify icon="eva:copy-fill" />
+          Duplicate
+        </MenuItem>
+
+        <MenuItem sx={{ color: 'error.main' }} onClick={handleDeleteClick}>
+          <Iconify icon="eva:trash-2-outline" />
+          Delete
+        </MenuItem>
+      </MenuPopover>
+
+      <AnnouncementDialog
+        open={openDialog}
+        onClose={handleCloseDialog}
+        onSuccess={handleDialogSuccess}
+        announcement={selectedAnnouncement}
+      />
+
+      <ConfirmDialog
+        open={openConfirm}
+        onClose={() => setOpenConfirm(false)}
+        title="Delete Announcement"
+        content={
+          <>
+            Are you sure you want to delete announcement <strong>{selectedAnnouncement?.title}</strong>?
+            This action cannot be undone.
+          </>
+        }
+        action={
+          <Button variant="contained" color="error" onClick={handleConfirmDelete}>
+            Delete
+          </Button>
+        }
+      />
+    </>
+  );
+}
+
