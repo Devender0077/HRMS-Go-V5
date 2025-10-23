@@ -49,22 +49,52 @@ export default function EmployeeNewEditForm({ isEdit = false, currentEmployee })
       try {
         setLoading(true);
         const [deptRes, branchRes, designRes, empRes, shiftsRes, policiesRes, paymentRes] = await Promise.all([
-          departmentService.getAll().catch(() => ({ data: [] })),
-          branchService.getAll().catch(() => ({ data: [] })),
-          designationService.getAll().catch(() => ({ data: [] })),
-          employeeService.getAllEmployees().catch(() => ({ data: [] })),
-          configurationService.getShifts({ status: 'active' }).catch(() => ({ shifts: [] })),
-          configurationService.getAttendancePolicies({ status: 'active' }).catch(() => ({ policies: [] })),
-          configurationService.getPaymentMethods({ status: 'active' }).catch(() => ({ methods: [] })),
+          departmentService.getAll().catch(() => ({ data: [], departments: [] })),
+          branchService.getAll().catch(() => ({ data: [], branches: [] })),
+          designationService.getAll().catch(() => ({ data: [], designations: [] })),
+          employeeService.getAllEmployees().catch(() => ({ data: { employees: [] }, employees: [] })),
+          configurationService.getShifts({ status: 'active' }).catch(() => ({ data: [], shifts: [] })),
+          configurationService.getAttendancePolicies({ status: 'active' }).catch(() => ({ data: [], policies: [] })),
+          configurationService.getPaymentMethods({ status: 'active' }).catch(() => ({ data: [], methods: [] })),
         ]);
 
-        setDepartments(deptRes.data || deptRes || []);
-        setBranches(branchRes.data || branchRes || []);
-        setDesignations(designRes.data || designRes || []);
-        setEmployees(empRes.data || empRes || []);
-        setShifts(shiftsRes.shifts || []);
-        setAttendancePolicies(policiesRes.policies || []);
-        setPaymentMethods(paymentRes.methods || []);
+        // Extract departments (handle multiple response formats)
+        const depts = deptRes.data?.departments || deptRes.departments || deptRes.data || deptRes || [];
+        setDepartments(Array.isArray(depts) ? depts : []);
+
+        // Extract branches (handle multiple response formats)
+        const branchesList = branchRes.data?.branches || branchRes.branches || branchRes.data || branchRes || [];
+        setBranches(Array.isArray(branchesList) ? branchesList : []);
+
+        // Extract designations (handle multiple response formats)
+        const designsList = designRes.data?.designations || designRes.designations || designRes.data || designRes || [];
+        setDesignations(Array.isArray(designsList) ? designsList : []);
+
+        // Extract employees (handle multiple response formats)
+        const empList = empRes.data?.employees || empRes.employees || empRes.data || empRes || [];
+        setEmployees(Array.isArray(empList) ? empList : []);
+
+        // Extract shifts (handle multiple response formats)
+        const shiftsList = shiftsRes.data?.shifts || shiftsRes.data || shiftsRes.shifts || shiftsRes || [];
+        setShifts(Array.isArray(shiftsList) ? shiftsList : []);
+
+        // Extract policies (handle multiple response formats)
+        const policiesList = policiesRes.data?.policies || policiesRes.data || policiesRes.policies || policiesRes || [];
+        setAttendancePolicies(Array.isArray(policiesList) ? policiesList : []);
+
+        // Extract payment methods (handle multiple response formats)
+        const methodsList = paymentRes.data?.methods || paymentRes.data || paymentRes.methods || paymentRes || [];
+        setPaymentMethods(Array.isArray(methodsList) ? methodsList : []);
+
+        console.log('Fetched options:', {
+          departments: depts,
+          branches: branchesList,
+          designations: designsList,
+          employees: empList,
+          shifts: shiftsList,
+          policies: policiesList,
+          methods: methodsList
+        });
       } catch (error) {
         console.error('Error fetching options:', error);
       } finally {
@@ -351,11 +381,11 @@ export default function EmployeeNewEditForm({ isEdit = false, currentEmployee })
                       .filter(emp => !currentEmployee || emp.id !== currentEmployee.id) // Don't show self
                       .map((emp) => (
                         <MenuItem key={emp.id} value={emp.id}>
-                          {emp.firstName} {emp.lastName} - {emp.designation || 'N/A'}
+                          {emp.firstName || emp.first_name} {emp.lastName || emp.last_name} - {emp.designation || emp.designation_name || 'N/A'}
                         </MenuItem>
                       ))
                   ) : (
-                    <MenuItem disabled>No employees found</MenuItem>
+                    <MenuItem disabled>No employees found - Run: npm run setup</MenuItem>
                   )}
                 </RHFSelect>
                 <Typography variant="caption" sx={{ color: 'text.secondary', mt: 0.5, display: 'block' }}>
