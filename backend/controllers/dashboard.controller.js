@@ -36,18 +36,20 @@ exports.getDashboardStats = async (req, res) => {
       [today]
     );
 
-    // Leave stats
-    const onLeaveToday = await Leave.count({
-      where: {
-        status: 'approved',
-        start_date: { [Op.lte]: today },
-        end_date: { [Op.gte]: today }
-      }
-    });
+    // Leave stats - using raw SQL for reliability
+    const [[{onLeaveToday}]] = await db.query(
+      `SELECT COUNT(*) as onLeaveToday
+       FROM leave_requests
+       WHERE status = 'approved'
+       AND start_date <= ? AND end_date >= ?`,
+      [today, today]
+    );
 
-    const pendingLeaves = await Leave.count({
-      where: { status: 'pending' }
-    });
+    const [[{pendingLeaves}]] = await db.query(
+      `SELECT COUNT(*) as pendingLeaves
+       FROM leave_requests
+       WHERE status = 'pending'`
+    );
 
     // Department breakdown
     const [deptBreakdown] = await db.query(
@@ -190,13 +192,18 @@ exports.getQuickActions = async (req, res) => {
   try {
     const today = new Date().toISOString().split('T')[0];
     
-    // Pending approvals
-    const pendingLeaves = await Leave.findAll({
-      where: { status: 'pending' },
-      limit: 5,
-      order: [['created_at', 'DESC']],
-      attributes: ['id', 'employeeId', 'leaveTypeId', 'startDate', 'endDate', 'createdAt']
-    });
+    // Pending approvals - using raw SQL
+    const [pendingLeavesData] = await db.query(
+      `SELECT lr.id, lr.employee_id as employeeId, lr.leave_type_id as leaveTypeId, 
+              lr.start_date as startDate, lr.end_date as endDate, lr.created_at as createdAt,
+              CONCAT(e.first_name, ' ', e.last_name) as employee_name, e.email as employee_email
+       FROM leave_requests lr
+       JOIN employees e ON lr.employee_id = e.id
+       WHERE lr.status = 'pending'
+       ORDER BY lr.created_at DESC
+       LIMIT 5`
+    );
+    const pendingLeaves = pendingLeavesData;
 
     // Upcoming birthdays (next 7 days)
     const [upcomingBirthdays] = await db.query(
