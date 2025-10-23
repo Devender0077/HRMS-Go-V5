@@ -1,6 +1,6 @@
 import { Helmet } from 'react-helmet-async';
 // sections
-import HRMSLogin from '../../sections/auth/hrms/HRMSLogin';
+import HRMSLogin from '../../sections/auth/HRMSLogin';
 
 // ----------------------------------------------------------------------
 

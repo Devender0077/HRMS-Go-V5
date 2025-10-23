@@ -11,11 +11,11 @@ import {
   Alert,
 } from '@mui/material';
 // routes
-import { PATH_AUTH } from '../../../routes/paths';
+import { PATH_AUTH } from '../../routes/paths';
 // layouts
-import LoginLayout from '../../../layouts/login';
+import LoginLayout from '../../layouts/login';
 // components
-import Iconify from '../../../components/iconify';
+import Iconify from '../../components/iconify';
 // sections
 import AuthLoginForm from './AuthLoginForm';
 import FaceLoginForm from './FaceLoginForm';
