@@ -122,42 +122,50 @@ export default function EmployeeNewEditForm({ isEdit = false, currentEmployee })
   const defaultValues = useMemo(
     () => ({
       // Basic Information
-      firstName: currentEmployee?.firstName || '',
-      lastName: currentEmployee?.lastName || '',
+      firstName: currentEmployee?.firstName || currentEmployee?.first_name || '',
+      lastName: currentEmployee?.lastName || currentEmployee?.last_name || '',
       email: currentEmployee?.email || '',
       phone: currentEmployee?.phone || '',
-      employeeId: currentEmployee?.employeeId || '',
-      dateOfBirth: currentEmployee?.dateOfBirth || '',
+      employeeId: currentEmployee?.employeeId || currentEmployee?.employee_id || '',
+      dateOfBirth: currentEmployee?.dateOfBirth || currentEmployee?.date_of_birth || '',
       gender: currentEmployee?.gender || '',
+      maritalStatus: currentEmployee?.maritalStatus || currentEmployee?.marital_status || '',
+      bloodGroup: currentEmployee?.bloodGroup || currentEmployee?.blood_group || '',
+      nationality: currentEmployee?.nationality || '',
       status: currentEmployee?.status || 'Active',
       
       // Employment Details
-      branch: currentEmployee?.branch || '',
-      department: currentEmployee?.department || '',
-      designation: currentEmployee?.designation || '',
+      branch: currentEmployee?.branch || currentEmployee?.branch_id || '',
+      department: currentEmployee?.department || currentEmployee?.department_id || '',
+      designation: currentEmployee?.designation || currentEmployee?.designation_id || '',
       shift: currentEmployee?.shift || '',
-      employmentType: currentEmployee?.employmentType || 'Full Time',
-      attendancePolicy: currentEmployee?.attendancePolicy || '',
-      joiningDate: currentEmployee?.joiningDate || '',
-      reportsTo: currentEmployee?.reportsTo || '',
+      employmentType: currentEmployee?.employmentType || currentEmployee?.employment_type || 'full_time',
+      attendancePolicy: currentEmployee?.attendancePolicy || currentEmployee?.attendance_policy || '',
+      joiningDate: currentEmployee?.joiningDate || currentEmployee?.joining_date || '',
+      reportsTo: currentEmployee?.reportsTo || currentEmployee?.manager_id || '',
       
       // Address Information
       address: currentEmployee?.address || '',
       city: currentEmployee?.city || '',
       state: currentEmployee?.state || '',
       country: currentEmployee?.country || '',
-      zipCode: currentEmployee?.zipCode || '',
+      zipCode: currentEmployee?.zipCode || currentEmployee?.postal_code || '',
+      
+      // Emergency Contact
+      emergencyContactName: currentEmployee?.emergencyContactName || currentEmployee?.emergency_contact_name || '',
+      emergencyContactPhone: currentEmployee?.emergencyContactPhone || currentEmployee?.emergency_contact_phone || '',
+      emergencyContactRelation: currentEmployee?.emergencyContactRelation || currentEmployee?.emergency_contact_relation || '',
       
       // Bank Information
-      bankName: currentEmployee?.bankName || '',
-      accountNumber: currentEmployee?.accountNumber || '',
-      routingNumber: currentEmployee?.routingNumber || '',
-      swiftCode: currentEmployee?.swiftCode || '',
-      bankAddress: currentEmployee?.bankAddress || '',
+      bankName: currentEmployee?.bankName || currentEmployee?.bank_name || '',
+      accountNumber: currentEmployee?.accountNumber || currentEmployee?.account_number || '',
+      routingNumber: currentEmployee?.routingNumber || currentEmployee?.routing_number || '',
+      swiftCode: currentEmployee?.swiftCode || currentEmployee?.swift_code || '',
+      bankAddress: currentEmployee?.bankAddress || currentEmployee?.bank_address || '',
       
       // Salary Information
-      basicSalary: currentEmployee?.basicSalary || '',
-      paymentMethod: currentEmployee?.paymentMethod || 'Bank Transfer',
+      basicSalary: currentEmployee?.basicSalary || currentEmployee?.basic_salary || '',
+      paymentMethod: currentEmployee?.paymentMethod || currentEmployee?.payment_method || 'Bank Transfer',
       
       // Login Information
       temporaryPassword: '',
@@ -239,16 +247,37 @@ export default function EmployeeNewEditForm({ isEdit = false, currentEmployee })
               
               <RHFSelect name="gender" label="Gender">
                 <MenuItem value="">Select gender</MenuItem>
-                <MenuItem value="Male">Male</MenuItem>
-                <MenuItem value="Female">Female</MenuItem>
-                <MenuItem value="Other">Other</MenuItem>
+                <MenuItem value="male">Male</MenuItem>
+                <MenuItem value="female">Female</MenuItem>
+                <MenuItem value="other">Other</MenuItem>
               </RHFSelect>
 
-              <RHFSelect name="status" label="Status">
-                <MenuItem value="Active">Active</MenuItem>
-                <MenuItem value="Inactive">Inactive</MenuItem>
-                <MenuItem value="On Leave">On Leave</MenuItem>
-                <MenuItem value="Probation">Probation</MenuItem>
+              <RHFSelect name="maritalStatus" label="Marital Status">
+                <MenuItem value="">Select marital status</MenuItem>
+                <MenuItem value="single">Single</MenuItem>
+                <MenuItem value="married">Married</MenuItem>
+                <MenuItem value="divorced">Divorced</MenuItem>
+                <MenuItem value="widowed">Widowed</MenuItem>
+              </RHFSelect>
+
+              <RHFSelect name="bloodGroup" label="Blood Group">
+                <MenuItem value="">Select blood group</MenuItem>
+                <MenuItem value="A+">A+</MenuItem>
+                <MenuItem value="A-">A-</MenuItem>
+                <MenuItem value="B+">B+</MenuItem>
+                <MenuItem value="B-">B-</MenuItem>
+                <MenuItem value="AB+">AB+</MenuItem>
+                <MenuItem value="AB-">AB-</MenuItem>
+                <MenuItem value="O+">O+</MenuItem>
+                <MenuItem value="O-">O-</MenuItem>
+              </RHFSelect>
+
+              <RHFTextField name="nationality" label="Nationality" placeholder="Enter nationality" />
+
+              <RHFSelect name="status" label="Employment Status">
+                <MenuItem value="active">Active</MenuItem>
+                <MenuItem value="inactive">Inactive</MenuItem>
+                <MenuItem value="terminated">Terminated</MenuItem>
               </RHFSelect>
             </Box>
 
@@ -324,24 +353,21 @@ export default function EmployeeNewEditForm({ isEdit = false, currentEmployee })
                   </MenuItem>
                 ) : shifts.length === 0 ? (
                   <MenuItem value="">No shifts configured</MenuItem>
-                ) : (
-                  <>
-                    <MenuItem value="">Select shift</MenuItem>
-                    {shifts.map((shift) => (
+                ) : [
+                    <MenuItem key="empty" value="">Select shift</MenuItem>,
+                    ...shifts.map((shift) => (
                       <MenuItem key={shift.id} value={shift.name}>
                         {shift.name} ({shift.start_time} - {shift.end_time})
                       </MenuItem>
-                    ))}
-                  </>
-                )}
+                    ))
+                  ]}
               </RHFSelect>
 
               <RHFSelect name="employmentType" label="Employment Type">
-                <MenuItem value="Full Time">Full Time</MenuItem>
-                <MenuItem value="Part Time">Part Time</MenuItem>
-                <MenuItem value="Contract">Contract</MenuItem>
-                <MenuItem value="Intern">Intern</MenuItem>
-                <MenuItem value="Temporary">Temporary</MenuItem>
+                <MenuItem value="full_time">Full Time</MenuItem>
+                <MenuItem value="part_time">Part Time</MenuItem>
+                <MenuItem value="contract">Contract</MenuItem>
+                <MenuItem value="intern">Intern</MenuItem>
               </RHFSelect>
 
               <RHFSelect name="attendancePolicy" label="Attendance Policy">
@@ -351,16 +377,14 @@ export default function EmployeeNewEditForm({ isEdit = false, currentEmployee })
                   </MenuItem>
                 ) : attendancePolicies.length === 0 ? (
                   <MenuItem value="">No policies configured</MenuItem>
-                ) : (
-                  <>
-                    <MenuItem value="">Select attendance policy</MenuItem>
-                    {attendancePolicies.map((policy) => (
+                ) : [
+                    <MenuItem key="empty" value="">Select attendance policy</MenuItem>,
+                    ...attendancePolicies.map((policy) => (
                       <MenuItem key={policy.id} value={policy.name}>
                         {policy.name}
                       </MenuItem>
-                    ))}
-                  </>
-                )}
+                    ))
+                  ]}
               </RHFSelect>
 
               <RHFTextField 
@@ -379,11 +403,17 @@ export default function EmployeeNewEditForm({ isEdit = false, currentEmployee })
                   ) : employees.length > 0 ? (
                     employees
                       .filter(emp => !currentEmployee || emp.id !== currentEmployee.id) // Don't show self
-                      .map((emp) => (
-                        <MenuItem key={emp.id} value={emp.id}>
-                          {emp.firstName || emp.first_name} {emp.lastName || emp.last_name} - {emp.designation || emp.designation_name || 'N/A'}
-                        </MenuItem>
-                      ))
+                      .map((emp) => {
+                        const firstName = emp.firstName || emp.first_name || '';
+                        const lastName = emp.lastName || emp.last_name || '';
+                        const designation = emp.designation || emp.designation_name || emp.designationName || '';
+                        
+                        return (
+                          <MenuItem key={emp.id} value={emp.id}>
+                            {firstName} {lastName}{designation ? ` (${designation})` : ''}
+                          </MenuItem>
+                        );
+                      })
                   ) : (
                     <MenuItem disabled>No employees found - Run: npm run setup</MenuItem>
                   )}
@@ -424,6 +454,39 @@ export default function EmployeeNewEditForm({ isEdit = false, currentEmployee })
               <RHFTextField name="state" label="State/Province" placeholder="Enter state/province" />
               <RHFTextField name="country" label="Country" placeholder="Enter country" />
               <RHFTextField name="zipCode" label="ZIP/Postal Code" placeholder="Enter ZIP/postal code" />
+            </Box>
+
+            <Divider sx={{ my: 4 }} />
+
+            {/* EMERGENCY CONTACT */}
+            <Typography variant="h6" sx={{ mb: 1 }}>
+              Emergency Contact
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
+              Enter emergency contact details for the employee
+            </Typography>
+
+            <Box
+              rowGap={3}
+              columnGap={2}
+              display="grid"
+              gridTemplateColumns={{
+                xs: 'repeat(1, 1fr)',
+                sm: 'repeat(2, 1fr)',
+              }}
+              sx={{ mb: 3 }}
+            >
+              <RHFTextField name="emergencyContactName" label="Contact Name" placeholder="Enter emergency contact name" />
+              <RHFTextField name="emergencyContactPhone" label="Contact Phone" placeholder="Enter emergency contact phone" />
+              <RHFSelect name="emergencyContactRelation" label="Relationship">
+                <MenuItem value="">Select relationship</MenuItem>
+                <MenuItem value="Spouse">Spouse</MenuItem>
+                <MenuItem value="Parent">Parent</MenuItem>
+                <MenuItem value="Sibling">Sibling</MenuItem>
+                <MenuItem value="Child">Child</MenuItem>
+                <MenuItem value="Friend">Friend</MenuItem>
+                <MenuItem value="Other">Other</MenuItem>
+              </RHFSelect>
             </Box>
 
             <Divider sx={{ my: 4 }} />
@@ -495,15 +558,14 @@ export default function EmployeeNewEditForm({ isEdit = false, currentEmployee })
                   </MenuItem>
                 ) : paymentMethods.length === 0 ? (
                   <MenuItem value="">No payment methods configured</MenuItem>
-                ) : (
-                  <>
-                    {paymentMethods.map((method) => (
+                ) : [
+                    <MenuItem key="empty" value="">Select payment method</MenuItem>,
+                    ...paymentMethods.map((method) => (
                       <MenuItem key={method.id} value={method.name}>
                         {method.name}
                       </MenuItem>
-                    ))}
-                  </>
-                )}
+                    ))
+                  ]}
               </RHFSelect>
             </Box>
 

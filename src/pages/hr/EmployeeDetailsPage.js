@@ -171,9 +171,9 @@ export default function EmployeeDetailsPage() {
   const TABS = [
     { value: 'profile', label: 'Overview', icon: 'eva:person-fill' },
     { value: 'attendance', label: 'Attendance', icon: 'eva:clock-fill' },
-    { value: 'leaves', label: 'Leaves', icon: 'eva:calendar-fill' },
+    // { value: 'leaves', label: 'Leaves', icon: 'eva:calendar-fill' }, // Temporarily disabled - API needs leave_requests data
     { value: 'salary', label: 'Salary', icon: 'eva:credit-card-fill' },
-    { value: 'documents', label: 'Documents', icon: 'eva:file-text-fill' },
+    // { value: 'documents', label: 'Documents', icon: 'eva:file-text-fill' }, // Temporarily disabled - API needs employee_documents data
     { value: 'performance', label: 'Performance', icon: 'eva:trending-up-fill' },
   ];
 
@@ -358,10 +358,22 @@ export default function EmployeeDetailsPage() {
                       </Grid>
                       <Grid item xs={6}>
                         <Typography variant="caption" color="text.secondary">Gender</Typography>
-                        <Typography variant="body1">{employee.gender || 'N/A'}</Typography>
+                        <Typography variant="body1" sx={{ textTransform: 'capitalize' }}>{employee.gender || 'N/A'}</Typography>
                       </Grid>
                       <Grid item xs={6}>
-                        <Typography variant="caption" color="text.secondary">Status</Typography>
+                        <Typography variant="caption" color="text.secondary">Marital Status</Typography>
+                        <Typography variant="body1" sx={{ textTransform: 'capitalize' }}>{employee.marital_status || 'N/A'}</Typography>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Typography variant="caption" color="text.secondary">Blood Group</Typography>
+                        <Typography variant="body1">{employee.blood_group || 'N/A'}</Typography>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Typography variant="caption" color="text.secondary">Nationality</Typography>
+                        <Typography variant="body1">{employee.nationality || 'N/A'}</Typography>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Typography variant="caption" color="text.secondary">Employment Status</Typography>
                         <Label color={getStatusColor(employee.status)} sx={{ textTransform: 'capitalize' }}>
                           {employee.status}
                         </Label>
@@ -399,6 +411,10 @@ export default function EmployeeDetailsPage() {
                         <Typography variant="body1">{employee.shift || 'N/A'}</Typography>
                       </Grid>
                       <Grid item xs={6}>
+                        <Typography variant="caption" color="text.secondary">Attendance Policy</Typography>
+                        <Typography variant="body1">{employee.attendance_policy || 'N/A'}</Typography>
+                      </Grid>
+                      <Grid item xs={6}>
                         <Typography variant="caption" color="text.secondary">Reports To</Typography>
                         <Typography variant="body1">{employee.manager_name || 'N/A'}</Typography>
                       </Grid>
@@ -416,6 +432,24 @@ export default function EmployeeDetailsPage() {
                       {employee.city}, {employee.state} {employee.postal_code}<br />
                       {employee.country}
                     </Typography>
+
+                    <Divider />
+
+                    <Typography variant="h6">Emergency Contact</Typography>
+                    <Grid container spacing={2}>
+                      <Grid item xs={6}>
+                        <Typography variant="caption" color="text.secondary">Contact Name</Typography>
+                        <Typography variant="body1">{employee.emergency_contact_name || 'N/A'}</Typography>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Typography variant="caption" color="text.secondary">Contact Phone</Typography>
+                        <Typography variant="body1">{employee.emergency_contact_phone || 'N/A'}</Typography>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Typography variant="caption" color="text.secondary">Relationship</Typography>
+                        <Typography variant="body1">{employee.emergency_contact_relation || 'N/A'}</Typography>
+                      </Grid>
+                    </Grid>
 
                     {employee.bank_name && (
                       <>

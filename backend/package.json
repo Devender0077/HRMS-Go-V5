@@ -18,6 +18,10 @@
     "db:seed": "node database/seedDashboardData.js",
     "db:seed:general": "node database/seedGeneralSettings.js",
     "db:seed:templates": "node database/addTemplateFields.js",
+    "db:update:employees": "node database/updateEmployeeFields.js",
+    "db:update:employee-data": "node database/updateAllEmployeeData.js",
+    "db:create:user-accounts": "node database/createUserAccountsForEmployees.js",
+    "db:alter:employees": "node database/alterEmployeeTable.js",
     "seed:admin": "node database/seedAdminUser.js",
     "clean-install": "rm -rf node_modules package-lock.json && npm cache clean --force && npm install",
     "postinstall": "echo '✅ Backend dependencies installed successfully!'"

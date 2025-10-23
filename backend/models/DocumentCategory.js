@@ -14,6 +14,11 @@ const DocumentCategory = sequelize.define('DocumentCategory', {
   description: {
     type: DataTypes.TEXT,
   },
+  isMandatory: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+    field: 'is_mandatory',
+  },
   status: {
     type: DataTypes.ENUM('active', 'inactive'),
     defaultValue: 'active',

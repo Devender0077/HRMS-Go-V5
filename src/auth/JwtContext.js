@@ -95,40 +95,40 @@ export function AuthProvider({ children }) {
           return;
         }
 
-        // Try to get user from API
-        try {
-          const response = await axios.get('/api/account/my-account');
-          const { user } = response.data;
+        // If token is valid, use stored user data
+        // Note: /api/auth/me endpoint would be better for fetching current user
+        // For now, using localStorage to avoid API call on every page load
+        const storedUser = window.localStorage.getItem('user');
+        let user;
 
-          dispatch({
-            type: 'INITIAL',
-            payload: {
-              isAuthenticated: true,
-              user,
-            },
-          });
-        } catch (apiError) {
-          // If API fails but token is valid, use mock user
-          if (isValidToken(accessToken)) {
-            const mockUser = {
-              id: 1,
-              displayName: 'Admin User',
-              email: 'admin@hrms.com',
-              photoURL: '/assets/images/avatars/avatar_default.jpg',
-              role: 'admin',
-            };
-
-            dispatch({
-              type: 'INITIAL',
-              payload: {
-                isAuthenticated: true,
-                user: mockUser,
-              },
-            });
-          } else {
-            throw apiError;
+        if (storedUser) {
+          try {
+            user = JSON.parse(storedUser);
+          } catch (e) {
+            console.error('Error parsing stored user:', e);
+            user = null;
           }
         }
+
+        // Fallback to default user if no stored user
+        if (!user) {
+          user = {
+            id: 1,
+            displayName: 'Admin User',
+            email: 'admin@hrms.com',
+            photoURL: '/assets/images/avatars/avatar_default.jpg',
+            role: 'admin',
+            userType: 'super_admin',
+          };
+        }
+
+        dispatch({
+          type: 'INITIAL',
+          payload: {
+            isAuthenticated: true,
+            user: user,
+          },
+        });
       } else {
         dispatch({
           type: 'INITIAL',
@@ -139,7 +139,7 @@ export function AuthProvider({ children }) {
         });
       }
     } catch (error) {
-      console.error(error);
+      console.error('Auth initialization error:', error);
       dispatch({
         type: 'INITIAL',
         payload: {
@@ -183,6 +183,9 @@ export function AuthProvider({ children }) {
         status: user.status,
       };
 
+      // Store user data in localStorage for persistence
+      window.localStorage.setItem('user', JSON.stringify(formattedUser));
+
       dispatch({
         type: 'LOGIN',
         payload: {
@@ -225,6 +228,9 @@ export function AuthProvider({ children }) {
         userType: user.userType,
         status: user.status,
       };
+
+      // Store user data in localStorage for persistence
+      window.localStorage.setItem('user', JSON.stringify(formattedUser));
 
       dispatch({
         type: 'REGISTER',

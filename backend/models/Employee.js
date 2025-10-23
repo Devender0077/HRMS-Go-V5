@@ -165,6 +165,38 @@ const Employee = sequelize.define('Employee', {
     allowNull: true,
     field: 'attendance_policy',
   },
+  paymentMethod: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
+    defaultValue: 'Bank Transfer',
+    field: 'payment_method',
+  },
+  // Personal Details
+  bloodGroup: {
+    type: DataTypes.STRING(10),
+    allowNull: true,
+    field: 'blood_group',
+  },
+  nationality: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
+  },
+  // Emergency Contact
+  emergencyContactName: {
+    type: DataTypes.STRING(200),
+    allowNull: true,
+    field: 'emergency_contact_name',
+  },
+  emergencyContactPhone: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+    field: 'emergency_contact_phone',
+  },
+  emergencyContactRelation: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
+    field: 'emergency_contact_relation',
+  },
 }, {
   tableName: 'employees',
   timestamps: true,

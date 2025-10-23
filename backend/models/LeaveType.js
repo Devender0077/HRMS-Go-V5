@@ -26,6 +26,11 @@ const LeaveType = sequelize.define('LeaveType', {
     defaultValue: 0,
     field: 'max_carry_forward',
   },
+  color: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+    defaultValue: '#1976d2',
+  },
   status: {
     type: DataTypes.ENUM('active', 'inactive'),
     defaultValue: 'active',
