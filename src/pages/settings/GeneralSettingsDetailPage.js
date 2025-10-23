@@ -29,6 +29,7 @@ import {
   DialogContent,
   DialogActions,
   Chip,
+  Tooltip,
 } from '@mui/material';
 // routes
 import { PATH_DASHBOARD } from '../../routes/paths';
@@ -41,6 +42,7 @@ import Scrollbar from '../../components/scrollbar';
 // services
 import generalSettingsService from '../../services/api/generalSettingsService';
 import ImageUpload from '../../components/settings/ImageUpload';
+import TemplatePreview from '../../components/settings/TemplatePreview';
 
 // ----------------------------------------------------------------------
 
@@ -126,12 +128,12 @@ const CATEGORIES = {
     icon: 'eva:bell-fill',
     color: '#c62828',
     fields: [
-      { key: 'notify_new_employee', label: 'Notify on New Employee', type: 'boolean' },
-      { key: 'notify_leave_request', label: 'Notify on Leave Request', type: 'boolean' },
-      { key: 'notify_leave_approval', label: 'Notify on Leave Approval', type: 'boolean' },
-      { key: 'notify_birthday', label: 'Send Birthday Wishes', type: 'boolean' },
-      { key: 'notify_anniversary', label: 'Send Anniversary Wishes', type: 'boolean' },
-      { key: 'document_expiry_days', label: 'Document Expiry Alert (days)', type: 'number' },
+      { key: 'enable_email_notifications', label: 'Enable Email Notifications', type: 'boolean' },
+      { key: 'enable_browser_notifications', label: 'Enable Browser Notifications', type: 'boolean' },
+      { key: 'notify_employee_leave', label: 'Notify on Leave Requests', type: 'boolean' },
+      { key: 'notify_employee_attendance', label: 'Notify on Attendance', type: 'boolean' },
+      { key: 'notify_payroll', label: 'Notify on Payroll', type: 'boolean' },
+      { key: 'notify_document_upload', label: 'Notify on Document Upload', type: 'boolean' },
     ]
   },
   integrations: {
@@ -140,14 +142,14 @@ const CATEGORIES = {
     color: '#00796b',
     fields: [
       { key: 'slack_enabled', label: 'Enable Slack', type: 'boolean' },
-      { key: 'slack_webhook', label: 'Slack Webhook URL', type: 'text' },
+      { key: 'slack_webhook_url', label: 'Slack Webhook URL', type: 'text' },
       { key: 'pusher_enabled', label: 'Enable Pusher', type: 'boolean' },
       { key: 'pusher_app_id', label: 'Pusher App ID', type: 'text' },
       { key: 'pusher_key', label: 'Pusher Key', type: 'text' },
       { key: 'pusher_secret', label: 'Pusher Secret', type: 'text' },
       { key: 'pusher_cluster', label: 'Pusher Cluster', type: 'text' },
-      { key: 'teams_enabled', label: 'Enable Microsoft Teams', type: 'boolean' },
-      { key: 'teams_webhook', label: 'MS Teams Webhook URL', type: 'text' },
+      { key: 'msteams_enabled', label: 'Enable Microsoft Teams', type: 'boolean' },
+      { key: 'msteams_webhook_url', label: 'MS Teams Webhook URL', type: 'text' },
       { key: 'zoom_enabled', label: 'Enable Zoom', type: 'boolean' },
       { key: 'zoom_api_key', label: 'Zoom API Key', type: 'text' },
     ]
@@ -328,6 +330,9 @@ export default function GeneralSettingsDetailPage() {
   const [formData, setFormData] = useState({});
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedSetting, setSelectedSetting] = useState(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewTemplate, setPreviewTemplate] = useState('');
+  const [previewType, setPreviewType] = useState('');
 
   const categoryConfig = CATEGORIES[categoryId];
 
@@ -407,6 +412,18 @@ export default function GeneralSettingsDetailPage() {
   const handleDialogSave = async () => {
     await handleSave();
     handleDialogClose();
+  };
+
+  const handlePreview = (field) => {
+    setPreviewTemplate(formData[field.key] || '');
+    setPreviewType(field.key);
+    setPreviewOpen(true);
+  };
+
+  const handlePreviewClose = () => {
+    setPreviewOpen(false);
+    setPreviewTemplate('');
+    setPreviewType('');
   };
 
   if (!categoryConfig) {
@@ -535,9 +552,24 @@ export default function GeneralSettingsDetailPage() {
                         )}
                       </TableCell>
                       <TableCell align="right">
-                        <IconButton onClick={() => handleEdit(field)} color="primary">
-                          <Iconify icon="eva:edit-fill" />
-                        </IconButton>
+                        <Stack direction="row" spacing={1} justifyContent="flex-end">
+                          {field.key.includes('template') && (
+                            <Tooltip title="Preview Template">
+                              <IconButton 
+                                onClick={() => handlePreview(field)} 
+                                color="info"
+                                size="small"
+                              >
+                                <Iconify icon="eva:eye-fill" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                          <Tooltip title="Edit">
+                            <IconButton onClick={() => handleEdit(field)} color="primary" size="small">
+                              <Iconify icon="eva:edit-fill" />
+                            </IconButton>
+                          </Tooltip>
+                        </Stack>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -631,6 +663,14 @@ export default function GeneralSettingsDetailPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Template Preview Dialog */}
+      <TemplatePreview
+        open={previewOpen}
+        template={previewTemplate}
+        templateType={previewType}
+        onClose={handlePreviewClose}
+      />
     </>
   );
 }

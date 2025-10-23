@@ -17,6 +17,7 @@
     "migrate:fresh": "node database/migrate.js fresh",
     "db:seed": "node database/seedDashboardData.js",
     "db:seed:general": "node database/seedGeneralSettings.js",
+    "db:seed:general-complete": "node database/seedCompleteGeneralSettings.js",
     "db:seed:templates": "node database/addTemplateFields.js",
     "db:update:employees": "node database/updateEmployeeFields.js",
     "db:update:employee-data": "node database/updateAllEmployeeData.js",
