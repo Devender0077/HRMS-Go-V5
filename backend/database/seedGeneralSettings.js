@@ -156,5 +156,13 @@ async function seedGeneralSettings() {
   }
 }
 
-seedGeneralSettings();
+// Export for use in setup scripts
+module.exports = {
+  seedGeneralSettings,
+};
+
+// Run if executed directly
+if (require.main === module) {
+  seedGeneralSettings();
+}
 

@@ -370,5 +370,14 @@ async function seedDashboardData() {
   }
 }
 
-seedDashboardData();
+// Export for use in setup scripts
+module.exports = {
+  seedAll: seedDashboardData,
+  seedDashboardData,
+};
+
+// Run if executed directly
+if (require.main === module) {
+  seedDashboardData();
+}
 
