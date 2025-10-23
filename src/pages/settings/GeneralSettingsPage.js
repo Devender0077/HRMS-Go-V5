@@ -61,6 +61,7 @@ export default function GeneralSettingsPage() {
   
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState({});
+  const [categoryCounts, setCategoryCounts] = useState({});
   const [stats, setStats] = useState({ 
     total: SETTING_CATEGORIES.length, 
     configured: 0, 
@@ -81,19 +82,27 @@ export default function GeneralSettingsPage() {
       if (response && response.settings) {
         setSettings(response.settings);
         
-        // Calculate stats
+        // Use dynamic counts from backend
+        if (response.categoryCounts) {
+          setCategoryCounts(response.categoryCounts);
+        }
+        
+        // Calculate stats from backend data
+        const totalCategories = response.categories || Object.keys(response.settings).length;
         const configured = Object.keys(response.settings).filter(
           key => response.settings[key] && Object.keys(response.settings[key]).length > 0
         ).length;
         
+        const totalSettings = response.total || 0;
         const pending = SETTING_CATEGORIES.length - configured;
-        const completion = Math.round((configured / SETTING_CATEGORIES.length) * 100);
+        const completion = totalCategories > 0 ? Math.round((configured / SETTING_CATEGORIES.length) * 100) : 0;
         
         setStats({ 
           total: SETTING_CATEGORIES.length, 
           configured, 
           pending, 
-          completion 
+          completion,
+          totalSettings // Total number of individual settings in database
         });
       }
     } catch (error) {
@@ -179,7 +188,8 @@ export default function GeneralSettingsPage() {
         <Grid container spacing={3}>
           {SETTING_CATEGORIES.map((category) => {
             const categorySettings = settings[category.id] || {};
-            const settingCount = Object.keys(categorySettings).length;
+            // Use dynamic count from backend (if available), fallback to frontend count
+            const settingCount = categoryCounts[category.id] || Object.keys(categorySettings).length;
             const isConfigured = settingCount > 0;
 
             return (

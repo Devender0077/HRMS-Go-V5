@@ -41,11 +41,20 @@ exports.getAll = async (req, res) => {
       });
     });
 
+    // Calculate category counts
+    const categoryCounts = {};
+    settings.forEach(setting => {
+      const cat = setting.category;
+      categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+    });
+
     res.json({
       success: true,
       settings: grouped,
       raw,
       total: settings.length,
+      categoryCounts,
+      categories: Object.keys(grouped).length,
     });
   } catch (error) {
     console.error('Get all settings error:', error);
