@@ -32,7 +32,7 @@ exports.getDashboardStats = async (req, res) => {
     const [[attendanceToday]] = await db.query(
       `SELECT COUNT(DISTINCT employee_id) as present 
        FROM attendance 
-       WHERE DATE(check_in) = ?`,
+       WHERE DATE(clock_in) = ?`,
       [today]
     );
 
@@ -91,17 +91,17 @@ exports.getDashboardStats = async (req, res) => {
 
     // Attendance trend (last 7 days)
     const [attendanceTrend] = await db.query(
-      `SELECT DATE(check_in) as date, COUNT(DISTINCT employee_id) as count
+      `SELECT DATE(clock_in) as date, COUNT(DISTINCT employee_id) as count
        FROM attendance
-       WHERE check_in >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-       GROUP BY DATE(check_in)
+       WHERE clock_in >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+       GROUP BY DATE(clock_in)
        ORDER BY date ASC`
     );
 
     // Leave trend (last 30 days)
     const [leaveTrend] = await db.query(
       `SELECT DATE(start_date) as date, COUNT(*) as count
-       FROM leaves
+       FROM leave_requests
        WHERE start_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
        AND status = 'approved'
        GROUP BY DATE(start_date)
@@ -248,8 +248,8 @@ exports.getRecentActivities = async (req, res) => {
     
     // Get recent activities from various modules
     const [recentLeaves] = await db.query(
-      `SELECT 'leave' as type, id, employee_id, CONCAT(first_name, ' ', last_name) as employee_name,
-              status, created_at, 'applied for leave' as action
+      `SELECT 'leave' as type, lr.id, lr.employee_id, CONCAT(e.first_name, ' ', e.last_name) as employee_name,
+              lr.status, lr.created_at, 'applied for leave' as action
        FROM leave_requests lr
        JOIN employees e ON lr.employee_id = e.id
        ORDER BY lr.created_at DESC
