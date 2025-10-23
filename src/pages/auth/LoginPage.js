@@ -1,7 +1,6 @@
 import { Helmet } from 'react-helmet-async';
 // sections
-import Login from '../../sections/auth/Login';
-// import Login from '../../sections/auth/LoginAuth0';
+import HRMSLogin from '../../sections/auth/HRMSLogin';
 
 // ----------------------------------------------------------------------
 
@@ -9,10 +8,10 @@ export default function LoginPage() {
   return (
     <>
       <Helmet>
-        <title> Login | Minimal UI</title>
+        <title> Login | HRMS Go V5</title>
       </Helmet>
 
-      <Login />
+      <HRMSLogin />
     </>
   );
 }
