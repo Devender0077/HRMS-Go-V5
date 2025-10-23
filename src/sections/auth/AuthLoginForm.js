@@ -28,8 +28,8 @@ export default function AuthLoginForm() {
   });
 
   const defaultValues = {
-    email: 'admin@hrms.com',
-    password: 'admin123',
+    email: '',
+    password: '',
   };
 
   const methods = useForm({

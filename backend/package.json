@@ -17,6 +17,7 @@
     "db:seed": "node database/seedDashboardData.js",
     "db:seed:general": "node database/seedGeneralSettings.js",
     "db:seed:templates": "node database/addTemplateFields.js",
+    "seed:admin": "node database/seedAdminUser.js",
     "clean-install": "rm -rf node_modules package-lock.json && npm cache clean --force && npm install",
     "postinstall": "echo '✅ Backend dependencies installed successfully!'"
   },

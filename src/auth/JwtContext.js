@@ -154,69 +154,43 @@ export function AuthProvider({ children }) {
     initialize();
   }, [initialize]);
 
-  // LOGIN
+  // LOGIN - Uses database credentials (no hardcoded mock data)
   const login = useCallback(async (email, password) => {
-    // Mock login for demo (remove when backend is ready)
-    if (email === 'admin@hrms.com' && password === 'admin123') {
-      const mockUser = {
-        id: 1,
-        displayName: 'Admin User',
-        email: 'admin@hrms.com',
-        photoURL: '/assets/images/avatars/avatar_default.jpg',
-        role: 'admin',
-      };
-      const mockToken = 'mock-jwt-token-' + Date.now();
-
-      setSession(mockToken);
-
-      dispatch({
-        type: 'LOGIN',
-        payload: {
-          user: mockUser,
-        },
-      });
-      return;
-    }
-
-    // Try actual API call
     try {
-      const response = await axios.post('/api/account/login', {
+      const response = await axios.post('/api/auth/login', {
         email,
         password,
       });
-      const { accessToken, user } = response.data;
 
-      setSession(accessToken);
+      const { success, token, user, message } = response.data;
+
+      if (!success) {
+        throw new Error(message || 'Login failed');
+      }
+
+      // Set session with actual token from backend
+      setSession(token);
+
+      // Format user data for frontend
+      const formattedUser = {
+        id: user.id,
+        displayName: user.name || `${user.email}`,
+        email: user.email,
+        photoURL: user.avatar || '/assets/images/avatars/avatar_default.jpg',
+        role: user.userType || user.user_type || 'employee',
+        userType: user.userType || user.user_type,
+        status: user.status,
+      };
 
       dispatch({
         type: 'LOGIN',
         payload: {
-          user,
+          user: formattedUser,
         },
       });
     } catch (error) {
-      // If API fails and credentials match demo, use mock
-      if (email === 'admin@hrms.com' && password === 'admin123') {
-        const mockUser = {
-          id: 1,
-          displayName: 'Admin User',
-          email: 'admin@hrms.com',
-          photoURL: '/assets/images/avatars/avatar_default.jpg',
-          role: 'admin',
-        };
-        const mockToken = 'mock-jwt-token-' + Date.now();
-
-        setSession(mockToken);
-
-        dispatch({
-          type: 'LOGIN',
-          payload: {
-            user: mockUser,
-          },
-        });
-      } else {
-        throw error;
-      }
+      console.error('Login error:', error);
+      throw new Error(error.response?.data?.message || error.message || 'Invalid email or password');
     }
   }, []);
 

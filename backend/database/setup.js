@@ -21,7 +21,7 @@ const { syncStrategies } = require('../config/syncDatabase');
 // Import seed functions
 const seedDashboardData = require('./seedDashboardData');
 const seedGeneralSettings = require('./seedGeneralSettings');
-const addTemplateFields = require('./addTemplateFields');
+const { seedAdminUser } = require('./seedAdminUser');
 
 // Parse command line arguments
 const args = process.argv.slice(2);
@@ -36,20 +36,25 @@ const setupSteps = {
     
     try {
       // Step 1: Migrate (create tables)
-      console.log('📦 Step 1/3: Creating database tables...\n');
+      console.log('📦 Step 1/4: Creating database tables...\n');
       const migrateResult = await syncStrategies.development();
       console.log(`✅ Tables created: ${migrateResult.models.length} models\n`);
       
       // Wait a bit for tables to be ready
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Step 2: Seed general settings
-      console.log('📝 Step 2/3: Seeding general settings...\n');
+      // Step 2: Create admin user
+      console.log('🔐 Step 2/4: Creating admin user...\n');
+      await seedAdminUser();
+      console.log('✅ Admin user created\n');
+      
+      // Step 3: Seed general settings
+      console.log('📝 Step 3/4: Seeding general settings...\n');
       await seedGeneralSettings.seedGeneralSettings();
       console.log('✅ General settings seeded\n');
       
-      // Step 3: Seed dashboard/sample data
-      console.log('📊 Step 3/3: Seeding sample data...\n');
+      // Step 4: Seed dashboard/sample data
+      console.log('📊 Step 4/4: Seeding sample data...\n');
       await seedDashboardData.seedAll();
       console.log('✅ Sample data seeded\n');
       
@@ -58,12 +63,14 @@ const setupSteps = {
       console.log('╚════════════════════════════════════════════════════════════════╝\n');
       console.log('Your database is ready with:');
       console.log(`  ✅ ${migrateResult.models.length} tables created`);
+      console.log('  ✅ Admin user created (admin@hrms.com / admin123)');
       console.log('  ✅ General settings configured');
       console.log('  ✅ Sample data populated\n');
       console.log('Next steps:');
       console.log('  1. Start backend: npm run dev');
       console.log('  2. Start frontend: cd .. && npm start');
-      console.log('  3. Login: admin@hrms.com / admin123\n');
+      console.log('  3. Login with your credentials');
+      console.log('\n⚠️  IMPORTANT: Change default password after first login!\n');
       
       process.exit(0);
     } catch (error) {

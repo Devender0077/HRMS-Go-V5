@@ -67,17 +67,6 @@ export default function FaceLoginForm() {
         </Stack>
       </Card>
 
-      <Alert severity="info">
-        <Typography variant="caption">
-          To enable this feature, the administrator needs to:
-          <br />
-          1. Download face-api.js models
-          <br />
-          2. Configure the backend API
-          <br />
-          3. Enable face recognition in system settings
-        </Typography>
-      </Alert>
     </Stack>
   );
 }

@@ -59,10 +59,6 @@ export default function HRMSLogin() {
         </Stack>
       </Stack>
 
-      <Alert severity="info" sx={{ mb: 3 }}>
-        Use email : <strong>admin@hrms.com</strong> / password : <strong>admin123</strong>
-      </Alert>
-
       <Tabs 
         value={currentTab} 
         onChange={handleChangeTab}
