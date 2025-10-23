@@ -1,5 +1,5 @@
 import { Helmet } from 'react-helmet-async';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 // @mui
 import {
   Card,
@@ -23,13 +23,16 @@ import { PATH_DASHBOARD } from '../../routes/paths';
 import Iconify from '../../components/iconify';
 import Scrollbar from '../../components/scrollbar';
 import CustomBreadcrumbs from '../../components/custom-breadcrumbs';
-import { useSettingsContext } from '../../components/settings';
 import {
   useTable,
   TableHeadCustom,
   TableNoData,
   TablePaginationCustom,
 } from '../../components/table';
+import { useSettingsContext } from '../../components/settings';
+
+// services
+import attendanceService from '../../services/attendanceService';
 
 // ----------------------------------------------------------------------
 
@@ -44,44 +47,15 @@ const TABLE_HEAD = [
   { id: 'totalHours', label: 'Total Hours', align: 'center' },
 ];
 
-const MOCK_MUSTER_DATA = [
-  {
-    id: '1',
-    employeeName: 'John Doe',
-    employeeId: 'EMP001',
-    department: 'Engineering',
-    present: 22,
-    absent: 2,
-    halfDay: 1,
-    late: 3,
-    onLeave: 2,
-    totalHours: 176.5,
-  },
-  {
-    id: '2',
-    employeeName: 'Jane Smith',
-    employeeId: 'EMP002',
-    department: 'Marketing',
-    present: 24,
-    absent: 0,
-    halfDay: 0,
-    late: 1,
-    onLeave: 1,
-    totalHours: 192.0,
-  },
-  {
-    id: '3',
-    employeeName: 'Bob Johnson',
-    employeeId: 'EMP003',
-    department: 'Engineering',
-    present: 20,
-    absent: 3,
-    halfDay: 2,
-    late: 5,
-    onLeave: 0,
-    totalHours: 160.0,
-  },
-];
+// Map codes to muster buckets
+const CODE_BUCKET = {
+  P: 'present',
+  A: 'absent',
+  HD: 'halfDay',
+  LT: 'late',
+  L: 'onLeave',
+  // WD/H/EO/OT don't affect the 5 buckets here
+};
 
 // ----------------------------------------------------------------------
 
@@ -98,28 +72,129 @@ export default function AttendanceMusterPage() {
 
   const { themeStretch } = useSettingsContext();
 
-  const [tableData] = useState(MOCK_MUSTER_DATA);
-  const [filterMonth, setFilterMonth] = useState(new Date().getMonth() + 1);
+  const [filterMonth, setFilterMonth] = useState(new Date().getMonth() + 1); // 1..12
   const [filterYear, setFilterYear] = useState(new Date().getFullYear());
   const [filterDepartment, setFilterDepartment] = useState('all');
 
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [employees, setEmployees] = useState([]); // from /calendar
+  const [hoursByEmployee, setHoursByEmployee] = useState({}); // id -> totalHours number
+
+  // Helpers for month window
+  const startDateISO = useMemo(
+    () => new Date(filterYear, filterMonth - 1, 1).toISOString().slice(0, 10),
+    [filterYear, filterMonth]
+  );
+  const endDateISO = useMemo(
+    () => new Date(filterYear, filterMonth, 0).toISOString().slice(0, 10),
+    [filterYear, filterMonth]
+  );
+
+  // Fetch calendar (employee + statusByDate) and records (hours) then merge
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      setLoading(true);
+      setError('');
+      try {
+        // 1) Calendar: employees + attendanceByDate
+        const calendar = await attendanceService.getCalendar({
+          year: filterYear,
+          month: filterMonth,
+          department: filterDepartment,
+        });
+
+        if (!alive) return;
+        setEmployees(Array.isArray(calendar) ? calendar : []);
+
+        // 2) Hours: sum totalHours by employeeId in range
+        const recordsRes = await attendanceService.getAttendanceRecordsFiltered({
+          startDate: startDateISO,
+          endDate: endDateISO,
+          // backend getRecords doesn't filter by department; we filter on client
+        });
+
+        const rows = recordsRes?.data?.attendance || recordsRes?.attendance || []; // depends on your service return shape
+        const hoursAgg = rows.reduce((acc, r) => {
+          const id = r.employeeId;
+          const hrs = parseFloat(r.totalHours ?? r.total_hours ?? 0) || 0;
+          acc[id] = (acc[id] || 0) + hrs;
+          return acc;
+        }, {});
+
+        if (!alive) return;
+        setHoursByEmployee(hoursAgg);
+      } catch (e) {
+        if (!alive) return;
+        setError(e?.response?.data?.message || e.message || 'Failed to load muster data');
+        setEmployees([]);
+        setHoursByEmployee({});
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [filterYear, filterMonth, filterDepartment, startDateISO, endDateISO]);
+
+  // Build table rows from employees + hours + status counts
+  const tableData = useMemo(() => {
+    // client-side department filter in case API doesn't filter
+    const list = (filterDepartment === 'all')
+      ? employees
+      : employees.filter(e => String(e.department || '').toLowerCase() === String(filterDepartment).toLowerCase());
+
+    return list.map((emp) => {
+      const byDate = emp.attendanceByDate || {};
+      const buckets = { present: 0, absent: 0, halfDay: 0, late: 0, onLeave: 0 };
+
+      Object.values(byDate).forEach((code) => {
+        const key = CODE_BUCKET[code];
+        if (key) buckets[key] += 1;
+      });
+
+      const totalHours = hoursByEmployee[emp.id] || 0;
+
+      return {
+        id: String(emp.id),
+        employeeName: emp.name || `Employee ${emp.id}`,
+        employeeId: emp.empId || `EMP${emp.id}`,
+        department: emp.department || '',
+        present: buckets.present,
+        absent: buckets.absent,
+        halfDay: buckets.halfDay,
+        late: buckets.late,
+        onLeave: buckets.onLeave,
+        totalHours,
+      };
+    });
+  }, [employees, hoursByEmployee, filterDepartment]);
+
+  // Summary cards from tableData
+  const summary = useMemo(() => ({
+    totalEmployees: tableData.length,
+    totalPresent: tableData.reduce((sum, r) => sum + r.present, 0),
+    totalAbsent: tableData.reduce((sum, r) => sum + r.absent, 0),
+    totalHalfDay: tableData.reduce((sum, r) => sum + r.halfDay, 0),
+    totalLate: tableData.reduce((sum, r) => sum + r.late, 0),
+    totalHours: tableData.reduce((sum, r) => sum + r.totalHours, 0),
+  }), [tableData]);
+
   const handleExport = () => {
-    console.log('Export muster report');
+    // You can export `tableData` here (CSV/XLSX)
+    console.log('Export muster report', { tableData, summary, month: filterMonth, year: filterYear });
   };
 
   const handlePrint = () => {
     window.print();
   };
 
-  // Calculate summary
-  const summary = {
-    totalEmployees: tableData.length,
-    totalPresent: tableData.reduce((sum, row) => sum + row.present, 0),
-    totalAbsent: tableData.reduce((sum, row) => sum + row.absent, 0),
-    totalHalfDay: tableData.reduce((sum, row) => sum + row.halfDay, 0),
-    totalLate: tableData.reduce((sum, row) => sum + row.late, 0),
-    totalHours: tableData.reduce((sum, row) => sum + row.totalHours, 0),
-  };
+  const paged = useMemo(
+    () => tableData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
+    [tableData, page, rowsPerPage]
+  );
 
   return (
     <>
@@ -164,7 +239,7 @@ export default function AttendanceMusterPage() {
                 fullWidth
                 label="Month"
                 value={filterMonth}
-                onChange={(e) => setFilterMonth(e.target.value)}
+                onChange={(e) => setFilterMonth(Number(e.target.value))}
               >
                 {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
                   <MenuItem key={month} value={month}>
@@ -179,7 +254,7 @@ export default function AttendanceMusterPage() {
                 fullWidth
                 label="Year"
                 value={filterYear}
-                onChange={(e) => setFilterYear(e.target.value)}
+                onChange={(e) => setFilterYear(Number(e.target.value))}
               >
                 {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map((year) => (
                   <MenuItem key={year} value={year}>
@@ -204,6 +279,8 @@ export default function AttendanceMusterPage() {
               </TextField>
             </Grid>
             <Grid item xs={12} md={3}>
+              {/* If you want manual fetch instead of auto-on-change,
+                  move the useEffect body into a function and call it here */}
               <Button fullWidth variant="contained" size="large">
                 Generate Report
               </Button>
@@ -264,73 +341,87 @@ export default function AttendanceMusterPage() {
                 />
 
                 <TableBody>
-                  {tableData
-                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                    .map((row) => (
-                      <TableRow key={row.id} hover>
-                        <TableCell>
-                          <strong>{row.employeeName}</strong>
-                          <br />
-                          <span style={{ fontSize: '0.75rem', color: '#637381' }}>
-                            {row.employeeId}
-                          </span>
-                        </TableCell>
-                        <TableCell>{row.department}</TableCell>
-                        <TableCell align="center">
-                          <Box
-                            sx={{
-                              display: 'inline-block',
-                              px: 1,
-                              py: 0.5,
-                              borderRadius: 1,
-                              bgcolor: 'success.lighter',
-                              color: 'success.darker',
-                              fontWeight: 600,
-                            }}
-                          >
-                            {row.present}
-                          </Box>
-                        </TableCell>
-                        <TableCell align="center">
-                          <Box
-                            sx={{
-                              display: 'inline-block',
-                              px: 1,
-                              py: 0.5,
-                              borderRadius: 1,
-                              bgcolor: 'error.lighter',
-                              color: 'error.darker',
-                              fontWeight: 600,
-                            }}
-                          >
-                            {row.absent}
-                          </Box>
-                        </TableCell>
-                        <TableCell align="center">
-                          <Box
-                            sx={{
-                              display: 'inline-block',
-                              px: 1,
-                              py: 0.5,
-                              borderRadius: 1,
-                              bgcolor: 'warning.lighter',
-                              color: 'warning.darker',
-                              fontWeight: 600,
-                            }}
-                          >
-                            {row.halfDay}
-                          </Box>
-                        </TableCell>
-                        <TableCell align="center">{row.late}</TableCell>
-                        <TableCell align="center">{row.onLeave}</TableCell>
-                        <TableCell align="center">
-                          <Typography variant="subtitle2">{row.totalHours.toFixed(1)}h</Typography>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                  {loading && (
+                    <TableRow>
+                      <TableCell colSpan={TABLE_HEAD.length} align="center">
+                        Loading muster data…
+                      </TableCell>
+                    </TableRow>
+                  )}
 
-                  {tableData.length === 0 && (
-                    <TableNoData isNotFound={true} />
+                  {!loading && error && (
+                    <TableRow>
+                      <TableCell colSpan={TABLE_HEAD.length} align="center" sx={{ color: 'error.main' }}>
+                        {error}
+                      </TableCell>
+                    </TableRow>
+                  )}
+
+                  {!loading && !error && paged.map((row) => (
+                    <TableRow key={row.id} hover>
+                      <TableCell>
+                        <strong>{row.employeeName}</strong>
+                        <br />
+                        <span style={{ fontSize: '0.75rem', color: '#637381' }}>
+                          {row.employeeId}
+        </span>
+                      </TableCell>
+                      <TableCell>{row.department}</TableCell>
+                      <TableCell align="center">
+                        <Box
+                          sx={{
+                            display: 'inline-block',
+                            px: 1,
+                            py: 0.5,
+                            borderRadius: 1,
+                            bgcolor: 'success.lighter',
+                            color: 'success.darker',
+                            fontWeight: 600,
+                          }}
+                        >
+                          {row.present}
+                        </Box>
+                      </TableCell>
+                      <TableCell align="center">
+                        <Box
+                          sx={{
+                            display: 'inline-block',
+                            px: 1,
+                            py: 0.5,
+                            borderRadius: 1,
+                            bgcolor: 'error.lighter',
+                            color: 'error.darker',
+                            fontWeight: 600,
+                          }}
+                        >
+                          {row.absent}
+                        </Box>
+                      </TableCell>
+                      <TableCell align="center">
+                        <Box
+                          sx={{
+                            display: 'inline-block',
+                            px: 1,
+                            py: 0.5,
+                            borderRadius: 1,
+                            bgcolor: 'warning.lighter',
+                            color: 'warning.darker',
+                            fontWeight: 600,
+                          }}
+                        >
+                          {row.halfDay}
+                        </Box>
+                      </TableCell>
+                      <TableCell align="center">{row.late}</TableCell>
+                      <TableCell align="center">{row.onLeave}</TableCell>
+                      <TableCell align="center">
+                        <Typography variant="subtitle2">{row.totalHours.toFixed(1)}h</Typography>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+
+                  {!loading && !error && tableData.length === 0 && (
+                    <TableNoData isNotFound />
                   )}
                 </TableBody>
               </Table>
@@ -349,4 +440,3 @@ export default function AttendanceMusterPage() {
     </>
   );
 }
-

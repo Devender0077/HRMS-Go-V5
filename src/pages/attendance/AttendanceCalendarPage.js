@@ -1,5 +1,5 @@
 import { Helmet } from 'react-helmet-async';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 // @mui
 import {
   Card,
@@ -27,6 +27,9 @@ import Scrollbar from '../../components/scrollbar';
 import CustomBreadcrumbs from '../../components/custom-breadcrumbs';
 import { useSettingsContext } from '../../components/settings';
 
+// services
+import attendanceService from '../../services/attendanceService';
+
 // ----------------------------------------------------------------------
 
 // Status codes and their meanings
@@ -43,93 +46,46 @@ const STATUS_CODES = {
   '-': { label: 'No Data', color: '#bdbdbd', bgColor: '#fafafa' },
 };
 
-// Generate mock attendance data for a month
-const generateMonthData = (year, month) => {
-  const daysInMonth = new Date(year, month, 0).getDate();
-  const employees = [
-    { id: 1, name: 'John Doe', empId: 'EMP001', department: 'Engineering' },
-    { id: 2, name: 'Jane Smith', empId: 'EMP002', department: 'Marketing' },
-    { id: 3, name: 'Bob Johnson', empId: 'EMP003', department: 'Engineering' },
-    { id: 4, name: 'Alice Williams', empId: 'EMP004', department: 'HR' },
-    { id: 5, name: 'Charlie Brown', empId: 'EMP005', department: 'Sales' },
-  ];
-
-  return employees.map((emp) => {
-    const attendance = {};
-    for (let day = 1; day <= daysInMonth; day += 1) {
-      const date = new Date(year, month - 1, day);
-      const dayOfWeek = date.getDay();
-      
-      // Sunday = Weekly Off
-      if (dayOfWeek === 0) {
-        attendance[day] = 'WD';
-      }
-      // Random attendance for demo
-      else {
-        const random = Math.random();
-        if (random > 0.9) attendance[day] = 'A';
-        else if (random > 0.85) attendance[day] = 'HD';
-        else if (random > 0.8) attendance[day] = 'L';
-        else if (random > 0.75) attendance[day] = 'LT';
-        else if (random > 0.7) attendance[day] = 'EO';
-        else if (random > 0.65) attendance[day] = 'OT';
-        else attendance[day] = 'P';
-      }
-    }
-    return {
-      ...emp,
-      attendance,
-    };
-  });
-};
-
 // ----------------------------------------------------------------------
 
 export default function AttendanceCalendarPage() {
   const { themeStretch } = useSettingsContext();
 
   const currentDate = new Date();
-  const [filterMonth, setFilterMonth] = useState(currentDate.getMonth() + 1);
+  const [filterMonth, setFilterMonth] = useState(currentDate.getMonth() + 1); // 1..12
   const [filterYear, setFilterYear] = useState(currentDate.getFullYear());
   const [filterDepartment, setFilterDepartment] = useState('all');
 
+  const [monthData, setMonthData] = useState([]); // [{ id,name,empId,department,attendanceByDate: { 'YYYY-MM-DD': 'P' } }]
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
   const daysInMonth = new Date(filterYear, filterMonth, 0).getDate();
-  const monthData = generateMonthData(filterYear, filterMonth);
 
   const handleExport = () => {
-    console.log('Export calendar');
+    // You can export `monthData` here as CSV/XLSX if needed
+    console.log('Export calendar from real DB payload:', monthData);
   };
 
   const handlePrint = () => {
     window.print();
   };
 
-  // Get day of week
+  // Get day of week label for headers
   const getDayOfWeek = (day) => {
     const date = new Date(filterYear, filterMonth - 1, day);
     return date.toLocaleDateString('en-US', { weekday: 'short' });
   };
 
-  // Calculate summary for each employee
-  const calculateSummary = (attendance) => {
-    const summary = {
-      P: 0,
-      A: 0,
-      HD: 0,
-      WD: 0,
-      L: 0,
-      H: 0,
-      LT: 0,
-      EO: 0,
-      OT: 0,
-    };
-    
-    Object.values(attendance).forEach((status) => {
-      if (summary[status] !== undefined) {
-        summary[status] += 1;
-      }
+  // Build ISO date for each day cell: 'YYYY-MM-DD'
+  const isoFor = (y, m1to12, d) => new Date(y, m1to12 - 1, d).toISOString().slice(0, 10);
+
+  // Calculate summary from attendanceByDate map
+  const calculateSummaryByDate = (attendanceByDate = {}) => {
+    const summary = { P: 0, A: 0, HD: 0, WD: 0, L: 0, H: 0, LT: 0, EO: 0, OT: 0 };
+    Object.values(attendanceByDate).forEach((code) => {
+      if (summary[code] !== undefined) summary[code] += 1;
     });
-    
     return summary;
   };
 
@@ -149,10 +105,10 @@ export default function AttendanceCalendarPage() {
           color: statusInfo.color,
           fontWeight: 600,
           fontSize: '0.75rem',
-          cursor: 'pointer',
+          cursor: 'default',
           transition: 'all 0.2s',
           '&:hover': {
-            transform: 'scale(1.1)',
+            transform: 'scale(1.05)',
             boxShadow: 1,
           },
         }}
@@ -162,6 +118,33 @@ export default function AttendanceCalendarPage() {
       </Box>
     );
   };
+
+  // Fetch from API whenever filters change
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const data = await attendanceService.getCalendar({
+          year: filterYear,
+          month: filterMonth,
+          department: filterDepartment,
+        });
+        if (alive) setMonthData(Array.isArray(data) ? data : []);
+      } catch (e) {
+        if (alive) {
+          setError(e?.response?.data?.message || e.message || 'Failed to load attendance');
+          setMonthData([]);
+        }
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [filterYear, filterMonth, filterDepartment]);
 
   return (
     <>
@@ -206,7 +189,7 @@ export default function AttendanceCalendarPage() {
                 fullWidth
                 label="Month"
                 value={filterMonth}
-                onChange={(e) => setFilterMonth(e.target.value)}
+                onChange={(e) => setFilterMonth(Number(e.target.value))}
               >
                 {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
                   <MenuItem key={month} value={month}>
@@ -221,7 +204,7 @@ export default function AttendanceCalendarPage() {
                 fullWidth
                 label="Year"
                 value={filterYear}
-                onChange={(e) => setFilterYear(e.target.value)}
+                onChange={(e) => setFilterYear(Number(e.target.value))}
               >
                 {Array.from({ length: 5 }, (_, i) => currentDate.getFullYear() - i).map((year) => (
                   <MenuItem key={year} value={year}>
@@ -246,6 +229,8 @@ export default function AttendanceCalendarPage() {
               </TextField>
             </Grid>
             <Grid item xs={12} md={3}>
+              {/* Optional: if you want manual fetch instead of auto-on-change,
+                  move the useEffect logic into a function and call it here */}
               <Button fullWidth variant="contained" size="large">
                 Generate Calendar
               </Button>
@@ -338,8 +323,32 @@ export default function AttendanceCalendarPage() {
                 </TableHead>
 
                 <TableBody>
-                  {monthData.map((employee) => {
-                    const summary = calculateSummary(employee.attendance);
+                  {loading && (
+                    <TableRow>
+                      <TableCell colSpan={daysInMonth + 2} align="center">
+                        Loading attendance…
+                      </TableCell>
+                    </TableRow>
+                  )}
+
+                  {error && !loading && (
+                    <TableRow>
+                      <TableCell colSpan={daysInMonth + 2} align="center" sx={{ color: 'error.main' }}>
+                        {error}
+                      </TableCell>
+                    </TableRow>
+                  )}
+
+                  {!loading && !error && monthData.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={daysInMonth + 2} align="center">
+                        No records found for the selected filters.
+                      </TableCell>
+                    </TableRow>
+                  )}
+
+                  {!loading && !error && monthData.map((employee) => {
+                    const summary = calculateSummaryByDate(employee.attendanceByDate);
                     return (
                       <TableRow key={employee.id} hover>
                         <TableCell
@@ -361,9 +370,12 @@ export default function AttendanceCalendarPage() {
                             </Typography>
                           </Box>
                         </TableCell>
+
                         {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
                           const dayOfWeek = getDayOfWeek(day);
                           const isWeekend = dayOfWeek === 'Sun';
+                          const iso = isoFor(filterYear, filterMonth, day);
+                          const code = employee.attendanceByDate?.[iso] || '-';
                           return (
                             <TableCell
                               key={day}
@@ -374,10 +386,11 @@ export default function AttendanceCalendarPage() {
                                 borderColor: 'divider',
                               }}
                             >
-                              {renderStatusCell(employee.attendance[day] || '-')}
+                              {renderStatusCell(code)}
                             </TableCell>
                           );
                         })}
+
                         <TableCell
                           sx={{
                             position: 'sticky',
@@ -416,4 +429,3 @@ export default function AttendanceCalendarPage() {
     </>
   );
 }
-

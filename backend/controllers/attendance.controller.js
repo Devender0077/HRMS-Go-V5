@@ -2,6 +2,161 @@ const Attendance = require('../models/Attendance');
 const Employee = require('../models/Employee');
 const { Op } = require('sequelize');
 
+/** =========================
+ * Helper: DB status -> UI code
+ * ========================= */
+const mapStatusToCode = (s = '') => {
+  switch (s.toLowerCase()) {
+    case 'present': return 'P';
+    case 'absent': return 'A';
+    case 'half_day': return 'HD';
+    case 'weekly_off': return 'WD';
+    case 'leave': return 'L';
+    case 'holiday': return 'H';
+    case 'late': return 'LT';
+    case 'early_out': return 'EO';
+    case 'overtime': return 'OT';
+    default: return '-';
+  }
+};
+
+/** =========================
+ * NEW: Calendar view (month-by-date)
+ * GET /api/attendance/calendar?year=2025&month=10&department=all
+ * ========================= */
+// === REPLACE your getCalendar with this flexible version ===
+exports.getCalendar = async (req, res) => {
+  try {
+    const year = Number(req.query.year);
+    const month = Number(req.query.month);
+    const departmentFilter = (req.query.department || 'all').toLowerCase();
+
+    if (!year || !month || month < 1 || month > 12) {
+      return res.status(400).json({ success: false, message: 'Valid year and month are required' });
+    }
+
+    // Month bounds (UTC)
+    const start = new Date(Date.UTC(year, month - 1, 1));
+    const end = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
+
+    // --- Introspect Employee model fields ---
+    const fields = Object.keys(Employee.rawAttributes || {}).reduce((acc, k) => {
+      acc[k.toLowerCase()] = k; // map lower->actual
+      return acc;
+    }, {});
+
+    // Helpers to pick existing columns by priority
+    const pick = (...candidates) => {
+      for (const c of candidates) {
+        const actual = fields[c.toLowerCase()];
+        if (actual) return actual;
+      }
+      return null;
+    };
+
+    const nameField =
+      pick('name') ||
+      (pick('first_name') && pick('last_name')) || // handled later as pair
+      pick('full_name', 'fullname', 'employee_name', 'display_name', 'fullName');
+
+    const firstNameField = pick('first_name', 'firstname', 'firstName');
+    const lastNameField  = pick('last_name', 'lastname', 'lastName');
+
+    const empCodeField = pick('emp_code', 'employee_code', 'empcode', 'employeeCode', 'code');
+    const deptField    = pick('department', 'dept', 'dept_name', 'department_name', 'departmentName', 'department_id');
+
+    // Build where for employees (only if department column exists and filter != all)
+    const empWhere = {};
+    if (deptField && departmentFilter !== 'all') {
+      // MySQL is case-insensitive by default; this will match fine on typical collations
+      empWhere[deptField] = { [Op.like]: departmentFilter };
+    }
+
+    // Select: always include id; include whatever name/code/department fields exist
+    const empAttributes = ['id'];
+    if (nameField && typeof nameField === 'string') empAttributes.push(nameField);
+    if (firstNameField) empAttributes.push(firstNameField);
+    if (lastNameField)  empAttributes.push(lastNameField);
+    if (empCodeField)   empAttributes.push(empCodeField);
+    if (deptField)      empAttributes.push(deptField);
+
+    const employees = await Employee.findAll({
+      where: empWhere,
+      attributes: [...new Set(empAttributes)], // dedupe
+      order: nameField ? [[nameField, 'ASC']] : [['id', 'ASC']],
+      raw: true,
+    });
+
+    if (!employees.length) {
+      return res.json({ success: true, data: [] });
+    }
+
+    const empIds = employees.map(e => e.id);
+
+    // Attendance for month
+    const rows = await Attendance.findAll({
+      where: {
+        employeeId: { [Op.in]: empIds },
+        date: { [Op.between]: [start, end] },
+      },
+      attributes: ['employeeId', 'date', 'status'],
+      order: [['date', 'ASC']],
+      raw: true,
+    });
+
+    // Build employeeId -> { 'YYYY-MM-DD': 'P' }
+    const byEmployee = new Map();
+    for (const r of rows) {
+      const iso = new Date(r.date).toISOString().slice(0, 10);
+      const code = mapStatusToCode(r.status);
+      if (!byEmployee.has(r.employeeId)) byEmployee.set(r.employeeId, {});
+      byEmployee.get(r.employeeId)[iso] = code;
+    }
+
+    // Normalize employees into payload
+    const payload = employees.map((e) => {
+      // Name resolution
+      let name = null;
+      if (nameField && e[nameField] != null) {
+        name = String(e[nameField]).trim();
+      } else if (firstNameField || lastNameField) {
+        const first = firstNameField ? (e[firstNameField] || '').toString().trim() : '';
+        const last  = lastNameField  ? (e[lastNameField]  || '').toString().trim() : '';
+        name = `${first} ${last}`.trim();
+      }
+      if (!name) name = `Employee ${e.id}`;
+
+      // Emp code/id shown in UI
+      const empId = empCodeField ? (e[empCodeField] || `EMP${e.id}`) : `EMP${e.id}`;
+
+      // Department label
+      const department =
+        deptField ? (e[deptField] != null ? String(e[deptField]) : '') : '';
+
+      return {
+        id: e.id,
+        name,
+        empId,
+        department,
+        attendanceByDate: byEmployee.get(e.id) || {},
+      };
+    });
+
+    return res.json({ success: true, data: payload });
+  } catch (error) {
+    console.error('getCalendar error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to build attendance calendar',
+      error: error.message,
+    });
+  }
+};
+
+/** =========================
+ * EXISTING ENDPOINTS (unchanged)
+ * ========================= */
+
 // Clock in
 exports.clockIn = async (req, res) => {
   try {
@@ -120,7 +275,7 @@ exports.clockOut = async (req, res) => {
   }
 };
 
-// Get attendance records
+// Get attendance records (paginated/filterable)
 exports.getRecords = async (req, res) => {
   try {
     const {
@@ -132,7 +287,9 @@ exports.getRecords = async (req, res) => {
       status,
     } = req.query;
 
-    const offset = (page - 1) * limit;
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const offset = (pageNum - 1) * limitNum;
 
     // Build where clause
     const where = {};
@@ -162,8 +319,8 @@ exports.getRecords = async (req, res) => {
     // Get attendance records with pagination
     const { count, rows } = await Attendance.findAndCountAll({
       where,
-      limit: parseInt(limit),
-      offset: parseInt(offset),
+      limit: limitNum,
+      offset,
       order: [['date', 'DESC'], ['clockIn', 'DESC']],
     });
 
@@ -172,8 +329,8 @@ exports.getRecords = async (req, res) => {
       data: {
         attendance: rows,
         totalCount: count,
-        currentPage: parseInt(page),
-        totalPages: Math.ceil(count / limit),
+        currentPage: pageNum,
+        totalPages: Math.ceil(count / limitNum),
       },
     });
   } catch (error) {
@@ -264,11 +421,13 @@ exports.requestRegularization = async (req, res) => {
 exports.getAll = async (req, res) => {
   try {
     const { page = 1, limit = 10 } = req.query;
-    const offset = (page - 1) * limit;
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const offset = (pageNum - 1) * limitNum;
 
     const { count, rows } = await Attendance.findAndCountAll({
-      limit: parseInt(limit),
-      offset: parseInt(offset),
+      limit: limitNum,
+      offset,
       order: [['date', 'DESC'], ['clockIn', 'DESC']],
     });
 
@@ -277,8 +436,8 @@ exports.getAll = async (req, res) => {
       data: {
         attendance: rows,
         totalCount: count,
-        currentPage: parseInt(page),
-        totalPages: Math.ceil(count / limit),
+        currentPage: pageNum,
+        totalPages: Math.ceil(count / limitNum),
       },
     });
   } catch (error) {

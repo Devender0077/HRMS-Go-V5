@@ -35,7 +35,29 @@ const attendanceService = {
       throw error;
     }
   },
+  getCalendar: async ({ year, month, department = 'all' }) => {
+  try {
+    const response = await axios.get(
+      `${API_URL}/attendance/calendar`,
+      { params: { year, month, department } }
+    );
+    return response.data?.data || [];
+  } catch (error) {
+    console.error('Error fetching attendance calendar:', error);
+    throw error;
+  }
+},
 
+// NEW: explicitly hit /attendance/records with filters (date range, etc.)
+getAttendanceRecordsFiltered: async (params = {}) => {
+  try {
+    const response = await axios.get(`${API_URL}/attendance/records`, { params });
+    return response.data; // controller returns { success, data: { attendance, totalCount, ... } }
+  } catch (error) {
+    console.error('Error fetching filtered attendance records:', error);
+    throw error;
+  }
+},
   // Get attendance by ID
   getAttendanceById: async (id) => {
     try {
