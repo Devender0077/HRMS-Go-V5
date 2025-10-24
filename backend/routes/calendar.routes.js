@@ -9,6 +9,7 @@ const {
 } = require('../controllers/calendar.controller');
 
 // Calendar routes
+router.get('/', getEvents); // Root endpoint - get all events
 router.get('/events', getEvents);
 router.post('/events', createEvent);
 router.get('/events/:id', getEventById);

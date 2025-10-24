@@ -116,6 +116,31 @@ app.use('/api/organization', require('./routes/organization.routes'));
 app.use('/api/upload', require('./routes/upload.routes'));
 app.use('/api/dashboard', require('./routes/dashboard.routes'));
 
+// Route aliases for alternate paths (frontend compatibility)
+app.use('/api/leave-types', (req, res, next) => {
+  req.url = '/types';
+  leaveRoutes(req, res, next);
+});
+
+app.use('/api/salary-components', (req, res, next) => {
+  req.url = '/components';
+  payrollRoutes(req, res, next);
+});
+
+app.use('/api/settings/general', (req, res) => {
+  res.redirect(308, `/api/general-settings${req.url}`);
+});
+
+app.use('/api/job-postings', (req, res, next) => {
+  req.url = '/jobs' + req.url;
+  recruitmentRoutes(req, res, next);
+});
+
+app.use('/api/applications', (req, res, next) => {
+  req.url = '/applications' + req.url;
+  recruitmentRoutes(req, res, next);
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({

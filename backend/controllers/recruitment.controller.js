@@ -50,12 +50,18 @@ exports.deleteJobPosting = async (req, res) => {
 exports.getAllApplications = async (req, res) => {
   try {
     const applications = await JobApplication.findAll({
-      include: [{ model: JobPosting, as: 'job' }],
       order: [['applied_date', 'DESC']],
     });
-    res.json(applications);
+    res.json({
+      success: true,
+      data: applications
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching applications', error: error.message });
+    res.status(500).json({ 
+      success: false,
+      message: 'Error fetching applications', 
+      error: error.message 
+    });
   }
 };
 

@@ -6,6 +6,9 @@ const documentsController = require('../controllers/documents.controller');
 // Apply authentication middleware to all routes
 // router.use(authenticateToken);
 
+// Root endpoint - get all documents
+router.get('/', documentsController.getAllEmployeeDocuments);
+
 // Document categories
 router.get('/categories', documentsController.getCategories);
 

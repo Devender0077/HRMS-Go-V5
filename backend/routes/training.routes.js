@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const trainingController = require('../controllers/training.controller');
 
+// Root endpoint - get all training programs
+router.get('/', trainingController.getAllPrograms);
+
 // Training Programs
 router.get('/programs', trainingController.getAllPrograms);
 router.post('/programs', trainingController.createProgram);
