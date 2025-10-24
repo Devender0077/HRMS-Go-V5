@@ -348,6 +348,14 @@ class PerformanceService {
       };
     }
   }
+
+  /**
+   * Get goals (alias for getPerformanceGoals)
+   * @returns {Promise} Goals list
+   */
+  async getGoals() {
+    return this.getPerformanceGoals();
+  }
 }
 
 export default new PerformanceService();
