@@ -81,14 +81,13 @@ export default function AttendanceRecordsPage() {
   // Fetch attendance records
   useEffect(() => {
     fetchAttendance();
-  }, [page, rowsPerPage, filterDate, filterStatus]);
+    // We don't need to refetch on page/rowsPerPage — pagination is client-side
+  }, [filterDate, filterStatus]);
 
   const fetchAttendance = async () => {
     setLoading(true);
     try {
       const response = await attendanceService.getAttendanceRecords({
-        page: page + 1,
-        limit: rowsPerPage,
         startDate: filterDate ? filterDate.toISOString().split('T')[0] : undefined,
         status: filterStatus !== 'all' ? filterStatus : undefined,
       });
@@ -118,6 +117,11 @@ export default function AttendanceRecordsPage() {
     filterStatus,
   });
 
+  // Client-side pagination slice
+  const start = page * rowsPerPage;
+  const end = start + rowsPerPage;
+  const paginatedData = dataFiltered.slice(start, end);
+
   const denseHeight = dense ? 52 : 72;
 
   const isFiltered = filterName !== '' || filterDate !== null || filterStatus !== 'all';
@@ -143,6 +147,7 @@ export default function AttendanceRecordsPage() {
     setFilterName('');
     setFilterDate(null);
     setFilterStatus('all');
+    setPage(0);
   };
 
   const handleViewDetails = (id) => {
@@ -168,7 +173,7 @@ export default function AttendanceRecordsPage() {
   const handleConfirmDelete = async () => {
     try {
       const response = await attendanceService.delete(selectedId);
-      
+
       if (response.success) {
         enqueueSnackbar('Attendance record deleted successfully');
         fetchAttendance();
@@ -225,7 +230,7 @@ export default function AttendanceRecordsPage() {
                   order={order}
                   orderBy={orderBy}
                   headLabel={TABLE_HEAD}
-                  rowCount={safeTableData.length}
+                  rowCount={dataFiltered.length}
                   onSort={onSort}
                 />
 
@@ -238,21 +243,19 @@ export default function AttendanceRecordsPage() {
                     </tr>
                   ) : (
                     <>
-                      {dataFiltered
-                        .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                        .map((row) => (
-                          <AttendanceTableRow 
-                            key={row.id} 
-                            row={row}
-                            onViewDetails={handleViewDetails}
-                            onEdit={handleEdit}
-                            onDelete={handleDeleteClick}
-                          />
-                        ))}
+                      {paginatedData.map((row) => (
+                        <AttendanceTableRow
+                          key={row.id}
+                          row={row}
+                          onViewDetails={handleViewDetails}
+                          onEdit={handleEdit}
+                          onDelete={handleDeleteClick}
+                        />
+                      ))}
 
                       <TableEmptyRows
                         height={denseHeight}
-                        emptyRows={emptyRows(page, rowsPerPage, safeTableData.length)}
+                        emptyRows={emptyRows(page, rowsPerPage, dataFiltered.length)}
                       />
 
                       <TableNoData isNotFound={isNotFound} />
@@ -264,7 +267,7 @@ export default function AttendanceRecordsPage() {
           </TableContainer>
 
           <TablePaginationCustom
-            count={dataFiltered.length}
+            count={dataFiltered.length}          // total rows after filtering
             page={page}
             rowsPerPage={rowsPerPage}
             onPageChange={onChangePage}
@@ -293,11 +296,10 @@ export default function AttendanceRecordsPage() {
 // ----------------------------------------------------------------------
 
 function applyFilter({ inputData, comparator, filterName, filterDate, filterStatus }) {
-  // Handle undefined or null inputData
   if (!inputData || !Array.isArray(inputData)) {
     return [];
   }
-  
+
   const stabilizedThis = inputData.map((el, index) => [el, index]);
 
   stabilizedThis.sort((a, b) => {
@@ -311,22 +313,22 @@ function applyFilter({ inputData, comparator, filterName, filterDate, filterStat
   if (filterName) {
     inputData = inputData.filter(
       (record) =>
-        record.employeeName.toLowerCase().indexOf(filterName.toLowerCase()) !== -1 ||
-        record.employeeId.toLowerCase().indexOf(filterName.toLowerCase()) !== -1
+        (record.employeeName ?? '').toLowerCase().includes(filterName.toLowerCase()) ||
+        (record.employeeId ?? '').toLowerCase().includes(filterName.toLowerCase())
     );
   }
 
   if (filterDate) {
     inputData = inputData.filter(
       (record) =>
+        record?.date &&
         new Date(record.date).toDateString() === new Date(filterDate).toDateString()
     );
   }
 
   if (filterStatus !== 'all') {
-    inputData = inputData.filter((record) => record.status === filterStatus);
+    inputData = inputData.filter((record) => (record.status ?? '') === filterStatus);
   }
 
   return inputData;
 }
-

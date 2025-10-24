@@ -26,8 +26,26 @@ AttendanceTableRow.propTypes = {
   onViewDetails: PropTypes.func,
 };
 
+// Safely coerce possible strings like "08:30", "8h", "8.25" to a number (hours)
+function toNumberOrNull(val) {
+  if (typeof val === 'number') return Number.isFinite(val) ? val : null;
+  if (typeof val === 'string') {
+    const hhmm = val.match(/^(\d{1,2}):(\d{2})$/);
+    if (hhmm) {
+      const h = parseInt(hhmm[1], 10);
+      const m = parseInt(hhmm[2], 10);
+      return Number.isFinite(h) && Number.isFinite(m) ? h + m / 60 : null;
+    }
+    const cleaned = val.replace(/[^0-9.-]/g, '');
+    const n = parseFloat(cleaned);
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+}
+
 export default function AttendanceTableRow({ row, onEdit, onDelete, onViewDetails }) {
   const [openPopover, setOpenPopover] = useState(null);
+
   const {
     employeeName,
     employeeId,
@@ -40,7 +58,11 @@ export default function AttendanceTableRow({ row, onEdit, onDelete, onViewDetail
     isLate,
     clockInLocation,
     clockInIp,
-  } = row;
+    id,
+  } = row || {};
+
+  const totalHoursNum = toNumberOrNull(totalHours);
+  const overtimeNum = toNumberOrNull(overtime);
 
   const getStatusColor = () => {
     switch (status) {
@@ -61,18 +83,18 @@ export default function AttendanceTableRow({ row, onEdit, onDelete, onViewDetail
     <TableRow hover>
       <TableCell>
         <Stack>
-          <Typography variant="subtitle2">{employeeName}</Typography>
+          <Typography variant="subtitle2">{employeeName || '-'}</Typography>
           <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-            {employeeId}
+            {employeeId || ''}
           </Typography>
         </Stack>
       </TableCell>
 
-      <TableCell align="left">{fDate(date)}</TableCell>
+      <TableCell align="left">{date ? fDate(date) : '-'}</TableCell>
 
       <TableCell align="left">
         <Stack direction="row" alignItems="center" spacing={0.5}>
-          <Typography variant="body2">{clockIn}</Typography>
+          <Typography variant="body2">{clockIn || '-'}</Typography>
           {isLate && (
             <Chip
               label="Late"
@@ -84,7 +106,7 @@ export default function AttendanceTableRow({ row, onEdit, onDelete, onViewDetail
         </Stack>
       </TableCell>
 
-      <TableCell align="left">{clockOut}</TableCell>
+      <TableCell align="left">{clockOut || '-'}</TableCell>
 
       <TableCell align="left">
         <Stack>
@@ -107,14 +129,22 @@ export default function AttendanceTableRow({ row, onEdit, onDelete, onViewDetail
         </Stack>
       </TableCell>
 
+      {/* Total Hours */}
       <TableCell align="center">
-        <Typography variant="subtitle2">{totalHours.toFixed(2)}h</Typography>
+        <Typography variant="subtitle2">
+          {totalHoursNum !== null
+            ? `${totalHoursNum.toFixed(2)}h`
+            : typeof totalHours === 'string' && totalHours.trim()
+            ? totalHours
+            : '-'}
+        </Typography>
       </TableCell>
 
+      {/* Overtime */}
       <TableCell align="center">
-        {overtime > 0 ? (
+        {overtimeNum !== null && overtimeNum > 0 ? (
           <Chip
-            label={`${overtime.toFixed(2)}h`}
+            label={`${overtimeNum.toFixed(2)}h`}
             color="success"
             size="small"
             icon={<Iconify icon="eva:clock-fill" width={16} />}
@@ -128,7 +158,7 @@ export default function AttendanceTableRow({ row, onEdit, onDelete, onViewDetail
 
       <TableCell align="center">
         <Label variant="soft" color={getStatusColor()} sx={{ textTransform: 'capitalize' }}>
-          {status.replace('_', ' ')}
+          {(status || 'unknown').replace('_', ' ')}
         </Label>
       </TableCell>
 
@@ -139,7 +169,7 @@ export default function AttendanceTableRow({ row, onEdit, onDelete, onViewDetail
       </TableCell>
 
       <Popover
-        open={!!openPopover}
+        open={Boolean(openPopover)}
         anchorEl={openPopover}
         onClose={() => setOpenPopover(null)}
         anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
@@ -147,7 +177,7 @@ export default function AttendanceTableRow({ row, onEdit, onDelete, onViewDetail
       >
         <MenuItem
           onClick={() => {
-            onViewDetails && onViewDetails(row.id);
+            onViewDetails && onViewDetails(id ?? row?.id);
             setOpenPopover(null);
           }}
         >
@@ -157,7 +187,7 @@ export default function AttendanceTableRow({ row, onEdit, onDelete, onViewDetail
 
         <MenuItem
           onClick={() => {
-            onEdit && onEdit(row.id);
+            onEdit && onEdit(id ?? row?.id);
             setOpenPopover(null);
           }}
         >
@@ -167,7 +197,7 @@ export default function AttendanceTableRow({ row, onEdit, onDelete, onViewDetail
 
         <MenuItem
           onClick={() => {
-            onDelete && onDelete(row.id);
+            onDelete && onDelete(id ?? row?.id);
             setOpenPopover(null);
           }}
           sx={{ color: 'error.main' }}
@@ -179,4 +209,3 @@ export default function AttendanceTableRow({ row, onEdit, onDelete, onViewDetail
     </TableRow>
   );
 }
-
