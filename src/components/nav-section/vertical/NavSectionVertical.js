@@ -35,12 +35,26 @@ export default function NavSectionVertical({ data, sx, ...other }) {
    * Filter navigation items based on ACTUAL permissions from database
    */
   const filteredData = useMemo(() => {
+    // Force reload permissions from localStorage if hook doesn't have them
+    let actualPermissions = permissions;
+    if (!actualPermissions || actualPermissions.length === 0) {
+      try {
+        const stored = localStorage.getItem('permissions');
+        if (stored) {
+          actualPermissions = JSON.parse(stored);
+        }
+      } catch (e) {
+        actualPermissions = [];
+      }
+    }
+    
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('🔍 NAVIGATION FILTER - Using Database Permissions');
     console.log('   User:', user?.email);
     console.log('   User Type:', user?.userType);
-    console.log('   Total permissions:', permissions.length);
-    console.log('   Permissions:', permissions);
+    console.log('   Hook permissions:', permissions.length);
+    console.log('   Actual permissions:', actualPermissions.length);
+    console.log('   Permissions:', actualPermissions);
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     
     // Super admin sees EVERYTHING - no filtering
@@ -64,15 +78,15 @@ export default function NavSectionVertical({ data, sx, ...other }) {
           let hasAccess = false;
           
           if (typeof item.permission === 'string') {
-            hasAccess = hasPermission(item.permission);
+            hasAccess = actualPermissions.includes(item.permission);
             console.log(`   ${item.title}: Checking "${item.permission}" → ${hasAccess ? 'YES' : 'NO'}`);
           } else if (Array.isArray(item.permission)) {
-            hasAccess = hasAnyPermission(item.permission);
+            hasAccess = item.permission.some(perm => actualPermissions.includes(perm));
             console.log(`   ${item.title}: Checking ANY of ${JSON.stringify(item.permission)} → ${hasAccess ? 'YES' : 'NO'}`);
             if (!hasAccess) {
               // Debug which permissions are missing
               item.permission.forEach(perm => {
-                const has = permissions.includes(perm);
+                const has = actualPermissions.includes(perm);
                 console.log(`      - ${perm}: ${has ? '✅' : '❌'}`);
               });
             }
@@ -112,7 +126,7 @@ export default function NavSectionVertical({ data, sx, ...other }) {
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
     
     return filtered;
-  }, [data, hasPermission, hasAnyPermission, permissions]);
+  }, [data, user, permissions]); // Removed hasPermission/hasAnyPermission - using actualPermissions directly
 
   return (
     <Stack sx={sx} {...other}>
