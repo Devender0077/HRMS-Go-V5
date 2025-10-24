@@ -2,6 +2,8 @@ import { Navigate, useRoutes } from 'react-router-dom';
 // auth
 import AuthGuard from '../auth/AuthGuard';
 import GuestGuard from '../auth/GuestGuard';
+// guards
+import RoutePermissionWrapper from '../guards/RoutePermissionWrapper';
 // layouts
 import MainLayout from '../layouts/main';
 import SimpleLayout from '../layouts/simple';
@@ -224,6 +226,9 @@ export default function Router() {
         </AuthGuard>
       ),
       children: [
+        {
+          element: <RoutePermissionWrapper />,
+          children: [
         { element: <Navigate to={PATH_AFTER_LOGIN} replace />, index: true },
         { path: 'app', element: <HRMSDashboardPage /> },
         { path: 'ecommerce', element: <GeneralEcommercePage /> },
@@ -495,6 +500,8 @@ export default function Router() {
             },
           ],
         },
+          ], // End of RoutePermissionWrapper children
+        }, // End of RoutePermissionWrapper
       ],
     },
     {
