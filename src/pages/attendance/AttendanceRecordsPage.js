@@ -1,5 +1,6 @@
 import { Helmet } from 'react-helmet-async';
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 // @mui
 import {
   Card,
@@ -9,6 +10,7 @@ import {
   Container,
   TableContainer,
   CircularProgress,
+  MenuItem,
 } from '@mui/material';
 // routes
 import { PATH_DASHBOARD } from '../../routes/paths';
@@ -21,6 +23,7 @@ import CustomBreadcrumbs from '../../components/custom-breadcrumbs';
 import { useSettingsContext } from '../../components/settings';
 import { useSnackbar } from '../../components/snackbar';
 import ConfirmDialog from '../../components/confirm-dialog';
+import MenuPopover from '../../components/menu-popover';
 import {
   useTable,
   getComparator,
@@ -35,6 +38,9 @@ import {
   AttendanceTableToolbar,
   AttendanceTableRow,
 } from '../../sections/@dashboard/attendance/list';
+import AttendanceDetailsDialog from '../../sections/@dashboard/attendance/AttendanceDetailsDialog';
+// utils
+import * as XLSX from 'xlsx';
 
 // ----------------------------------------------------------------------
 
@@ -73,10 +79,15 @@ export default function AttendanceRecordsPage() {
   const [loading, setLoading] = useState(true);
   const [openConfirm, setOpenConfirm] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
+  const [selectedAttendance, setSelectedAttendance] = useState(null);
+  const [openDetails, setOpenDetails] = useState(false);
+  const [openExportMenu, setOpenExportMenu] = useState(null);
 
   const [filterName, setFilterName] = useState('');
   const [filterDate, setFilterDate] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
+
+  const navigate = useNavigate();
 
   // Fetch attendance records
   useEffect(() => {
@@ -151,13 +162,54 @@ export default function AttendanceRecordsPage() {
   };
 
   const handleViewDetails = (id) => {
-    console.log('View details for:', id);
-    // Navigate to details page or open modal
+    const attendance = tableData.find((row) => row.id === id);
+    if (attendance) {
+      setSelectedAttendance(attendance);
+      setOpenDetails(true);
+    }
   };
 
   const handleEdit = (id) => {
-    console.log('Regularize attendance:', id);
-    // Navigate to regularization page
+    // Navigate to regularization page with attendance ID
+    navigate(`/dashboard/attendance/regularizations?attendance_id=${id}`);
+  };
+
+  const handleExport = (format) => {
+    setOpenExportMenu(null);
+    
+    try {
+      const exportData = dataFiltered.map((row) => ({
+        'Employee ID': row.employeeId || row.employee_id || 'N/A',
+        'Employee Name': row.employeeName || row.employee_name || 'N/A',
+        'Date': row.date,
+        'Clock In': row.clockIn || '-',
+        'Clock Out': row.clockOut || '-',
+        'Total Hours': row.totalHours || row.total_hours || '0',
+        'Overtime': row.overtime || '0',
+        'Status': row.status || 'unknown',
+        'Location': row.clockInLocation || row.clock_in_location || '-',
+      }));
+
+      if (format === 'excel') {
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Attendance');
+        XLSX.writeFile(wb, `attendance_records_${new Date().toISOString().split('T')[0]}.xlsx`);
+        enqueueSnackbar('Exported to Excel successfully', { variant: 'success' });
+      } else if (format === 'csv') {
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        const csv = XLSX.utils.sheet_to_csv(ws);
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `attendance_records_${new Date().toISOString().split('T')[0]}.csv`;
+        link.click();
+        enqueueSnackbar('Exported to CSV successfully', { variant: 'success' });
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      enqueueSnackbar('Failed to export data', { variant: 'error' });
+    }
   };
 
   const handleDeleteClick = (id) => {
@@ -205,6 +257,7 @@ export default function AttendanceRecordsPage() {
             <Button
               variant="contained"
               startIcon={<Iconify icon="eva:download-fill" />}
+              onClick={(e) => setOpenExportMenu(e.currentTarget)}
             >
               Export
             </Button>
@@ -289,6 +342,27 @@ export default function AttendanceRecordsPage() {
           </Button>
         }
       />
+
+      <AttendanceDetailsDialog
+        open={openDetails}
+        onClose={() => setOpenDetails(false)}
+        attendance={selectedAttendance}
+      />
+
+      <MenuPopover
+        open={Boolean(openExportMenu)}
+        anchorEl={openExportMenu}
+        onClose={() => setOpenExportMenu(null)}
+      >
+        <MenuItem onClick={() => handleExport('excel')}>
+          <Iconify icon="vscode-icons:file-type-excel" sx={{ mr: 2 }} />
+          Export to Excel
+        </MenuItem>
+        <MenuItem onClick={() => handleExport('csv')}>
+          <Iconify icon="vscode-icons:file-type-csv" sx={{ mr: 2 }} />
+          Export to CSV
+        </MenuItem>
+      </MenuPopover>
     </>
   );
 }
