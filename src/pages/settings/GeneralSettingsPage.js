@@ -71,7 +71,7 @@ export default function GeneralSettingsPage() {
 
   useEffect(() => {
     fetchSettings();
-  }, []);
+  }, [location]); // Re-fetch when navigating back to this page
 
   const fetchSettings = async () => {
     try {
@@ -156,8 +156,8 @@ export default function GeneralSettingsPage() {
         <Grid container spacing={3} sx={{ mb: 4 }}>
           <Grid item xs={12} sm={6} md={3}>
             <Card sx={{ p: 3, textAlign: 'center', bgcolor: 'primary.lighter' }}>
-              <Typography variant="h2" color="primary.main">{stats.total}</Typography>
-              <Typography variant="caption" color="text.secondary">Total Categories</Typography>
+              <Typography variant="h2" color="primary.main">{stats.totalSettings || 0}</Typography>
+              <Typography variant="caption" color="text.secondary">Total Settings</Typography>
             </Card>
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
@@ -188,8 +188,11 @@ export default function GeneralSettingsPage() {
         <Grid container spacing={3}>
           {SETTING_CATEGORIES.map((category) => {
             const categorySettings = settings[category.id] || {};
-            // Use dynamic count from backend (if available), fallback to frontend count
-            const settingCount = categoryCounts[category.id] || Object.keys(categorySettings).length;
+            // Use dynamic count from backend (if available), NO FALLBACK
+            // categoryCounts[category.id] can be 0, which is a valid count
+            const settingCount = categoryCounts[category.id] !== undefined 
+              ? categoryCounts[category.id] 
+              : 0;
             const isConfigured = settingCount > 0;
 
             return (

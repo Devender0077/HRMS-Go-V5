@@ -2,6 +2,7 @@ import { Helmet } from 'react-helmet-async';
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
+import { useSnackbar } from 'notistack';
 // @mui
 import {
   Container,
@@ -31,6 +32,8 @@ import Iconify from '../../components/iconify';
 // utils
 import { fDateTime } from '../../utils/formatTime';
 import { getAttendanceTrackingData } from '../../utils/locationService';
+// services
+import attendanceService from '../../services/attendanceService';
 
 // ----------------------------------------------------------------------
 
@@ -38,6 +41,7 @@ export default function AttendanceClockPage() {
   const { themeStretch } = useSettingsContext();
   const { t } = useTranslation();
   const dispatch = useDispatch();
+  const { enqueueSnackbar } = useSnackbar();
 
   const user = useSelector(selectUser);
   const clockedIn = useSelector(selectClockedIn);
@@ -58,6 +62,50 @@ export default function AttendanceClockPage() {
     return () => clearInterval(timer);
   }, []);
 
+  // Load today's attendance status on mount
+  useEffect(() => {
+    const loadTodayAttendance = async () => {
+      try {
+        if (!user?.id) return;
+        
+        const today = new Date().toISOString().split('T')[0];
+        const response = await attendanceService.getAttendanceRecords({
+          userId: user.id, // Use userId, backend will look up employee
+          date: today,
+        });
+        
+        const attendanceData = response.data?.attendance || response.data || [];
+        if (response.success && attendanceData.length > 0) {
+          const todayRecord = attendanceData[0];
+          if (todayRecord.clockIn && !todayRecord.clockOut) {
+            // Already clocked in, update Redux state
+            dispatch(clockInSuccess({
+              clockInTime: todayRecord.clockIn,
+              employeeId: user.id,
+              date: todayRecord.date,
+            }));
+          } else if (todayRecord.clockIn && todayRecord.clockOut) {
+            // Already clocked in and out, update Redux state
+            dispatch(clockInSuccess({
+              clockInTime: todayRecord.clockIn,
+              employeeId: user.id,
+              date: todayRecord.date,
+            }));
+            dispatch(clockOutSuccess({
+              clockOutTime: todayRecord.clockOut,
+              totalHours: parseFloat(todayRecord.totalHours || 0),
+            }));
+            dispatch(updateTodayHours(parseFloat(todayRecord.totalHours || 0)));
+          }
+        }
+      } catch (error) {
+        console.error('Error loading today attendance:', error);
+      }
+    };
+    
+    loadTodayAttendance();
+  }, [user?.id, dispatch]);
+
   // Calculate elapsed time
   useEffect(() => {
     if (clockedIn && clockInTime) {
@@ -73,24 +121,44 @@ export default function AttendanceClockPage() {
       const trackingData = await getAttendanceTrackingData();
       setLocationData(trackingData);
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Call backend API to save clock in
+      const response = await attendanceService.clockIn({
+        userId: user?.id, // Pass user ID, backend will look up employee
+        ip: trackingData.ipAddress,
+        location: trackingData.location,
+        latitude: trackingData.latitude,
+        longitude: trackingData.longitude,
+        deviceInfo: trackingData.deviceInfo,
+      });
 
-      const now = new Date().toISOString();
-      dispatch(
-        clockInSuccess({
-          clockInTime: now,
-          employeeId: user?.id,
-          date: new Date().toDateString(),
-          location: trackingData.location,
-          ipAddress: trackingData.ipAddress,
-          latitude: trackingData.latitude,
-          longitude: trackingData.longitude,
-          deviceInfo: trackingData.deviceInfo,
-        })
-      );
+      if (response.success) {
+        // Update Redux state
+        dispatch(
+          clockInSuccess({
+            clockInTime: response.data.clockIn,
+            employeeId: user?.id,
+            date: response.data.date,
+            location: trackingData.location,
+            ipAddress: trackingData.ipAddress,
+            latitude: trackingData.latitude,
+            longitude: trackingData.longitude,
+            deviceInfo: trackingData.deviceInfo,
+          })
+        );
+      }
     } catch (error) {
       console.error('Clock in error:', error);
+      console.error('Error details:', error.response?.data);
+      console.error('Current user:', user);
+      
+      let errorMessage = error.response?.data?.message || error.message || 'Failed to clock in';
+      
+      // If error is about missing employee profile, show helpful message
+      if (errorMessage.includes('Employee ID is required') || errorMessage.includes('employee profile')) {
+        errorMessage = `${errorMessage}\n\nYou're logged in as: ${user?.email || 'Unknown'}\n\nPlease login with an account that has an employee profile (e.g., john.doe@hrmsgo.com) or create an employee profile for your current user.`;
+      }
+      
+      enqueueSnackbar(errorMessage, { variant: 'error', autoHideDuration: 10000 });
     } finally {
       setIsProcessing(false);
     }
@@ -99,19 +167,33 @@ export default function AttendanceClockPage() {
   const handleClockOut = async () => {
     setIsProcessing(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Get location data for clock out
+      const trackingData = await getAttendanceTrackingData();
 
-      const totalHours = (elapsedTime / 3600).toFixed(2);
-      dispatch(
-        clockOutSuccess({
-          clockOutTime: new Date().toISOString(),
-          totalHours: parseFloat(totalHours),
-        })
-      );
-      dispatch(updateTodayHours(parseFloat(totalHours)));
+      // Call backend API to save clock out
+      const response = await attendanceService.clockOut({
+        userId: user?.id, // Pass user ID, backend will look up employee
+        ip: trackingData.ipAddress,
+        location: trackingData.location,
+        latitude: trackingData.latitude,
+        longitude: trackingData.longitude,
+      });
+
+      if (response.success) {
+        const totalHours = parseFloat(response.data.totalHours || 0);
+        
+        // Update Redux state
+        dispatch(
+          clockOutSuccess({
+            clockOutTime: response.data.clockOut,
+            totalHours,
+          })
+        );
+        dispatch(updateTodayHours(totalHours));
+      }
     } catch (error) {
       console.error('Clock out error:', error);
+      alert('Failed to clock out: ' + (error.response?.data?.message || error.message));
     } finally {
       setIsProcessing(false);
     }

@@ -30,7 +30,7 @@ const Role = sequelize.define('Role', {
     defaultValue: 'active',
   },
 }, {
-  tableName: 'roles',
+  tableName: 'user_roles',
   timestamps: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at',

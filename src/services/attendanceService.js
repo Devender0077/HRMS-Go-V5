@@ -90,6 +90,75 @@ getAttendanceRecordsFiltered: async (params = {}) => {
       throw error;
     }
   },
+
+  // Get regularizations
+  getRegularizations: async (params = {}) => {
+    try {
+      const response = await axios.get(`${API_URL}/attendance/regularizations`, { params });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching regularizations:', error);
+      throw error;
+    }
+  },
+
+  // Create regularization request
+  createRegularization: async (data) => {
+    try {
+      const response = await axios.post(`${API_URL}/attendance/regularizations`, data);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating regularization:', error);
+      throw error;
+    }
+  },
+
+  // Update regularization
+  updateRegularization: async (id, data) => {
+    try {
+      const response = await axios.put(`${API_URL}/attendance/regularizations/${id}`, data);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating regularization:', error);
+      throw error;
+    }
+  },
+
+  // Approve regularization
+  approveRegularization: async (id, approvedBy) => {
+    try {
+      const response = await axios.put(`${API_URL}/attendance/regularizations/${id}/approve`, { approvedBy });
+      return response.data;
+    } catch (error) {
+      console.error('Error approving regularization:', error);
+      throw error;
+    }
+  },
+
+  // Reject regularization
+  rejectRegularization: async (id, rejectedBy, rejectionReason) => {
+    try {
+      const response = await axios.put(`${API_URL}/attendance/regularizations/${id}/reject`, { 
+        rejectedBy, 
+        rejectionReason 
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error rejecting regularization:', error);
+      throw error;
+    }
+  },
+
+  // Delete regularization
+  deleteRegularization: async (id) => {
+    try {
+      const response = await axios.delete(`${API_URL}/attendance/regularizations/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting regularization:', error);
+      throw error;
+    }
+  },
 };
 
 export default attendanceService;

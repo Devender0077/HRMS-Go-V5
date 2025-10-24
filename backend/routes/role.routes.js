@@ -20,9 +20,9 @@ router.get('/', async (req, res) => {
   try {
     const [roles] = await pool.query(`
       SELECT r.*, 
-        (SELECT COUNT(*) FROM user_roles WHERE role_id = r.id) as users_count,
+        (SELECT COUNT(*) FROM users WHERE role_id = r.id) as users_count,
         (SELECT COUNT(*) FROM role_permissions WHERE role_id = r.id) as permissions_count
-      FROM roles r
+      FROM user_roles r
       ORDER BY r.created_at DESC
     `);
     
@@ -45,9 +45,9 @@ router.get('/:id', async (req, res) => {
   try {
     const [roles] = await pool.query(`
       SELECT r.*, 
-        (SELECT COUNT(*) FROM user_roles WHERE role_id = r.id) as users_count,
+        (SELECT COUNT(*) FROM users WHERE role_id = r.id) as users_count,
         (SELECT COUNT(*) FROM role_permissions WHERE role_id = r.id) as permissions_count
-      FROM roles r
+      FROM user_roles r
       WHERE r.id = ?
     `, [req.params.id]);
     
@@ -100,7 +100,7 @@ router.post('/', async (req, res) => {
 
     // Insert role
     const [result] = await pool.query(
-      'INSERT INTO roles (name, slug, description, status, is_system, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NOW(), NOW())',
+      'INSERT INTO user_roles (name, slug, description, status, is_system, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NOW(), NOW())',
       [name, slug, description || null, status || 'active', 0]
     );
 
@@ -141,7 +141,7 @@ router.put('/:id', async (req, res) => {
 
     // Update role
     await pool.query(
-      'UPDATE roles SET name = ?, slug = ?, description = ?, status = ? WHERE id = ?',
+      'UPDATE user_roles SET name = ?, slug = ?, description = ?, status = ? WHERE id = ?',
       [name, slug, description, status, roleId]
     );
 
@@ -182,7 +182,7 @@ router.delete('/:id', async (req, res) => {
 
     // Check if role is assigned to users
     const [users] = await pool.query(
-      'SELECT COUNT(*) as count FROM user_roles WHERE role_id = ?',
+      'SELECT COUNT(*) as count FROM users WHERE role_id = ?',
       [roleId]
     );
 
@@ -194,7 +194,7 @@ router.delete('/:id', async (req, res) => {
     }
 
     // Delete role (permissions will be deleted automatically due to CASCADE)
-    await pool.query('DELETE FROM roles WHERE id = ?', [roleId]);
+    await pool.query('DELETE FROM user_roles WHERE id = ?', [roleId]);
 
     res.json({
       success: true,
@@ -216,7 +216,7 @@ router.patch('/:id/toggle-status', async (req, res) => {
     const roleId = req.params.id;
 
     // Get current status
-    const [roles] = await pool.query('SELECT status FROM roles WHERE id = ?', [roleId]);
+    const [roles] = await pool.query('SELECT status FROM user_roles WHERE id = ?', [roleId]);
     
     if (roles.length === 0) {
       return res.status(404).json({
@@ -228,7 +228,7 @@ router.patch('/:id/toggle-status', async (req, res) => {
     const newStatus = roles[0].status === 'active' ? 'inactive' : 'active';
 
     // Update status
-    await pool.query('UPDATE roles SET status = ? WHERE id = ?', [newStatus, roleId]);
+    await pool.query('UPDATE user_roles SET status = ? WHERE id = ?', [newStatus, roleId]);
 
     res.json({
       success: true,

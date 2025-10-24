@@ -119,7 +119,20 @@ export function AuthProvider({ children }) {
             photoURL: '/assets/images/avatars/avatar_default.jpg',
             role: 'admin',
             userType: 'super_admin',
+            permissions: [], // Will be loaded below
           };
+        }
+
+        // Load permissions from localStorage if not in user object
+        if (!user.permissions || user.permissions.length === 0) {
+          const storedPermissions = window.localStorage.getItem('permissions');
+          if (storedPermissions) {
+            try {
+              user.permissions = JSON.parse(storedPermissions);
+            } catch (e) {
+              user.permissions = [];
+            }
+          }
         }
 
         dispatch({
@@ -172,6 +185,34 @@ export function AuthProvider({ children }) {
       // Set session with actual token from backend
       setSession(token);
 
+      // Fetch user's role and permissions
+      let userPermissions = [];
+      let userRoleData = null;
+      
+      try {
+        // Get full user details including role_id
+        const userDetailsResponse = await axios.get(`${API_URL}/users/${user.id}`);
+        const userDetails = userDetailsResponse.data.data;
+        
+        if (userDetails.role_id) {
+          // Get role with permissions
+          const roleResponse = await axios.get(`${API_URL}/roles/${userDetails.role_id}`);
+          const roleData = roleResponse.data.data;
+          
+          if (roleData.permissions) {
+            userPermissions = roleData.permissions.map(p => p.slug);
+            userRoleData = {
+              id: roleData.id,
+              name: roleData.name,
+              slug: roleData.slug,
+            };
+          }
+        }
+      } catch (permError) {
+        console.error('Error fetching permissions:', permError);
+        // Continue login even if permissions fail
+      }
+
       // Format user data for frontend
       const formattedUser = {
         id: user.id,
@@ -181,10 +222,13 @@ export function AuthProvider({ children }) {
         role: user.userType || user.user_type || 'employee',
         userType: user.userType || user.user_type,
         status: user.status,
+        permissions: userPermissions,
+        roleData: userRoleData,
       };
 
       // Store user data in localStorage for persistence
       window.localStorage.setItem('user', JSON.stringify(formattedUser));
+      window.localStorage.setItem('permissions', JSON.stringify(userPermissions));
 
       dispatch({
         type: 'LOGIN',

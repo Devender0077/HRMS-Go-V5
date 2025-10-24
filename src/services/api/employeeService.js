@@ -10,9 +10,15 @@ class EmployeeService {
   async getAll(params = {}) {
     try {
       const response = await apiClient.get('/employees', { params });
+      // Handle both formats: array or {employees: [], ...}
+      const employees = Array.isArray(response.data) 
+        ? response.data 
+        : response.data?.employees || response.data?.data || [];
+      
       return {
         success: true,
-        data: response.data,
+        data: employees,
+        totalCount: response.data?.totalCount || employees.length,
       };
     } catch (error) {
       return {

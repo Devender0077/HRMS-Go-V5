@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import PropTypes from 'prop-types';
 // @mui
 import {
@@ -16,6 +16,8 @@ import {
 } from '@mui/material';
 // components
 import Iconify from '../iconify';
+// services
+import generalSettingsService from '../../services/api/generalSettingsService';
 
 // ----------------------------------------------------------------------
 
@@ -112,6 +114,9 @@ const SAMPLE_DATA = {
   his_her: 'his',
   his_her_cap: 'His',
   him_her: 'him',
+  
+  // Footer marks
+  offer_letter_footer: 'This is a confidential offer. Please do not share without authorization.',
 };
 
 // ----------------------------------------------------------------------
@@ -125,6 +130,28 @@ TemplatePreview.propTypes = {
 
 export default function TemplatePreview({ template, templateType, open, onClose }) {
   const [scale, setScale] = useState(0.8);
+  const [logoUrl, setLogoUrl] = useState('/logo/logo_full.svg');
+
+  // Fetch logo from general settings
+  useEffect(() => {
+    const fetchLogo = async () => {
+      try {
+        const response = await generalSettingsService.getByCategory('general');
+        if (response && response.settings) {
+          const logo = response.settings.app_logo || response.settings.logo || '/logo/logo_full.svg';
+          setLogoUrl(logo);
+        }
+      } catch (error) {
+        console.error('Error fetching logo:', error);
+        // Use default logo
+        setLogoUrl('/logo/logo_full.svg');
+      }
+    };
+
+    if (open) {
+      fetchLogo();
+    }
+  }, [open]);
 
   // Replace template variables with sample data
   const previewHTML = useMemo(() => {
@@ -132,14 +159,20 @@ export default function TemplatePreview({ template, templateType, open, onClose 
     
     let html = template;
     
+    // Add logo URL to sample data
+    const dataWithLogo = {
+      ...SAMPLE_DATA,
+      app_logo: logoUrl,
+    };
+    
     // Replace all variables in the format {variable_name}
-    Object.keys(SAMPLE_DATA).forEach(key => {
+    Object.keys(dataWithLogo).forEach(key => {
       const regex = new RegExp(`{${key}}`, 'g');
-      html = html.replace(regex, SAMPLE_DATA[key]);
+      html = html.replace(regex, dataWithLogo[key]);
     });
     
     return html;
-  }, [template]);
+  }, [template, logoUrl]);
 
   const handleZoomIn = () => {
     setScale(prev => Math.min(prev + 0.1, 1.5));

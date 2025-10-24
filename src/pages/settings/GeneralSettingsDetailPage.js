@@ -378,22 +378,26 @@ export default function GeneralSettingsDetailPage() {
     try {
       setSaving(true);
       
-      // Convert formData to settings array
-      const settingsArray = categoryConfig.fields.map(field => ({
-        key: field.key,
-        value: formData[field.key] || '',
-        category: categoryId,
-        description: field.label,
-        type: field.type === 'boolean' ? 'boolean' : field.type === 'number' ? 'number' : 'text',
-      }));
-
-      await generalSettingsService.updateMultiple(settingsArray);
+      // For general category, use legacy method (general_settings table)
+      if (categoryId === 'general') {
+        const settingsArray = categoryConfig.fields.map(field => ({
+          key: field.key,
+          value: formData[field.key] || '',
+          category: categoryId,
+          description: field.label,
+          type: field.type === 'boolean' ? 'boolean' : field.type === 'number' ? 'number' : 'text',
+        }));
+        await generalSettingsService.updateMultiple(settingsArray);
+      } else {
+        // For specialized categories, use new updateCategory method
+        await generalSettingsService.updateCategory(categoryId, formData);
+      }
       
       enqueueSnackbar('Settings saved successfully', { variant: 'success' });
       await fetchCategorySettings();
     } catch (error) {
       console.error('Error saving settings:', error);
-      enqueueSnackbar('Failed to save settings', { variant: 'error' });
+      enqueueSnackbar(`Failed to save settings: ${error.response?.data?.message || error.message}`, { variant: 'error' });
     } finally {
       setSaving(false);
     }

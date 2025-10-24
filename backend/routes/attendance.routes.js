@@ -11,7 +11,14 @@ router.post('/clock-in', attendanceController.clockIn);
 router.post('/clock-out', attendanceController.clockOut);
 router.get('/records', attendanceController.getRecords);
 router.get('/today', attendanceController.getTodayRecord);
-router.post('/regularization', attendanceController.requestRegularization);
+
+// Regularization routes
+router.get('/regularizations', attendanceController.getRegularizations);
+router.post('/regularizations', attendanceController.createRegularization);
+router.put('/regularizations/:id', attendanceController.updateRegularization);
+router.put('/regularizations/:id/approve', attendanceController.approveRegularization);
+router.put('/regularizations/:id/reject', attendanceController.rejectRegularization);
+router.delete('/regularizations/:id', attendanceController.deleteRegularization);
 
 // CRUD routes
 router.get('/', attendanceController.getAll);

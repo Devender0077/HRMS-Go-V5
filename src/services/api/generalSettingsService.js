@@ -21,9 +21,27 @@ const generalSettingsService = {
     return response.data;
   },
 
-  // Update multiple settings at once
+  // Update multiple settings at once (LEGACY)
   updateMultiple: async (settings) => {
     const response = await axios.post(`${API_URL}/general-settings/bulk`, { settings });
+    return response.data;
+  },
+
+  // Update category settings (SPECIALIZED - uses specialized tables)
+  updateCategory: async (category, data) => {
+    const response = await axios.put(`${API_URL}/general-settings/category/${category}`, data);
+    return response.data;
+  },
+
+  // Reset category settings
+  resetCategory: async (category) => {
+    const response = await axios.delete(`${API_URL}/general-settings/category/${category}/reset`);
+    return response.data;
+  },
+
+  // Batch update multiple categories
+  batchUpdate: async (updates) => {
+    const response = await axios.post(`${API_URL}/general-settings/batch`, { updates });
     return response.data;
   },
 

@@ -72,6 +72,16 @@ const userService = {
       throw error;
     }
   },
+
+  loginAsUser: async (id) => {
+    try {
+      const response = await axios.post(`${API_URL}/users/${id}/login-as`);
+      return response.data;
+    } catch (error) {
+      console.error('Error logging in as user:', error);
+      throw error;
+    }
+  },
 };
 
 export default userService;

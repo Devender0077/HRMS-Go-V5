@@ -174,6 +174,37 @@ export default function UsersPage() {
     }
   };
 
+  const handleLoginAsUser = async () => {
+    try {
+      if (selectedUser) {
+        const confirmed = window.confirm(
+          `Are you sure you want to login as ${selectedUser.name}?\n\nYou will be logged out from your current session.`
+        );
+        
+        if (confirmed) {
+          const response = await userService.loginAsUser(selectedUser.id);
+          if (response.success) {
+            // Store the impersonation data
+            localStorage.setItem('accessToken', response.data.token);
+            localStorage.setItem('user', JSON.stringify(response.data.user));
+            localStorage.setItem('permissions', JSON.stringify(response.data.user.permissions));
+            localStorage.setItem('isImpersonating', 'true');
+            
+            enqueueSnackbar(`Now logged in as ${selectedUser.name}`, { variant: 'info' });
+            
+            // Reload the page to apply new user session
+            setTimeout(() => {
+              window.location.href = '/dashboard';
+            }, 500);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error logging in as user:', error);
+      enqueueSnackbar(error.response?.data?.message || 'Error logging in as user', { variant: 'error' });
+    }
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'active':
@@ -387,8 +418,8 @@ export default function UsersPage() {
 
         <MenuItem
           onClick={() => {
-            enqueueSnackbar('Login as user feature - Coming soon', { variant: 'info' });
             handleClosePopover();
+            handleLoginAsUser();
           }}
         >
           <Iconify icon="eva:log-in-fill" />

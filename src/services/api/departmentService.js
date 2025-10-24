@@ -67,6 +67,7 @@ export const deleteDepartment = async (id) => {
 };
 
 const departmentService = {
+  getAll: getAllDepartments, // Alias for consistency
   getAllDepartments,
   getDepartmentById,
   createDepartment,

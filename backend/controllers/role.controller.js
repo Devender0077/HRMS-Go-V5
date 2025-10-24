@@ -22,9 +22,34 @@ exports.getAll = async (req, res) => {
       order: [['created_at', 'DESC']],
     });
 
+    // Get user count and permission count for each role
+    const rolesWithCounts = await Promise.all(
+      roles.map(async (role) => {
+        const roleData = role.toJSON();
+        
+        // Count users with this role
+        const [userCount] = await sequelize.query(
+          'SELECT COUNT(*) as count FROM users WHERE role_id = ?',
+          { replacements: [role.id] }
+        );
+        
+        // Count permissions for this role
+        const [permCount] = await sequelize.query(
+          'SELECT COUNT(*) as count FROM role_permissions WHERE role_id = ?',
+          { replacements: [role.id] }
+        );
+        
+        return {
+          ...roleData,
+          user_count: userCount[0].count,
+          permission_count: permCount[0].count,
+        };
+      })
+    );
+
     res.status(200).json({
       success: true,
-      data: { roles },
+      data: rolesWithCounts,
     });
   } catch (error) {
     console.error('Get roles error:', error);
@@ -227,7 +252,7 @@ exports.delete = async (req, res) => {
 
     // Check if role is assigned to users
     const [userCount] = await sequelize.query(
-      'SELECT COUNT(*) as count FROM user_roles WHERE role_id = ?',
+      'SELECT COUNT(*) as count FROM users WHERE role_id = ?',
       { replacements: [id] }
     );
 

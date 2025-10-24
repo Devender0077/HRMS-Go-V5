@@ -51,9 +51,100 @@ const models = {
   
   // Settings Models
   GeneralSetting: require('../models/GeneralSetting'),
+  
+  // Specialized Settings Models (19)
+  CompanyInformation: require('../models/CompanyInformation'),
+  EmailConfiguration: require('../models/EmailConfiguration'),
+  LocalizationSetting: require('../models/LocalizationSetting'),
+  NotificationSetting: require('../models/NotificationSetting'),
+  IntegrationSlack: require('../models/IntegrationSlack'),
+  IntegrationPusher: require('../models/IntegrationPusher'),
+  IntegrationTeams: require('../models/IntegrationTeams'),
+  IntegrationZoom: require('../models/IntegrationZoom'),
+  SecurityPolicy: require('../models/SecurityPolicy'),
+  BackupConfiguration: require('../models/BackupConfiguration'),
+  ApiConfiguration: require('../models/ApiConfiguration'),
+  DocumentTemplate: require('../models/DocumentTemplate'),
+  CookieConsent: require('../models/CookieConsent'),
+  SeoSetting: require('../models/SeoSetting'),
+  CacheSetting: require('../models/CacheSetting'),
+  WebhookConfiguration: require('../models/WebhookConfiguration'),
+  AiConfiguration: require('../models/AiConfiguration'),
+  GoogleCalendarIntegration: require('../models/GoogleCalendarIntegration'),
+  ExportSetting: require('../models/ExportSetting'),
+  
+  // Additional HR Models (3)
+  LeaveRequest: require('../models/LeaveRequest'),
+  PaymentMethod: require('../models/PaymentMethod'),
+  AttendanceRegularization: require('../models/AttendanceRegularization'),
+  
+  // Additional Settings Models (2)
+  WorkflowSetting: require('../models/WorkflowSetting'),
+  ReportSetting: require('../models/ReportSetting'),
 };
 
+// Log detailed model count
+console.log('\n📊 MODEL BREAKDOWN:');
+console.log('  Core Models:        25');
+console.log('  Settings Models:    21 (19 specialized + 2 workflow/reports)');
+console.log('  Additional Models:   3 (LeaveRequest, PaymentMethod, AttendanceRegularization)');
+console.log('  ─────────────────────');
+console.log(`  ✅ Total: ${Object.keys(models).length} models loaded\n`);
+
 console.log(`✅ Loaded ${Object.keys(models).length} models`);
+
+/**
+ * Setup model associations
+ */
+const setupAssociations = () => {
+  const { 
+    Employee, 
+    Department, 
+    Branch, 
+    Attendance, 
+    AttendanceRegularization,
+    Leave,
+    LeaveRequest,
+  } = models;
+
+  // Employee associations
+  if (Employee && Department) {
+    Employee.belongsTo(Department, { foreignKey: 'department_id', as: 'Department' });
+    Department.hasMany(Employee, { foreignKey: 'department_id' });
+  }
+
+  if (Employee && Branch) {
+    Employee.belongsTo(Branch, { foreignKey: 'branch_id', as: 'Branch' });
+    Branch.hasMany(Employee, { foreignKey: 'branch_id' });
+  }
+
+  // Attendance associations
+  if (Attendance && Employee) {
+    Attendance.belongsTo(Employee, { foreignKey: 'employee_id', as: 'Employee' });
+    Employee.hasMany(Attendance, { foreignKey: 'employee_id' });
+  }
+
+  // Attendance Regularization associations
+  if (AttendanceRegularization && Employee) {
+    AttendanceRegularization.belongsTo(Employee, { foreignKey: 'employee_id', as: 'Employee' });
+    Employee.hasMany(AttendanceRegularization, { foreignKey: 'employee_id' });
+  }
+
+  if (AttendanceRegularization && Attendance) {
+    AttendanceRegularization.belongsTo(Attendance, { foreignKey: 'attendance_id', as: 'Attendance' });
+  }
+
+  // Leave associations
+  if (LeaveRequest && Employee) {
+    LeaveRequest.belongsTo(Employee, { foreignKey: 'employee_id', as: 'Employee' });
+    Employee.hasMany(LeaveRequest, { foreignKey: 'employee_id' });
+  }
+
+  console.log('✅ Model associations configured');
+};
+
+// Setup associations
+setupAssociations();
 
 /**
  * Sync database with different strategies

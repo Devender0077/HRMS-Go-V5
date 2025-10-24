@@ -18,14 +18,14 @@ const pool = mysql.createPool(dbConfig);
 router.get('/', async (req, res) => {
   try {
     const [users] = await pool.query(`
-      SELECT u.id, u.name, u.email, u.phone, u.user_type as role, u.status, 
+      SELECT u.id, u.name, u.email, u.phone, u.user_type, u.status, 
              u.avatar, u.created_at,
+             r.name as role_name,
+             r.id as role_id,
              d.name as department_name,
-             (SELECT GROUP_CONCAT(r.name SEPARATOR ', ') 
-              FROM roles r 
-              INNER JOIN user_roles ur ON r.id = ur.role_id 
-              WHERE ur.user_id = u.id) as roles
+             e.employee_id
       FROM users u
+      LEFT JOIN user_roles r ON u.role_id = r.id
       LEFT JOIN employees e ON u.id = e.user_id
       LEFT JOIN departments d ON e.department_id = d.id
       ORDER BY u.created_at DESC
@@ -93,15 +93,22 @@ router.post('/', async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Get role_id based on user_type
+    const [roles] = await pool.query(
+      'SELECT id FROM user_roles WHERE slug = ?',
+      [user_type || 'employee']
+    );
+    const roleId = roles.length > 0 ? roles[0].id : null;
+
     const [result] = await pool.query(
-      'INSERT INTO users (name, email, password, user_type, phone, status) VALUES (?, ?, ?, ?, ?, ?)',
-      [name, email, hashedPassword, user_type || 'employee', phone || null, status || 'active']
+      'INSERT INTO users (name, email, password, user_type, phone, status, role_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())',
+      [name, email, hashedPassword, user_type || 'employee', phone || null, status || 'active', roleId]
     );
 
     res.status(201).json({
       success: true,
       message: 'User created successfully',
-      data: { id: result.insertId, name, email }
+      data: { id: result.insertId, name, email, user_type, role_id: roleId }
     });
   } catch (error) {
     console.error('Error creating user:', error);
@@ -116,22 +123,33 @@ router.post('/', async (req, res) => {
 // Update user
 router.put('/:id', async (req, res) => {
   try {
-    const { name, email, user_type, phone, status } = req.body;
+    const { name, email, user_type, phone, status, role_id } = req.body;
+    
+    // If user_type changed, update role_id too
+    let finalRoleId = role_id;
+    if (user_type && !role_id) {
+      const [roles] = await pool.query(
+        'SELECT id FROM user_roles WHERE slug = ?',
+        [user_type]
+      );
+      finalRoleId = roles.length > 0 ? roles[0].id : null;
+    }
     
     await pool.query(
-      'UPDATE users SET name = ?, email = ?, user_type = ?, phone = ?, status = ? WHERE id = ?',
-      [name, email, user_type, phone, status, req.params.id]
+      'UPDATE users SET name = ?, email = ?, user_type = ?, phone = ?, status = ?, role_id = ?, updated_at = NOW() WHERE id = ?',
+      [name, email, user_type, phone, status, finalRoleId, req.params.id]
     );
 
     res.json({
       success: true,
-      message: 'User updated successfully'
+      message: 'User updated successfully',
+      data: { id: req.params.id, name, email, user_type, role_id: finalRoleId }
     });
   } catch (error) {
     console.error('Error updating user:', error);
     res.status(500).json({
       success: false,
-      message: 'Error updating user',
+      message: error.code === 'ER_DUP_ENTRY' ? 'Email already exists' : 'Error updating user',
       error: error.message
     });
   }
@@ -181,7 +199,7 @@ router.patch('/:id/toggle-status', async (req, res) => {
     }
 
     const newStatus = users[0].status === 'active' ? 'inactive' : 'active';
-    await pool.query('UPDATE users SET status = ? WHERE id = ?', [newStatus, req.params.id]);
+    await pool.query('UPDATE users SET status = ?, updated_at = NOW() WHERE id = ?', [newStatus, req.params.id]);
 
     res.json({
       success: true,
@@ -211,17 +229,102 @@ router.post('/:id/reset-password', async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await pool.query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, req.params.id]);
+    await pool.query('UPDATE users SET password = ?, updated_at = NOW() WHERE id = ?', [hashedPassword, req.params.id]);
 
     res.json({
       success: true,
-      message: 'Password reset successfully'
+      message: 'Password reset successfully',
+      data: { userId: req.params.id }
     });
   } catch (error) {
     console.error('Error resetting password:', error);
     res.status(500).json({
       success: false,
       message: 'Error resetting password',
+      error: error.message
+    });
+  }
+});
+
+// Login as user (impersonation)
+router.post('/:id/login-as', async (req, res) => {
+  try {
+    const userId = req.params.id;
+    
+    // Get user details
+    const [users] = await pool.query(
+      `SELECT u.*, r.name as role_name, r.slug as role_slug 
+       FROM users u 
+       LEFT JOIN user_roles r ON u.role_id = r.id 
+       WHERE u.id = ?`,
+      [userId]
+    );
+    
+    if (users.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    if (users[0].status !== 'active') {
+      return res.status(403).json({
+        success: false,
+        message: 'Cannot login as inactive user'
+      });
+    }
+
+    const user = users[0];
+    delete user.password;
+
+    // Get user's permissions
+    let permissions = [];
+    if (user.role_id) {
+      const [rolePerms] = await pool.query(
+        `SELECT p.slug 
+         FROM role_permissions rp 
+         JOIN permissions p ON rp.permission_id = p.id 
+         WHERE rp.role_id = ?`,
+        [user.role_id]
+      );
+      permissions = rolePerms.map(p => p.slug);
+    }
+
+    // Create token (reuse JWT logic from auth)
+    const jwt = require('jsonwebtoken');
+    const token = jwt.sign(
+      { 
+        userId: user.id, 
+        email: user.email, 
+        userType: user.user_type,
+        isImpersonating: true 
+      },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '4h' } // Shorter expiry for impersonation
+    );
+
+    res.json({
+      success: true,
+      message: 'Logged in as user',
+      data: {
+        user: {
+          ...user,
+          permissions,
+          roleData: {
+            id: user.role_id,
+            name: user.role_name,
+            slug: user.role_slug
+          }
+        },
+        token,
+        isImpersonating: true
+      }
+    });
+  } catch (error) {
+    console.error('Error logging in as user:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error logging in as user',
       error: error.message
     });
   }
