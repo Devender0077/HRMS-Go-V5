@@ -12,12 +12,53 @@ exports.getAll = async (req, res) => {
       employeeId,
       leaveTypeId,
     } = req.query;
+    
+    const user = req.user; // From auth middleware
+    const userType = user?.userType || 'employee';
+    const currentUserId = user?.id;
+    
+    console.log('=== Fetching Leave Requests ===');
+    console.log('User type:', userType, 'Current user ID:', currentUserId);
 
     const offset = (page - 1) * limit;
 
-    // Build where clause
+    // Build where clause based on user role
     const where = {};
 
+    if (userType === 'employee') {
+      // Employees can only see their own leave requests
+      const Employee = require('../models/Employee');
+      const employee = await Employee.findOne({ where: { user_id: currentUserId } });
+      if (employee) {
+        where.employeeId = employee.id;
+      } else {
+        // No employee record found, return empty
+        return res.json({
+          success: true,
+          data: {
+            leaves: [],
+            totalCount: 0,
+            currentPage: parseInt(page),
+            totalPages: 0,
+          },
+        });
+      }
+    } else if (userType === 'manager') {
+      // Managers can see their team's leave requests (same department)
+      const Employee = require('../models/Employee');
+      const managerEmployee = await Employee.findOne({ where: { user_id: currentUserId } });
+      if (managerEmployee) {
+        const teamEmployees = await Employee.findAll({
+          where: { department_id: managerEmployee.department_id },
+          attributes: ['id']
+        });
+        const teamEmployeeIds = teamEmployees.map(emp => emp.id);
+        where.employeeId = { [Op.in]: teamEmployeeIds };
+      }
+    }
+    // HR, HR Manager, and Super Admin can see all leave requests (no additional filtering)
+
+    // Add other filters
     if (status && status !== 'all') {
       where.status = status;
     }
@@ -36,7 +77,19 @@ exports.getAll = async (req, res) => {
       limit: parseInt(limit),
       offset: parseInt(offset),
       order: [['created_at', 'DESC']],
+      include: [
+        {
+          model: Employee,
+          attributes: ['id', 'first_name', 'last_name', 'employee_id'],
+        },
+        {
+          model: LeaveType,
+          attributes: ['id', 'name', 'days_allowed'],
+        },
+      ],
     });
+
+    console.log('Leave requests found:', count);
 
     res.json({
       success: true,

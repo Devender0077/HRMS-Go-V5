@@ -13,12 +13,53 @@ exports.getAll = async (req, res) => {
       employeeId,
       status,
     } = req.query;
+    
+    const user = req.user; // From auth middleware
+    const userType = user?.userType || 'employee';
+    const currentUserId = user?.id;
+    
+    console.log('=== Fetching Payroll Records ===');
+    console.log('User type:', userType, 'Current user ID:', currentUserId);
 
     const offset = (page - 1) * limit;
 
-    // Build where clause
+    // Build where clause based on user role
     const where = {};
 
+    if (userType === 'employee') {
+      // Employees can only see their own payroll records
+      const Employee = require('../models/Employee');
+      const employee = await Employee.findOne({ where: { user_id: currentUserId } });
+      if (employee) {
+        where.employeeId = employee.id;
+      } else {
+        // No employee record found, return empty
+        return res.json({
+          success: true,
+          data: {
+            payrolls: [],
+            totalCount: 0,
+            currentPage: parseInt(page),
+            totalPages: 0,
+          },
+        });
+      }
+    } else if (userType === 'manager') {
+      // Managers can see their team's payroll records (same department)
+      const Employee = require('../models/Employee');
+      const managerEmployee = await Employee.findOne({ where: { user_id: currentUserId } });
+      if (managerEmployee) {
+        const teamEmployees = await Employee.findAll({
+          where: { department_id: managerEmployee.department_id },
+          attributes: ['id']
+        });
+        const teamEmployeeIds = teamEmployees.map(emp => emp.id);
+        where.employeeId = { [Op.in]: teamEmployeeIds };
+      }
+    }
+    // HR, HR Manager, and Super Admin can see all payroll records (no additional filtering)
+
+    // Add other filters
     if (month) {
       where.month = month;
     }
@@ -41,7 +82,15 @@ exports.getAll = async (req, res) => {
       limit: parseInt(limit),
       offset: parseInt(offset),
       order: [['year', 'DESC'], ['month', 'DESC']],
+      include: [
+        {
+          model: Employee,
+          attributes: ['id', 'first_name', 'last_name', 'employee_id'],
+        },
+      ],
     });
+
+    console.log('Payroll records found:', count);
 
     res.json({
       success: true,

@@ -11,6 +11,13 @@ exports.getAll = async (req, res) => {
       department = '',
       status = 'all',
     } = req.query;
+    
+    const user = req.user; // From auth middleware
+    const userType = user?.userType || 'employee';
+    const currentUserId = user?.id;
+    
+    console.log('=== Fetching Employees ===');
+    console.log('User type:', userType, 'Current user ID:', currentUserId);
 
     const offset = (page - 1) * limit;
     const db = require('../config/database');
@@ -18,6 +25,22 @@ exports.getAll = async (req, res) => {
     // Build WHERE conditions
     let whereConditions = [];
     let params = [];
+
+    // Role-based filtering
+    if (userType === 'employee') {
+      // Employees can only see their own profile
+      whereConditions.push('e.user_id = ?');
+      params.push(currentUserId);
+    } else if (userType === 'manager') {
+      // Managers can see their team (same department)
+      whereConditions.push(`
+        e.department_id IN (
+          SELECT department_id FROM employees WHERE user_id = ?
+        )
+      `);
+      params.push(currentUserId);
+    }
+    // HR, HR Manager, and Super Admin can see all employees (no additional filtering)
 
     if (search) {
       whereConditions.push('(e.first_name LIKE ? OR e.last_name LIKE ? OR e.employee_id LIKE ? OR e.email LIKE ?)');

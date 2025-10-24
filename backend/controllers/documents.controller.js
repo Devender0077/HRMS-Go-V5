@@ -103,17 +103,47 @@ exports.getEmployeeDocuments = async (req, res) => {
 // Get all employee documents (for documents page)
 exports.getAllEmployeeDocuments = async (req, res) => {
   try {
-    // Simplified query to avoid SQL errors
-    const [documents] = await db.execute(
-      `SELECT 
+    const user = req.user; // From auth middleware
+    const userType = user?.userType || 'employee';
+    const userId = user?.id;
+    
+    let query = `
+      SELECT 
         ed.*,
         CONCAT(e.first_name, ' ', e.last_name) as employee_name,
-        e.employee_id
+        e.employee_id,
+        u.id as user_id
       FROM employee_documents ed
       LEFT JOIN employees e ON ed.employee_id = e.id
-      ORDER BY ed.created_at DESC
-      LIMIT 100`
-    );
+      LEFT JOIN users u ON e.user_id = u.id
+    `;
+    
+    let whereConditions = [];
+    let queryParams = [];
+    
+    // Role-based filtering
+    if (userType === 'employee') {
+      // Employees can only see their own documents
+      whereConditions.push('u.id = ?');
+      queryParams.push(userId);
+    } else if (userType === 'manager') {
+      // Managers can see their team's documents (same department)
+      whereConditions.push(`
+        e.department_id IN (
+          SELECT department_id FROM employees WHERE user_id = ?
+        )
+      `);
+      queryParams.push(userId);
+    }
+    // HR, HR Manager, and Super Admin can see all documents (no additional filtering)
+    
+    if (whereConditions.length > 0) {
+      query += ' WHERE ' + whereConditions.join(' AND ');
+    }
+    
+    query += ' ORDER BY ed.created_at DESC LIMIT 100';
+    
+    const [documents] = await db.execute(query, queryParams);
 
     res.json({
       success: true,

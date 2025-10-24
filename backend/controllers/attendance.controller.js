@@ -437,16 +437,72 @@ exports.requestRegularization = async (req, res) => {
 // Get all attendance (for general listing)
 exports.getAll = async (req, res) => {
   try {
-    const { page = 1, limit = 10 } = req.query;
+    const { page = 1, limit = 10, startDate, endDate } = req.query;
+    const user = req.user; // From auth middleware
+    const userType = user?.userType || 'employee';
+    const currentUserId = user?.id;
+    
+    console.log('=== Fetching Attendance Records ===');
+    console.log('User type:', userType, 'Current user ID:', currentUserId);
+    
     const pageNum = parseInt(page, 10);
     const limitNum = parseInt(limit, 10);
     const offset = (pageNum - 1) * limitNum;
 
+    // Build where clause based on user role
+    const whereClause = {};
+    
+    if (userType === 'employee') {
+      // Employees can only see their own attendance
+      const Employee = require('../models/Employee');
+      const employee = await Employee.findOne({ where: { user_id: currentUserId } });
+      if (employee) {
+        whereClause.employeeId = employee.id;
+      } else {
+        // No employee record found, return empty
+        return res.json({
+          success: true,
+          data: {
+            attendance: [],
+            totalCount: 0,
+            currentPage: pageNum,
+            totalPages: 0,
+          },
+        });
+      }
+    } else if (userType === 'manager') {
+      // Managers can see their team's attendance (same department)
+      const Employee = require('../models/Employee');
+      const managerEmployee = await Employee.findOne({ where: { user_id: currentUserId } });
+      if (managerEmployee) {
+        const teamEmployees = await Employee.findAll({
+          where: { department_id: managerEmployee.department_id },
+          attributes: ['id']
+        });
+        const teamEmployeeIds = teamEmployees.map(emp => emp.id);
+        whereClause.employeeId = { [Op.in]: teamEmployeeIds };
+      }
+    }
+    // HR, HR Manager, and Super Admin can see all attendance (no additional filtering)
+    
+    // Add date filters if provided
+    if (startDate) whereClause.date = { [Op.gte]: startDate };
+    if (endDate) whereClause.date = { [Op.lte]: endDate };
+
     const { count, rows } = await Attendance.findAndCountAll({
+      where: whereClause,
       limit: limitNum,
       offset,
       order: [['date', 'DESC'], ['clockIn', 'DESC']],
+      include: [
+        {
+          model: Employee,
+          attributes: ['id', 'first_name', 'last_name', 'employee_id'],
+        },
+      ],
     });
+
+    console.log('Attendance records found:', count);
 
     res.json({
       success: true,

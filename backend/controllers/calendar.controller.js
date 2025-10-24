@@ -4,15 +4,49 @@ const { Op } = require('sequelize');
 // Get all calendar events
 const getEvents = async (req, res) => {
   try {
-    const events = await CalendarEvent.findAll({
+    const user = req.user; // From auth middleware
+    const userType = user?.userType || 'employee';
+    const userId = user?.id;
+    
+    console.log('=== Fetching Calendar Events ===');
+    console.log('User type:', userType, 'User ID:', userId);
+
+    // Get all events first
+    const allEvents = await CalendarEvent.findAll({
       order: [['start', 'ASC']],
     });
 
-    console.log('=== Fetching Calendar Events ===');
-    console.log('Total events in database:', events.length);
+    console.log('Total events in database:', allEvents.length);
+
+    // Filter events based on visibility and user role
+    const filteredEvents = allEvents.filter(event => {
+      const visibility = event.visibility || 'Everyone';
+      
+      // Super Admin and HR Manager can see all events
+      if (userType === 'super_admin' || userType === 'hr_manager') {
+        return true;
+      }
+      
+      // Filter based on visibility setting
+      switch (visibility) {
+        case 'Everyone':
+          return true;
+        case 'HR Only':
+          return userType === 'hr' || userType === 'hr_manager' || userType === 'super_admin';
+        case 'Managers Only':
+          return userType === 'manager' || userType === 'hr_manager' || userType === 'super_admin';
+        case 'Private':
+          // Only creator can see private events
+          return event.created_by === userId;
+        default:
+          return true;
+      }
+    });
+
+    console.log('Events after visibility filtering:', filteredEvents.length);
 
     // Transform to FullCalendar format
-    const formattedEvents = events.map(event => {
+    const formattedEvents = filteredEvents.map(event => {
       const formatted = {
         id: event.id,
         title: event.title,
@@ -29,7 +63,7 @@ const getEvents = async (req, res) => {
         textColor: event.text_color,
       };
       
-      console.log(`Event ${event.id}: "${event.title}" | All-Day: ${event.all_day} | Start: ${event.start} | End: ${event.end}`);
+      console.log(`Event ${event.id}: "${event.title}" | Visibility: ${event.visibility} | All-Day: ${event.all_day}`);
       
       return formatted;
     });
