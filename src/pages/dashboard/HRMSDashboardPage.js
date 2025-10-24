@@ -175,7 +175,7 @@ export default function HRMSDashboardPage() {
               <Grid item xs={12} md={4}>
                 <AppWidgetSummary
                   title="Present Today"
-                  percent={stats.totalEmployees ? ((stats.presentToday / stats.totalEmployees) * 100).toFixed(1) : 0}
+                  percent={stats.totalEmployees ? parseFloat(((stats.presentToday / stats.totalEmployees) * 100).toFixed(1)) : 0}
                   total={stats.presentToday}
                   chart={{
                     colors: [theme.palette.success.main],
@@ -187,7 +187,7 @@ export default function HRMSDashboardPage() {
               <Grid item xs={12} md={4}>
                 <AppWidgetSummary
                   title="On Leave"
-                  percent={stats.totalEmployees ? ((stats.onLeave / stats.totalEmployees) * 100).toFixed(1) : 0}
+                  percent={stats.totalEmployees ? parseFloat(((stats.onLeave / stats.totalEmployees) * 100).toFixed(1)) : 0}
                   total={stats.onLeave}
                   chart={{
                     colors: [theme.palette.warning.main],

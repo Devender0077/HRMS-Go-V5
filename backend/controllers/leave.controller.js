@@ -14,8 +14,17 @@ exports.getAll = async (req, res) => {
     } = req.query;
     
     const user = req.user; // From auth middleware
-    const userType = user?.userType || 'employee';
-    const currentUserId = user?.id;
+    
+    // If no user (not authenticated), return error
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required',
+      });
+    }
+    
+    const userType = user.userType || 'employee';
+    const currentUserId = user.id;
     
     console.log('=== Fetching Leave Requests ===');
     console.log('User type:', userType, 'Current user ID:', currentUserId);
@@ -27,12 +36,25 @@ exports.getAll = async (req, res) => {
 
     if (userType === 'employee') {
       // Employees can only see their own leave requests
-      const Employee = require('../models/Employee');
-      const employee = await Employee.findOne({ where: { user_id: currentUserId } });
-      if (employee) {
-        where.employeeId = employee.id;
-      } else {
-        // No employee record found, return empty
+      try {
+        const Employee = require('../models/Employee');
+        const employee = await Employee.findOne({ where: { user_id: currentUserId } });
+        if (employee) {
+          where.employeeId = employee.id;
+        } else {
+          // No employee record found, return empty
+          return res.json({
+            success: true,
+            data: {
+              leaves: [],
+              totalCount: 0,
+              currentPage: parseInt(page),
+              totalPages: 0,
+            },
+          });
+        }
+      } catch (empError) {
+        console.error('Error finding employee:', empError);
         return res.json({
           success: true,
           data: {
@@ -45,15 +67,19 @@ exports.getAll = async (req, res) => {
       }
     } else if (userType === 'manager') {
       // Managers can see their team's leave requests (same department)
-      const Employee = require('../models/Employee');
-      const managerEmployee = await Employee.findOne({ where: { user_id: currentUserId } });
-      if (managerEmployee) {
-        const teamEmployees = await Employee.findAll({
-          where: { department_id: managerEmployee.department_id },
-          attributes: ['id']
-        });
-        const teamEmployeeIds = teamEmployees.map(emp => emp.id);
-        where.employeeId = { [Op.in]: teamEmployeeIds };
+      try {
+        const Employee = require('../models/Employee');
+        const managerEmployee = await Employee.findOne({ where: { user_id: currentUserId } });
+        if (managerEmployee) {
+          const teamEmployees = await Employee.findAll({
+            where: { department_id: managerEmployee.department_id },
+            attributes: ['id']
+          });
+          const teamEmployeeIds = teamEmployees.map(emp => emp.id);
+          where.employeeId = { [Op.in]: teamEmployeeIds };
+        }
+      } catch (empError) {
+        console.error('Error finding manager team:', empError);
       }
     }
     // HR, HR Manager, and Super Admin can see all leave requests (no additional filtering)
@@ -77,16 +103,6 @@ exports.getAll = async (req, res) => {
       limit: parseInt(limit),
       offset: parseInt(offset),
       order: [['created_at', 'DESC']],
-      include: [
-        {
-          model: Employee,
-          attributes: ['id', 'first_name', 'last_name', 'employee_id'],
-        },
-        {
-          model: LeaveType,
-          attributes: ['id', 'name', 'days_allowed'],
-        },
-      ],
     });
 
     console.log('Leave requests found:', count);
