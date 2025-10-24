@@ -350,6 +350,14 @@ class TrainingService {
       };
     }
   }
+
+  /**
+   * Get programs (alias for getTrainingPrograms)
+   * @returns {Promise} Programs list
+   */
+  async getPrograms() {
+    return this.getTrainingPrograms();
+  }
 }
 
 export default new TrainingService();

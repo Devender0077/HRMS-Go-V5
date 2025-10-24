@@ -105,6 +105,8 @@ const setupAssociations = () => {
     AttendanceRegularization,
     Leave,
     LeaveRequest,
+    Payroll,
+    LeaveType,
   } = models;
 
   // Employee associations
@@ -120,8 +122,8 @@ const setupAssociations = () => {
 
   // Attendance associations
   if (Attendance && Employee) {
-    Attendance.belongsTo(Employee, { foreignKey: 'employee_id', as: 'Employee' });
-    Employee.hasMany(Attendance, { foreignKey: 'employee_id' });
+    Attendance.belongsTo(Employee, { foreignKey: 'employeeId', as: 'Employee' });
+    Employee.hasMany(Attendance, { foreignKey: 'employeeId' });
   }
 
   // Attendance Regularization associations
@@ -135,9 +137,25 @@ const setupAssociations = () => {
   }
 
   // Leave associations
+  if (Leave && Employee) {
+    Leave.belongsTo(Employee, { foreignKey: 'employeeId', as: 'Employee' });
+    Employee.hasMany(Leave, { foreignKey: 'employeeId' });
+  }
+
+  if (Leave && LeaveType) {
+    Leave.belongsTo(LeaveType, { foreignKey: 'leaveTypeId', as: 'LeaveType' });
+    LeaveType.hasMany(Leave, { foreignKey: 'leaveTypeId' });
+  }
+
   if (LeaveRequest && Employee) {
     LeaveRequest.belongsTo(Employee, { foreignKey: 'employee_id', as: 'Employee' });
     Employee.hasMany(LeaveRequest, { foreignKey: 'employee_id' });
+  }
+
+  // Payroll associations
+  if (Payroll && Employee) {
+    Payroll.belongsTo(Employee, { foreignKey: 'employeeId', as: 'Employee' });
+    Employee.hasMany(Payroll, { foreignKey: 'employeeId' });
   }
 
   console.log('✅ Model associations configured');

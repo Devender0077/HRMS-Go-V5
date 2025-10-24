@@ -356,6 +356,22 @@ class PerformanceService {
   async getGoals() {
     return this.getPerformanceGoals();
   }
+
+  /**
+   * Get reviews (alias for getPerformanceReviews)
+   * @returns {Promise} Reviews list
+   */
+  async getReviews() {
+    return this.getPerformanceReviews();
+  }
+
+  /**
+   * Get feedback (alias for getPerformanceFeedback)
+   * @returns {Promise} Feedback list
+   */
+  async getFeedback() {
+    return this.getPerformanceFeedback();
+  }
 }
 
 export default new PerformanceService();
