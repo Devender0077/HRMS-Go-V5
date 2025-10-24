@@ -1,5 +1,8 @@
 import PropTypes from 'prop-types';
 import { createContext, useEffect, useReducer, useCallback, useMemo } from 'react';
+// redux
+import { useDispatch } from 'react-redux';
+import { loginSuccess as reduxLoginSuccess, logout as reduxLogout } from '../redux/slices/authSlice';
 // utils
 import axios from 'axios';
 import localStorageAvailable from '../utils/localStorageAvailable';
@@ -65,6 +68,7 @@ AuthProvider.propTypes = {
 
 export function AuthProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const reduxDispatch = useDispatch(); // Add Redux dispatch
 
   const storageAvailable = localStorageAvailable();
 
@@ -135,6 +139,7 @@ export function AuthProvider({ children }) {
           }
         }
 
+        // Dispatch to local context
         dispatch({
           type: 'INITIAL',
           payload: {
@@ -142,6 +147,15 @@ export function AuthProvider({ children }) {
             user: user,
           },
         });
+
+        // ALSO dispatch to Redux store
+        reduxDispatch(reduxLoginSuccess({
+          user: user,
+          token: accessToken,
+          refreshToken: null,
+        }));
+        
+        console.log('📤 [INIT] Loaded user into both Context and Redux state');
       } else {
         dispatch({
           type: 'INITIAL',
@@ -161,7 +175,7 @@ export function AuthProvider({ children }) {
         },
       });
     }
-  }, [storageAvailable]);
+  }, [storageAvailable, reduxDispatch]);
 
   useEffect(() => {
     initialize();
@@ -260,17 +274,27 @@ export function AuthProvider({ children }) {
       console.log('   Permissions:', userPermissions.length);
       console.log('✅ [LOGIN] Login complete!');
 
+      // Dispatch to local context reducer
       dispatch({
         type: 'LOGIN',
         payload: {
           user: formattedUser,
         },
       });
+
+      // ALSO dispatch to Redux store
+      reduxDispatch(reduxLoginSuccess({
+        user: formattedUser,
+        token: accessToken,
+        refreshToken: refreshToken,
+      }));
+      
+      console.log('📤 [LOGIN] Dispatched to both Context and Redux state');
     } catch (error) {
       console.error('Login error:', error);
       throw new Error(error.response?.data?.message || error.message || 'Invalid email or password');
     }
-  }, []);
+  }, [reduxDispatch]);
 
   // REGISTER
   const register = useCallback(async (email, password, firstName, lastName) => {
@@ -321,10 +345,17 @@ export function AuthProvider({ children }) {
   // LOGOUT
   const logout = useCallback(() => {
     setSession(null);
+    
+    // Dispatch to local context
     dispatch({
       type: 'LOGOUT',
     });
-  }, []);
+    
+    // ALSO dispatch to Redux store
+    reduxDispatch(reduxLogout());
+    
+    console.log('📤 [LOGOUT] Cleared both Context and Redux state');
+  }, [reduxDispatch]);
 
   const memoizedValue = useMemo(
     () => ({
