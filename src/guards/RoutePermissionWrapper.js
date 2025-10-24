@@ -85,13 +85,27 @@ const ROUTE_PERMISSIONS = {
  */
 export default function RoutePermissionWrapper() {
   const location = useLocation();
-  const { hasPermission, hasAnyPermission, permissions } = usePermissions();
+  const { hasPermission, hasAnyPermission, permissions: hookPermissions } = usePermissions();
 
-  // Get user to check if super admin
+  // Get user and permissions directly from localStorage for most reliable check
   const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const storedPermissions = JSON.parse(localStorage.getItem('permissions') || '[]');
+  
+  // Use stored permissions if hook permissions are empty (timing issue)
+  const permissions = hookPermissions.length > 0 ? hookPermissions : storedPermissions;
+  
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('🔐 ROUTE PERMISSION CHECK');
+  console.log('   Path:', location.pathname);
+  console.log('   User Type:', user.userType);
+  console.log('   Hook Permissions:', hookPermissions.length);
+  console.log('   Stored Permissions:', storedPermissions.length);
+  console.log('   Using Permissions:', permissions.length);
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   
   // Super admin bypasses all permission checks
   if (user.userType === 'super_admin') {
+    console.log('✅ SUPER ADMIN: Access granted\n');
     return <Outlet />;
   }
 
@@ -100,23 +114,39 @@ export default function RoutePermissionWrapper() {
 
   // No permission required for this route - allow access
   if (!requiredPermission) {
+    console.log('✅ NO PERMISSION REQUIRED: Access granted\n');
     return <Outlet />;
   }
 
-  // Check if user has required permission(s)
+  // Check if user has required permission(s) - using stored permissions directly
   let hasAccess = false;
 
   if (typeof requiredPermission === 'string') {
-    hasAccess = hasPermission(requiredPermission);
+    hasAccess = permissions.includes(requiredPermission);
+    console.log(`   Checking: "${requiredPermission}"`);
+    console.log(`   Result: ${hasAccess ? '✅ YES' : '❌ NO'}`);
   } else if (Array.isArray(requiredPermission)) {
-    hasAccess = hasAnyPermission(requiredPermission);
+    hasAccess = requiredPermission.some(perm => permissions.includes(perm));
+    console.log(`   Checking ANY of: [${requiredPermission.join(', ')}]`);
+    console.log(`   Result: ${hasAccess ? '✅ YES' : '❌ NO'}`);
+    
+    if (!hasAccess) {
+      console.log('   Individual checks:');
+      requiredPermission.forEach(perm => {
+        const has = permissions.includes(perm);
+        console.log(`      - ${perm}: ${has ? '✅' : '❌'}`);
+      });
+    }
   }
+
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
   // Access denied
   if (!hasAccess) {
     console.log('🚫 ACCESS DENIED:', location.pathname);
     console.log('   Required:', requiredPermission);
     console.log('   User permissions:', permissions);
+    console.log('   All permissions:', permissions);
     
     return (
       <Container sx={{ mt: 8 }}>
@@ -125,6 +155,9 @@ export default function RoutePermissionWrapper() {
           You don't have permission to access this page. Please contact your administrator.
           <br /><br />
           <strong>Required permission:</strong> {Array.isArray(requiredPermission) ? requiredPermission.join(' OR ') : requiredPermission}
+          <br /><br />
+          <strong>Debug Info:</strong>
+          <br />Your permissions ({permissions.length}): {permissions.join(', ')}
         </Alert>
         <Button 
           variant="contained" 
@@ -138,6 +171,7 @@ export default function RoutePermissionWrapper() {
   }
 
   // User has permission - render the route
+  console.log('✅ ACCESS GRANTED:', location.pathname);
   return <Outlet />;
 }
 
