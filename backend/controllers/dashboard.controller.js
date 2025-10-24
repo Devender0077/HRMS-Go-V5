@@ -114,7 +114,7 @@ exports.getDashboardStats = async (req, res) => {
     const recentHires = await Employee.findAll({
       order: [['joining_date', 'DESC']],
       limit: 5,
-      attributes: ['id', 'employee_id', 'first_name', 'last_name', 'designation', 'joining_date', 'department_id']
+      attributes: ['id', 'employee_id', 'first_name', 'last_name', 'designation_id', 'joining_date', 'department_id']
     });
 
     // Birthdays this month
