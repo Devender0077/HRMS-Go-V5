@@ -190,14 +190,31 @@ export function AuthProvider({ children }) {
       let userRoleData = null;
       
       try {
+        console.log('🔍 [LOGIN] Fetching user details for user ID:', user.id);
+        
         // Get full user details including role_id
         const userDetailsResponse = await axios.get(`${API_URL}/users/${user.id}`);
         const userDetails = userDetailsResponse.data.data;
         
+        console.log('✓ [LOGIN] User details:', {
+          id: userDetails.id,
+          email: userDetails.email,
+          role_id: userDetails.role_id
+        });
+        
         if (userDetails.role_id) {
+          console.log('🔍 [LOGIN] Fetching role data for role ID:', userDetails.role_id);
+          
           // Get role with permissions
           const roleResponse = await axios.get(`${API_URL}/roles/${userDetails.role_id}`);
           const roleData = roleResponse.data.data;
+          
+          console.log('✓ [LOGIN] Role data:', {
+            id: roleData.id,
+            name: roleData.name,
+            slug: roleData.slug,
+            permissionsCount: roleData.permissions?.length || 0
+          });
           
           if (roleData.permissions) {
             userPermissions = roleData.permissions.map(p => p.slug);
@@ -206,10 +223,18 @@ export function AuthProvider({ children }) {
               name: roleData.name,
               slug: roleData.slug,
             };
+            
+            console.log('✅ [LOGIN] Permissions loaded:', userPermissions.length);
+            console.log('   First 10:', userPermissions.slice(0, 10));
+          } else {
+            console.warn('⚠️ [LOGIN] Role has NO permissions array!');
           }
+        } else {
+          console.warn('⚠️ [LOGIN] User has NO role_id!');
         }
       } catch (permError) {
-        console.error('Error fetching permissions:', permError);
+        console.error('❌ [LOGIN] Error fetching permissions:', permError);
+        console.error('   Response:', permError.response?.data);
         // Continue login even if permissions fail
       }
 
@@ -229,6 +254,11 @@ export function AuthProvider({ children }) {
       // Store user data in localStorage for persistence
       window.localStorage.setItem('user', JSON.stringify(formattedUser));
       window.localStorage.setItem('permissions', JSON.stringify(userPermissions));
+
+      console.log('💾 [LOGIN] Stored in localStorage:');
+      console.log('   User:', formattedUser.email);
+      console.log('   Permissions:', userPermissions.length);
+      console.log('✅ [LOGIN] Login complete!');
 
       dispatch({
         type: 'LOGIN',
