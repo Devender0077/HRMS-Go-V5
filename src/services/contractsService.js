@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios from '../utils/axios';
 import { API_URL } from '../config-global';
 
 // API Client

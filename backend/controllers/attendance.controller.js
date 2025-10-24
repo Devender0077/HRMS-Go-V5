@@ -160,9 +160,29 @@ exports.getCalendar = async (req, res) => {
 // Clock in
 exports.clockIn = async (req, res) => {
   try {
-    const { employeeId, ip, location, latitude, longitude, deviceInfo } = req.body;
+    const { userId, employeeId: directEmployeeId, ip, location, latitude, longitude, deviceInfo } = req.body;
     const now = new Date();
     const today = now.toISOString().split('T')[0];
+
+    // Get employeeId from userId if needed
+    let employeeId = directEmployeeId;
+    if (!employeeId && userId) {
+      const employee = await Employee.findOne({ where: { user_id: userId } });
+      if (!employee) {
+        return res.status(400).json({
+          success: false,
+          message: 'Employee profile not found for this user',
+        });
+      }
+      employeeId = employee.id;
+    }
+
+    if (!employeeId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Employee ID is required',
+      });
+    }
 
     // Check if already clocked in today
     const existingRecord = await Attendance.findOne({
@@ -220,9 +240,29 @@ exports.clockIn = async (req, res) => {
 // Clock out
 exports.clockOut = async (req, res) => {
   try {
-    const { employeeId, ip, location, latitude, longitude } = req.body;
+    const { userId, employeeId: directEmployeeId, ip, location, latitude, longitude } = req.body;
     const now = new Date();
     const today = now.toISOString().split('T')[0];
+
+    // Get employeeId from userId if needed
+    let employeeId = directEmployeeId;
+    if (!employeeId && userId) {
+      const employee = await Employee.findOne({ where: { user_id: userId } });
+      if (!employee) {
+        return res.status(400).json({
+          success: false,
+          message: 'Employee profile not found for this user',
+        });
+      }
+      employeeId = employee.id;
+    }
+
+    if (!employeeId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Employee ID is required',
+      });
+    }
 
     // Find today's attendance record
     const attendance = await Attendance.findOne({
