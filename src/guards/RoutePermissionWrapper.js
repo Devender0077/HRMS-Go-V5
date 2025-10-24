@@ -5,71 +5,79 @@ import usePermissions from '../hooks/usePermissions';
 /**
  * Route-to-Permission mapping
  * Maps each route path to required permission(s)
+ * Using ONLY permissions that exist in the database
  */
 const ROUTE_PERMISSIONS = {
-  // Employees
-  '/dashboard/employees': ['employees.view'],
-  '/dashboard/employees/directory': ['employees.view'],
-  '/dashboard/employees/new': ['employees.create'],
-  '/dashboard/employees/edit': ['employees.edit'],
+  // Dashboard - accessible to all
+  '/dashboard/app': ['dashboard.view'],
   
-  // Departments, Branches, Designations
-  '/dashboard/organization/departments': ['departments.view'],
-  '/dashboard/organization/branches': ['branches.view'],
-  '/dashboard/organization/designations': ['designations.view'],
+  // Employees
+  '/dashboard/hr/employees': ['employees.view'],
+  '/dashboard/hr/employees/new': ['employees.create'],
+  '/dashboard/hr/employees/edit': ['employees.edit'],
+  '/dashboard/hr/organization-chart': ['employees.view'],
   
   // Attendance
-  '/dashboard/attendance': ['attendance.view_all', 'attendance.view_own'],
+  '/dashboard/attendance/records': ['attendance.view_all', 'attendance.view_own'],
   '/dashboard/attendance/clock': ['attendance.clock'],
-  '/dashboard/attendance/calendar': ['attendance.view_all', 'attendance.view_team'],
-  '/dashboard/attendance/muster': ['attendance.view_all', 'attendance.view_team'],
+  '/dashboard/attendance/calendar': ['attendance.view_all', 'attendance.manage'],
+  '/dashboard/attendance/muster': ['attendance.view_all', 'attendance.manage'],
   '/dashboard/attendance/regularizations': ['attendance.view_all', 'attendance.view_own'],
   
   // Leaves
-  '/dashboard/leaves': ['leaves.view_all', 'leaves.view_own'],
+  '/dashboard/leaves/applications': ['leaves.view_all', 'leaves.view_own'],
   '/dashboard/leaves/apply': ['leaves.apply'],
   '/dashboard/leaves/balance': ['leaves.view_own'],
-  '/dashboard/leaves/types': ['leaves.manage_types'],
+  '/dashboard/leaves/types': ['leaves.manage'],
   
   // Payroll
-  '/dashboard/payroll': ['payroll.view_all', 'payroll.view_own'],
-  '/dashboard/payroll/components': ['payroll.manage_components'],
-  '/dashboard/payroll/runs': ['payroll.process'],
+  '/dashboard/payroll/run': ['payroll.view_all', 'payroll.view_own'],
+  '/dashboard/payroll/components': ['payroll.manage'],
+  '/dashboard/payroll/history': ['payroll.view_all', 'payroll.view_own'],
   
   // Recruitment
-  '/dashboard/recruitment': ['recruitment.view'],
-  '/dashboard/recruitment/jobs': ['recruitment.view', 'recruitment.create_jobs'],
-  '/dashboard/recruitment/applications': ['recruitment.view_applications'],
+  '/dashboard/recruitment/jobs': ['recruitment.view'],
+  '/dashboard/recruitment/applications': ['recruitment.view'],
+  '/dashboard/recruitment/candidates': ['recruitment.view'],
   
   // Performance
-  '/dashboard/performance': ['performance.view_all', 'performance.view_own'],
-  '/dashboard/performance/goals': ['performance.view_all', 'performance.view_own'],
-  '/dashboard/performance/reviews': ['performance.view_all', 'performance.view_own'],
+  '/dashboard/performance/reviews': ['performance.view', 'performance.view_own'],
+  '/dashboard/performance/goals': ['performance.view', 'performance.view_own'],
+  '/dashboard/performance/feedback': ['performance.view', 'performance.view_own'],
   
   // Training
-  '/dashboard/training': ['training.view'],
-  '/dashboard/training/programs': ['training.view', 'training.manage'],
+  '/dashboard/training/programs': ['training.view'],
+  '/dashboard/training/schedule': ['training.view'],
+  '/dashboard/training/certificates': ['training.view'],
   
   // Documents
-  '/dashboard/documents': ['documents.view_all', 'documents.view_own'],
+  '/dashboard/documents/employee': ['documents.view'],
+  '/dashboard/documents/library': ['documents.view'],
+  '/dashboard/documents/templates': ['documents.manage'],
   
   // Assets
-  '/dashboard/assets': ['assets.view'],
-  '/dashboard/assets/categories': ['assets.manage_categories'],
+  '/dashboard/assets/list': ['assets.view'],
+  '/dashboard/assets/categories': ['assets.manage'],
   '/dashboard/assets/assignments': ['assets.view'],
+  '/dashboard/assets/maintenance': ['assets.manage'],
   
   // Reports
-  '/dashboard/reports': ['reports.view'],
+  '/dashboard/reports/attendance': ['reports.view'],
+  '/dashboard/reports/leave': ['reports.view'],
+  '/dashboard/reports/payroll': ['reports.view'],
+  '/dashboard/reports/custom': ['reports.generate'],
   
-  // Settings (Admin only)
-  '/dashboard/settings/general': ['settings.view', 'settings.manage'],
-  '/dashboard/settings/system-setup': ['system.manage'],
-  '/dashboard/settings/roles': ['roles.view'],
-  '/dashboard/settings/permissions': ['permissions.view'],
-  '/dashboard/settings/users': ['users.view'],
+  // Settings
+  '/dashboard/settings/general': ['settings.view'],
+  '/dashboard/settings/system-setup': ['settings.manage'],
+  '/dashboard/settings/roles': ['settings.roles'],
+  '/dashboard/settings/users': ['settings.users'],
   
   // Calendar
   '/dashboard/calendar': ['calendar.view'],
+  
+  // Announcements
+  '/dashboard/announcements': ['announcements.view'],
 };
 
 /**

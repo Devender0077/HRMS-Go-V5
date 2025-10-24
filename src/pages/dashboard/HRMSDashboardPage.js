@@ -25,6 +25,9 @@ import {
 } from '../../sections/@dashboard/general/app';
 // assets
 import { SeoIllustration } from '../../assets/illustrations';
+// Role-based dashboards
+import EmployeeDashboard from './EmployeeDashboard';
+import ManagerDashboard from './ManagerDashboard';
 
 // ----------------------------------------------------------------------
 
@@ -33,6 +36,20 @@ export default function HRMSDashboardPage() {
   const theme = useTheme();
   const { themeStretch } = useSettingsContext();
   const navigate = useNavigate();
+
+  // Route to role-based dashboard
+  const userType = user?.userType;
+  
+  // Render role-specific dashboard
+  if (userType === 'employee') {
+    return <EmployeeDashboard />;
+  }
+  
+  if (userType === 'manager') {
+    return <ManagerDashboard />;
+  }
+  
+  // HR, HR Manager, and Super Admin see the full dashboard below
 
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
