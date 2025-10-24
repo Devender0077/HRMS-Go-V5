@@ -1,5 +1,5 @@
+import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { useState, useEffect } from 'react';
 // @mui
 import {
   Card,
@@ -78,13 +78,91 @@ export default function AttendanceRecordsPage() {
   const [filterDate, setFilterDate] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
 
-  // Fetch attendance records
-  useEffect(() => {
-    fetchAttendance();
-    // We don't need to refetch on page/rowsPerPage — pagination is client-side
-  }, [filterDate, filterStatus]);
+  // Employee name mapping from calendar API
+  const [employeeNameMap, setEmployeeNameMap] = useState({});
 
-  const fetchAttendance = async () => {
+  // ---------- NORMALIZER: make rows look like the calendar page & also support nested ----------
+  const normalizeAttendanceRecord = (raw = {}) => {
+    const employeeObj = raw.employee || raw.emp || raw.user || {};
+    const assembledFullName = [raw.firstName, raw.lastName].filter(Boolean).join(' ');
+
+    // candidates for name
+    const nameCandidates = [
+      raw.employeeName,
+      raw.name,
+      raw.fullName,
+      employeeObj.name,
+      employeeObj.fullName,
+      assembledFullName,
+    ].filter((v) => typeof v === 'string' && v.trim().length > 0);
+
+    const name = nameCandidates.length ? nameCandidates[0].trim() : '';
+
+    // candidates for id
+    const idCandidates = [
+      raw.employeeId,
+      raw.empId,
+      employeeObj.empId,
+      employeeObj.id,
+      raw.userId,
+      raw.id,
+    ].filter((v) => v !== undefined && v !== null && String(v).trim().length > 0);
+
+    const empId = idCandidates.length ? String(idCandidates[0]).trim() : '';
+
+    // ensure nested employee object with name/empId exists
+    const employee = {
+      ...(employeeObj || {}),
+      name,
+      empId,
+    };
+
+    // stable primary key candidate
+    const pk =
+      raw.id ??
+      raw._id ??
+      `${empId || 'emp'}_${raw.date || raw.attendanceDate || Math.random().toString(36).slice(2)}`;
+
+    // harmonize commonly used date/fields
+    const date = raw.date || raw.attendanceDate || raw.clockDate || null;
+
+    return {
+      ...raw,
+      id: pk,
+      date,
+      employee,              // nested like calendar page may expect
+      employeeName: name,    // flat field for easy rendering/export
+      name,                  // alias (some rows/components look for name)
+      employeeId: empId,     // flat ID
+      empId,                 // alias to match calendar shape
+    };
+  };
+
+  // Fetch employee names from calendar API (once on mount)
+  useEffect(() => {
+    const fetchEmployeeNames = async () => {
+      try {
+        // Use current year/month for calendar API
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth() + 1;
+        const calendarData = await attendanceService.getCalendar({ year, month, department: 'all' });
+        if (Array.isArray(calendarData)) {
+          const map = {};
+          calendarData.forEach(emp => {
+            if (emp.empId) map[String(emp.empId).trim()] = emp.name;
+          });
+          setEmployeeNameMap(map);
+        }
+      } catch (e) {
+        // ignore error, fallback to record names
+      }
+    };
+    fetchEmployeeNames();
+  }, []);
+
+  // Fetch attendance records
+  const fetchAttendance = React.useCallback(async () => {
     setLoading(true);
     try {
       const response = await attendanceService.getAttendanceRecords({
@@ -92,8 +170,10 @@ export default function AttendanceRecordsPage() {
         status: filterStatus !== 'all' ? filterStatus : undefined,
       });
 
-      if (response.success && response.data) {
-        setTableData(response.data.attendance || response.data || []);
+      if (response && response.success && response.data) {
+        const raw = response.data.attendance || response.data || [];
+        const mapped = Array.isArray(raw) ? raw.map(normalizeAttendanceRecord) : [];
+        setTableData(mapped);
       } else {
         setTableData([]);
       }
@@ -104,7 +184,12 @@ export default function AttendanceRecordsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterDate, filterStatus, enqueueSnackbar]);
+
+  useEffect(() => {
+    fetchAttendance();
+    // client-side pagination, no need to refetch on page/rowsPerPage
+  }, [fetchAttendance]);
 
   // Safety check for tableData
   const safeTableData = tableData || [];
@@ -152,12 +237,10 @@ export default function AttendanceRecordsPage() {
 
   const handleViewDetails = (id) => {
     console.log('View details for:', id);
-    // Navigate to details page or open modal
   };
 
   const handleEdit = (id) => {
     console.log('Regularize attendance:', id);
-    // Navigate to regularization page
   };
 
   const handleDeleteClick = (id) => {
@@ -174,16 +257,87 @@ export default function AttendanceRecordsPage() {
     try {
       const response = await attendanceService.delete(selectedId);
 
-      if (response.success) {
+      if (response && response.success) {
         enqueueSnackbar('Attendance record deleted successfully');
         fetchAttendance();
         handleCloseConfirm();
       } else {
-        enqueueSnackbar(response.message || 'Failed to delete', { variant: 'error' });
+        enqueueSnackbar((response && response.message) || 'Failed to delete', { variant: 'error' });
       }
     } catch (error) {
       console.error('Delete error:', error);
       enqueueSnackbar('An error occurred while deleting', { variant: 'error' });
+    }
+  };
+
+  // ------------------------------------------------------------------
+  // EXPORT: prepare data & export as Excel
+  // ------------------------------------------------------------------
+
+  const toNumberOrNull = (val) => {
+    if (typeof val === 'number') return Number.isFinite(val) ? val : null;
+    if (typeof val === 'string') {
+      const hhmm = val.match(/^(\d{1,2}):(\d{2})$/);
+      if (hhmm) {
+        const h = parseInt(hhmm[1], 10);
+        const m = parseInt(hhmm[2], 10);
+        return Number.isFinite(h) && Number.isFinite(m) ? h + m / 60 : null;
+      }
+      const cleaned = val.replace(/[^0-9.-]/g, '');
+      const n = parseFloat(cleaned);
+      return Number.isFinite(n) ? n : null;
+    }
+    return null;
+  };
+
+  const mapRowForExport = (r) => {
+    const totalHoursNum = toNumberOrNull(r.totalHours);
+    const overtimeNum = toNumberOrNull(r.overtime);
+    // Use employeeNameMap for name if available
+    const empId = r.employeeId || r.empId || (r.employee && r.employee.empId) || '';
+    const nameFromMap = empId && employeeNameMap[empId] ? employeeNameMap[empId] : null;
+    return {
+      Employee: nameFromMap || r.employeeName || r.name || (r.employee && r.employee.name) || '',
+      'Employee ID': empId,
+      Date: r.date ? new Date(r.date).toLocaleDateString() : '',
+      'Clock In': r.clockIn ?? '',
+      'Clock Out': r.clockOut ?? '',
+      Location: r.clockInLocation ?? '',
+      'Total Hours':
+        totalHoursNum !== null
+          ? Number(totalHoursNum.toFixed(2))
+          : (typeof r.totalHours === 'string' ? r.totalHours : ''),
+      Overtime:
+        overtimeNum !== null
+          ? Number(overtimeNum.toFixed(2))
+          : (typeof r.overtime === 'string' ? r.overtime : ''),
+      Status: (r.status ?? '').replace(/_/g, ' '),
+      'Clock-In IP': r.clockInIp ?? '',
+    };
+  };
+
+  const handleExport = async () => {
+    try {
+      const exportRows = dataFiltered.map(mapRowForExport);
+
+      if (!exportRows.length) {
+        enqueueSnackbar('No rows to export.', { variant: 'info' });
+        return;
+      }
+
+      const XLSX = await import('xlsx'); // no .default
+
+      const ws = XLSX.utils.json_to_sheet(exportRows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Attendance');
+
+      const fileName = `attendance_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+
+      enqueueSnackbar('Exported to Excel', { variant: 'success' });
+    } catch (err) {
+      console.error('Export error:', err);
+      enqueueSnackbar('Failed to export', { variant: 'error' });
     }
   };
 
@@ -205,6 +359,7 @@ export default function AttendanceRecordsPage() {
             <Button
               variant="contained"
               startIcon={<Iconify icon="eva:download-fill" />}
+              onClick={handleExport}
             >
               Export
             </Button>
@@ -243,15 +398,22 @@ export default function AttendanceRecordsPage() {
                     </tr>
                   ) : (
                     <>
-                      {paginatedData.map((row) => (
-                        <AttendanceTableRow
-                          key={row.id}
-                          row={row}
-                          onViewDetails={handleViewDetails}
-                          onEdit={handleEdit}
-                          onDelete={handleDeleteClick}
-                        />
-                      ))}
+                      {paginatedData.map((row, idx) => {
+                        // Use employeeNameMap for display
+                        const empIdRaw = row.employeeId || row.empId || (row.employee && row.employee.empId) || '';
+                        const empId = String(empIdRaw).trim();
+                        const nameFromMap = empId && employeeNameMap[empId] ? employeeNameMap[empId] : null;
+                        const rowWithName = { ...row, employeeName: nameFromMap || row.employeeName || row.name || (row.employee && row.employee.name) || empId };
+                        return (
+                          <AttendanceTableRow
+                            key={row.id || `${empId || 'emp'}-${row.date || idx}`}
+                            row={rowWithName}
+                            onViewDetails={handleViewDetails}
+                            onEdit={handleEdit}
+                            onDelete={handleDeleteClick}
+                          />
+                        );
+                      })}
 
                       <TableEmptyRows
                         height={denseHeight}
@@ -267,7 +429,7 @@ export default function AttendanceRecordsPage() {
           </TableContainer>
 
           <TablePaginationCustom
-            count={dataFiltered.length}          // total rows after filtering
+            count={dataFiltered.length}
             page={page}
             rowsPerPage={rowsPerPage}
             onPageChange={onChangePage}
@@ -311,11 +473,17 @@ function applyFilter({ inputData, comparator, filterName, filterDate, filterStat
   inputData = stabilizedThis.map((el) => el[0]);
 
   if (filterName) {
-    inputData = inputData.filter(
-      (record) =>
-        (record.employeeName ?? '').toLowerCase().includes(filterName.toLowerCase()) ||
-        (record.employeeId ?? '').toLowerCase().includes(filterName.toLowerCase())
-    );
+    const q = filterName.toLowerCase();
+    inputData = inputData.filter((record) => {
+      const name =
+        (record.employee && record.employee.name) ||
+        record.employeeName ||
+        record.name ||
+        '';
+      const id =
+        String(record.employeeId || record.empId || (record.employee && record.employee.empId) || '').toLowerCase();
+      return name.toLowerCase().includes(q) || id.includes(q);
+    });
   }
 
   if (filterDate) {

@@ -55,6 +55,7 @@ export default function AttendanceCalendarPage() {
   const [filterMonth, setFilterMonth] = useState(currentDate.getMonth() + 1); // 1..12
   const [filterYear, setFilterYear] = useState(currentDate.getFullYear());
   const [filterDepartment, setFilterDepartment] = useState('all');
+  const [filterName, setFilterName] = useState('');
 
   const [monthData, setMonthData] = useState([]); // [{ id,name,empId,department,attendanceByDate: { 'YYYY-MM-DD': 'P' } }]
   const [loading, setLoading] = useState(false);
@@ -146,6 +147,16 @@ export default function AttendanceCalendarPage() {
     };
   }, [filterYear, filterMonth, filterDepartment]);
 
+  // Filter monthData based on search term
+  const filteredMonthData = monthData.filter((employee) => {
+    if (!filterName) return true;
+    const searchTerm = filterName.toLowerCase();
+    return (
+      employee.name?.toLowerCase().includes(searchTerm) ||
+      employee.empId?.toLowerCase().includes(searchTerm)
+    );
+  });
+
   return (
     <>
       <Helmet>
@@ -229,11 +240,20 @@ export default function AttendanceCalendarPage() {
               </TextField>
             </Grid>
             <Grid item xs={12} md={3}>
-              {/* Optional: if you want manual fetch instead of auto-on-change,
-                  move the useEffect logic into a function and call it here */}
-              <Button fullWidth variant="contained" size="large">
-                Generate Calendar
-              </Button>
+              <TextField
+                fullWidth
+                value={filterName}
+                onChange={(e) => setFilterName(e.target.value)}
+                placeholder="Search employee..."
+                InputProps={{
+                  startAdornment: (
+                    <Iconify
+                      icon="eva:search-fill"
+                      sx={{ color: 'text.disabled', width: 20, height: 20, mr: 1 }}
+                    />
+                  ),
+                }}
+              />
             </Grid>
           </Grid>
         </Card>
@@ -339,7 +359,7 @@ export default function AttendanceCalendarPage() {
                     </TableRow>
                   )}
 
-                  {!loading && !error && monthData.length === 0 && (
+                  {!loading && !error && filteredMonthData.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={daysInMonth + 2} align="center">
                         No records found for the selected filters.
@@ -347,7 +367,7 @@ export default function AttendanceCalendarPage() {
                     </TableRow>
                   )}
 
-                  {!loading && !error && monthData.map((employee) => {
+                  {!loading && !error && filteredMonthData.map((employee) => {
                     const summary = calculateSummaryByDate(employee.attendanceByDate);
                     return (
                       <TableRow key={employee.id} hover>

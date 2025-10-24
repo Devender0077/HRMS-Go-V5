@@ -75,6 +75,7 @@ export default function AttendanceMusterPage() {
   const [filterMonth, setFilterMonth] = useState(new Date().getMonth() + 1); // 1..12
   const [filterYear, setFilterYear] = useState(new Date().getFullYear());
   const [filterDepartment, setFilterDepartment] = useState('all');
+  const [filterName, setFilterName] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -172,19 +173,59 @@ export default function AttendanceMusterPage() {
     });
   }, [employees, hoursByEmployee, filterDepartment]);
 
-  // Summary cards from tableData
-  const summary = useMemo(() => ({
-    totalEmployees: tableData.length,
-    totalPresent: tableData.reduce((sum, r) => sum + r.present, 0),
-    totalAbsent: tableData.reduce((sum, r) => sum + r.absent, 0),
-    totalHalfDay: tableData.reduce((sum, r) => sum + r.halfDay, 0),
-    totalLate: tableData.reduce((sum, r) => sum + r.late, 0),
-    totalHours: tableData.reduce((sum, r) => sum + r.totalHours, 0),
-  }), [tableData]);
+  // Filter tableData by employee name search
+  const filteredTableData = useMemo(() => {
+    if (!filterName) return tableData;
+    const searchTerm = filterName.toLowerCase();
+    return tableData.filter((row) =>
+      row.employeeName?.toLowerCase().includes(searchTerm) ||
+      row.employeeId?.toLowerCase().includes(searchTerm)
+    );
+  }, [tableData, filterName]);
 
-  const handleExport = () => {
-    // You can export `tableData` here (CSV/XLSX)
-    console.log('Export muster report', { tableData, summary, month: filterMonth, year: filterYear });
+  // Summary cards from filteredTableData
+  const summary = useMemo(() => ({
+    totalEmployees: filteredTableData.length,
+    totalPresent: filteredTableData.reduce((sum, r) => sum + r.present, 0),
+    totalAbsent: filteredTableData.reduce((sum, r) => sum + r.absent, 0),
+    totalHalfDay: filteredTableData.reduce((sum, r) => sum + r.halfDay, 0),
+    totalLate: filteredTableData.reduce((sum, r) => sum + r.late, 0),
+    totalHours: filteredTableData.reduce((sum, r) => sum + r.totalHours, 0),
+  }), [filteredTableData]);
+
+  const handleExport = async () => {
+    try {
+      if (!filteredTableData.length) {
+        alert('No data to export');
+        return;
+      }
+
+      // Map table data to export format
+      const exportRows = filteredTableData.map((row) => ({
+        'Employee Name': row.employeeName,
+        'Employee ID': row.employeeId,
+        'Department': row.department,
+        'Present': row.present,
+        'Absent': row.absent,
+        'Half Day': row.halfDay,
+        'Late': row.late,
+        'On Leave': row.onLeave,
+        'Total Hours': row.totalHours.toFixed(2),
+      }));
+
+      const XLSX = await import('xlsx');
+
+      const ws = XLSX.utils.json_to_sheet(exportRows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Muster Report');
+
+      const monthName = new Date(filterYear, filterMonth - 1).toLocaleString('default', { month: 'long' });
+      const fileName = `muster_report_${monthName}_${filterYear}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+    } catch (err) {
+      console.error('Export error:', err);
+      alert('Failed to export');
+    }
   };
 
   const handlePrint = () => {
@@ -192,8 +233,8 @@ export default function AttendanceMusterPage() {
   };
 
   const paged = useMemo(
-    () => tableData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
-    [tableData, page, rowsPerPage]
+    () => filteredTableData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
+    [filteredTableData, page, rowsPerPage]
   );
 
   return (
@@ -279,11 +320,20 @@ export default function AttendanceMusterPage() {
               </TextField>
             </Grid>
             <Grid item xs={12} md={3}>
-              {/* If you want manual fetch instead of auto-on-change,
-                  move the useEffect body into a function and call it here */}
-              <Button fullWidth variant="contained" size="large">
-                Generate Report
-              </Button>
+              <TextField
+                fullWidth
+                value={filterName}
+                onChange={(e) => setFilterName(e.target.value)}
+                placeholder="Search employee..."
+                InputProps={{
+                  startAdornment: (
+                    <Iconify
+                      icon="eva:search-fill"
+                      sx={{ color: 'text.disabled', width: 20, height: 20, mr: 1 }}
+                    />
+                  ),
+                }}
+              />
             </Grid>
           </Grid>
         </Card>
@@ -420,7 +470,7 @@ export default function AttendanceMusterPage() {
                     </TableRow>
                   ))}
 
-                  {!loading && !error && tableData.length === 0 && (
+                  {!loading && !error && filteredTableData.length === 0 && (
                     <TableNoData isNotFound />
                   )}
                 </TableBody>
@@ -429,7 +479,7 @@ export default function AttendanceMusterPage() {
           </Scrollbar>
 
           <TablePaginationCustom
-            count={tableData.length}
+            count={filteredTableData.length}
             page={page}
             rowsPerPage={rowsPerPage}
             onPageChange={onChangePage}
