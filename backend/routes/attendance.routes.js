@@ -15,6 +15,7 @@ router.post('/regularization', attendanceController.requestRegularization);
 
 // CRUD routes
 router.get('/', attendanceController.getAll);
+router.get('/calendar', attendanceController.getCalendar);
 router.get('/:id', attendanceController.getById);
 router.post('/', attendanceController.create);
 router.put('/:id', attendanceController.update);
