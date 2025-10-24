@@ -285,8 +285,8 @@ export function AuthProvider({ children }) {
       // ALSO dispatch to Redux store
       reduxDispatch(reduxLoginSuccess({
         user: formattedUser,
-        token: accessToken,
-        refreshToken: refreshToken,
+        token: token, // Use 'token' from API response
+        refreshToken: null, // No refresh token in current implementation
       }));
       
       console.log('📤 [LOGIN] Dispatched to both Context and Redux state');

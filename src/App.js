@@ -61,10 +61,10 @@ import { AuthProvider } from './auth/JwtContext';
 
 export default function App() {
   return (
-    <AuthProvider>
-      <HelmetProvider>
-        <ReduxProvider store={store}>
-          <PersistGate loading={null} persistor={persistor}>
+    <HelmetProvider>
+      <ReduxProvider store={store}>
+        <PersistGate loading={null} persistor={persistor}>
+          <AuthProvider>
             <LocalizationProvider dateAdapter={AdapterDateFns}>
               <SettingsProvider>
                 <BrowserRouter>
@@ -85,9 +85,9 @@ export default function App() {
                 </BrowserRouter>
               </SettingsProvider>
             </LocalizationProvider>
-          </PersistGate>
-        </ReduxProvider>
-      </HelmetProvider>
-    </AuthProvider>
+          </AuthProvider>
+        </PersistGate>
+      </ReduxProvider>
+    </HelmetProvider>
   );
 }
