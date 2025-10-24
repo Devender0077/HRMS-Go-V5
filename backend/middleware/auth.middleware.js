@@ -4,13 +4,6 @@ const User = require('../models/User');
 // Authenticate JWT token
 exports.authenticateToken = async (req, res, next) => {
   try {
-    // TEMPORARILY BYPASS AUTH FOR DEVELOPMENT
-    const bypassAuth = process.env.BYPASS_AUTH === 'true' || process.env.NODE_ENV === 'development';
-    if (bypassAuth) {
-      console.log('⚠️  Auth bypassed for development');
-      return next();
-    }
-
     // Get token from header
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(' ')[1];
@@ -25,7 +18,7 @@ exports.authenticateToken = async (req, res, next) => {
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Get user
+    // Get user from database
     const user = await User.findByPk(decoded.id);
     if (!user) {
       return res.status(404).json({
@@ -41,10 +34,21 @@ exports.authenticateToken = async (req, res, next) => {
       });
     }
 
-    // Attach user to request
-    req.user = user;
+    // Attach user to request with all needed fields
+    req.user = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      userType: user.user_type,
+      roleId: user.role_id,
+      status: user.status,
+    };
+    
+    console.log('✅ Authenticated user:', req.user.email, '(Type:', req.user.userType, ')');
     next();
   } catch (error) {
+    console.error('Auth error:', error);
+    
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({
         success: false,
@@ -52,9 +56,16 @@ exports.authenticateToken = async (req, res, next) => {
       });
     }
 
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(403).json({
+        success: false,
+        message: 'Invalid token',
+      });
+    }
+
     return res.status(403).json({
       success: false,
-      message: 'Invalid token',
+      message: 'Authentication failed',
       error: error.message,
     });
   }
