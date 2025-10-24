@@ -12,6 +12,7 @@ router.post('/clock-out', attendanceController.clockOut);
 router.get('/records', attendanceController.getRecords);
 router.get('/today', attendanceController.getTodayRecord);
 router.post('/regularization', attendanceController.requestRegularization);
+router.post('/update-status', attendanceController.updateStatus);
 
 // CRUD routes
 router.get('/', attendanceController.getAll);

@@ -80,6 +80,21 @@ getAttendanceRecordsFiltered: async (params = {}) => {
     }
   },
 
+  // Update attendance status for a specific employee and date
+  updateAttendanceStatus: async ({ employeeId, date, status }) => {
+    try {
+      const response = await axios.post(`${API_URL}/attendance/update-status`, {
+        employeeId,
+        date,
+        status,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating attendance status:', error);
+      throw error;
+    }
+  },
+
   // Get attendance statistics
   getAttendanceStats: async (params = {}) => {
     try {

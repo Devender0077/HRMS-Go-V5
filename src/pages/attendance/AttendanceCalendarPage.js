@@ -18,6 +18,10 @@ import {
   Box,
   Chip,
   TableHead,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 // routes
 import { PATH_DASHBOARD } from '../../routes/paths';
@@ -26,6 +30,7 @@ import Iconify from '../../components/iconify';
 import Scrollbar from '../../components/scrollbar';
 import CustomBreadcrumbs from '../../components/custom-breadcrumbs';
 import { useSettingsContext } from '../../components/settings';
+import { useSnackbar } from '../../components/snackbar';
 
 // services
 import attendanceService from '../../services/attendanceService';
@@ -50,6 +55,7 @@ const STATUS_CODES = {
 
 export default function AttendanceCalendarPage() {
   const { themeStretch } = useSettingsContext();
+  const { enqueueSnackbar } = useSnackbar();
 
   const currentDate = new Date();
   const [filterMonth, setFilterMonth] = useState(currentDate.getMonth() + 1); // 1..12
@@ -61,6 +67,17 @@ export default function AttendanceCalendarPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Edit dialog state
+  const [editDialog, setEditDialog] = useState({
+    open: false,
+    employeeId: null,
+    employeeName: '',
+    date: '',
+    currentStatus: '',
+  });
+  const [newStatus, setNewStatus] = useState('');
+  const [saving, setSaving] = useState(false);
+
   const daysInMonth = new Date(filterYear, filterMonth, 0).getDate();
 
   const handleExport = () => {
@@ -70,6 +87,70 @@ export default function AttendanceCalendarPage() {
 
   const handlePrint = () => {
     window.print();
+  };
+
+  // Handle cell click to open edit dialog
+  const handleCellClick = (employee, date, currentStatus) => {
+    setEditDialog({
+      open: true,
+      employeeId: employee.id,
+      employeeName: employee.name,
+      empId: employee.empId,
+      date,
+      currentStatus,
+    });
+    setNewStatus(currentStatus === '-' ? 'P' : currentStatus);
+  };
+
+  // Handle close dialog
+  const handleCloseDialog = () => {
+    setEditDialog({
+      open: false,
+      employeeId: null,
+      employeeName: '',
+      date: '',
+      currentStatus: '',
+    });
+    setNewStatus('');
+  };
+
+  // Handle save status
+  const handleSaveStatus = async () => {
+    setSaving(true);
+    try {
+      // Update attendance status via API
+      const response = await attendanceService.updateAttendanceStatus({
+        employeeId: editDialog.employeeId,
+        date: editDialog.date,
+        status: newStatus,
+      });
+
+      if (response.success || response.data) {
+        // Update local state
+        setMonthData((prevData) =>
+          prevData.map((emp) =>
+            emp.id === editDialog.employeeId
+              ? {
+                  ...emp,
+                  attendanceByDate: {
+                    ...emp.attendanceByDate,
+                    [editDialog.date]: newStatus,
+                  },
+                }
+              : emp
+          )
+        );
+        enqueueSnackbar('Attendance status updated successfully', { variant: 'success' });
+        handleCloseDialog();
+      } else {
+        enqueueSnackbar(response.message || 'Failed to update status', { variant: 'error' });
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      enqueueSnackbar('Error updating attendance status', { variant: 'error' });
+    } finally {
+      setSaving(false);
+    }
   };
 
   // Get day of week label for headers
@@ -90,11 +171,12 @@ export default function AttendanceCalendarPage() {
     return summary;
   };
 
-  // Render status cell
-  const renderStatusCell = (status) => {
+  // Render status cell - now clickable for editing
+  const renderStatusCell = (status, employee, date) => {
     const statusInfo = STATUS_CODES[status] || STATUS_CODES['-'];
     return (
       <Box
+        onClick={() => handleCellClick(employee, date, status)}
         sx={{
           width: 36,
           height: 36,
@@ -106,14 +188,15 @@ export default function AttendanceCalendarPage() {
           color: statusInfo.color,
           fontWeight: 600,
           fontSize: '0.75rem',
-          cursor: 'default',
+          cursor: 'pointer',
           transition: 'all 0.2s',
           '&:hover': {
-            transform: 'scale(1.05)',
-            boxShadow: 1,
+            transform: 'scale(1.1)',
+            boxShadow: 2,
+            opacity: 0.8,
           },
         }}
-        title={statusInfo.label}
+        title={`${statusInfo.label} - Click to edit`}
       >
         {status}
       </Box>
@@ -151,10 +234,9 @@ export default function AttendanceCalendarPage() {
   const filteredMonthData = monthData.filter((employee) => {
     if (!filterName) return true;
     const searchTerm = filterName.toLowerCase();
-    return (
-      employee.name?.toLowerCase().includes(searchTerm) ||
-      employee.empId?.toLowerCase().includes(searchTerm)
-    );
+    const nameStr = (employee.name || '').toString().toLowerCase();
+    const idStr = (employee.empId != null ? String(employee.empId) : '').toLowerCase();
+    return nameStr.includes(searchTerm) || idStr.includes(searchTerm);
   });
 
   return (
@@ -406,7 +488,7 @@ export default function AttendanceCalendarPage() {
                                 borderColor: 'divider',
                               }}
                             >
-                              {renderStatusCell(code)}
+                              {renderStatusCell(code, employee, iso)}
                             </TableCell>
                           );
                         })}
@@ -442,10 +524,85 @@ export default function AttendanceCalendarPage() {
         {/* Footer Info */}
         <Card sx={{ p: 2, mt: 2 }}>
           <Typography variant="caption" color="text.secondary">
-            * Click on any date cell to view detailed attendance information
+            * Click on any date cell to edit attendance status
           </Typography>
         </Card>
       </Container>
+
+      {/* Edit Status Dialog */}
+      <Dialog open={editDialog.open} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>Edit Attendance Status</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 2 }}>
+            <Box>
+              <Typography variant="subtitle2" color="text.secondary">
+                Employee
+              </Typography>
+              <Typography variant="body1">
+                {editDialog.employeeName} ({editDialog.empId})
+              </Typography>
+            </Box>
+            <Box>
+              <Typography variant="subtitle2" color="text.secondary">
+                Date
+              </Typography>
+              <Typography variant="body1">
+                {editDialog.date ? new Date(editDialog.date).toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                }) : ''}
+              </Typography>
+            </Box>
+            <TextField
+              select
+              fullWidth
+              label="Status"
+              value={newStatus}
+              onChange={(e) => setNewStatus(e.target.value)}
+            >
+              {Object.entries(STATUS_CODES)
+                .filter(([code]) => code !== '-')
+                .map(([code, info]) => (
+                  <MenuItem key={code} value={code}>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Box
+                        sx={{
+                          width: 24,
+                          height: 24,
+                          borderRadius: 0.5,
+                          bgcolor: info.bgColor,
+                          color: info.color,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: 600,
+                          fontSize: '0.7rem',
+                        }}
+                      >
+                        {code}
+                      </Box>
+                      <Typography>{info.label}</Typography>
+                    </Stack>
+                  </MenuItem>
+                ))}
+            </TextField>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog} disabled={saving}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleSaveStatus}
+            disabled={saving || !newStatus}
+          >
+            {saving ? 'Saving...' : 'Save'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }
