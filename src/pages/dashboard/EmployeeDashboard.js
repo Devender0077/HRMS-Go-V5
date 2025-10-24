@@ -9,8 +9,8 @@ import Iconify from '../../components/iconify';
 // sections
 import {
   AppWidgetSummary,
-  AppCurrentVisits,
-  AppWebsiteVisits,
+  AppCurrentDownload,
+  AppAreaInstalled,
 } from '../../sections/@dashboard/general/app';
 // services
 import attendanceService from '../../services/attendanceService';
@@ -168,7 +168,7 @@ export default function EmployeeDashboard() {
 
           {/* Attendance Chart */}
           <Grid item xs={12} md={6}>
-            <AppWebsiteVisits
+            <AppAreaInstalled
               title="My Attendance (Last 30 Days)"
               subheader="Present vs Absent"
               chart={{
@@ -179,8 +179,6 @@ export default function EmployeeDashboard() {
                 series: [
                   {
                     name: 'Present',
-                    type: 'column',
-                    fill: 'solid',
                     data: [1, 1, 0, 1, 1, 1, 0, 1, 1, 1],
                   },
                 ],
@@ -190,7 +188,7 @@ export default function EmployeeDashboard() {
 
           {/* Leave Breakdown */}
           <Grid item xs={12} md={6}>
-            <AppCurrentVisits
+            <AppCurrentDownload
               title="Leave Balance Breakdown"
               chart={{
                 series: [

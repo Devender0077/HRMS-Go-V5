@@ -9,8 +9,8 @@ import Iconify from '../../components/iconify';
 // sections
 import {
   AppWidgetSummary,
-  AppCurrentVisits,
-  AppWebsiteVisits,
+  AppCurrentDownload,
+  AppAreaInstalled,
 } from '../../sections/@dashboard/general/app';
 
 // ----------------------------------------------------------------------
@@ -141,7 +141,7 @@ export default function ManagerDashboard() {
 
           {/* Team Attendance Trend */}
           <Grid item xs={12} md={8}>
-            <AppWebsiteVisits
+            <AppAreaInstalled
               title="Team Attendance Trend"
               subheader="Last 10 Days"
               chart={{
@@ -152,14 +152,10 @@ export default function ManagerDashboard() {
                 series: [
                   {
                     name: 'Present',
-                    type: 'area',
-                    fill: 'gradient',
                     data: [10, 11, 9, 10, 12, 10, 11, 10, 11, 10],
                   },
                   {
                     name: 'On Leave',
-                    type: 'area',
-                    fill: 'gradient',
                     data: [2, 1, 3, 2, 0, 2, 1, 2, 1, 2],
                   },
                 ],
@@ -169,7 +165,7 @@ export default function ManagerDashboard() {
 
           {/* Leave Status Breakdown */}
           <Grid item xs={12} md={4}>
-            <AppCurrentVisits
+            <AppCurrentDownload
               title="Leave Requests"
               chart={{
                 series: [

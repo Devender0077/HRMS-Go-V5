@@ -37,20 +37,7 @@ export default function HRMSDashboardPage() {
   const { themeStretch } = useSettingsContext();
   const navigate = useNavigate();
 
-  // Route to role-based dashboard
-  const userType = user?.userType;
-  
-  // Render role-specific dashboard
-  if (userType === 'employee') {
-    return <EmployeeDashboard />;
-  }
-  
-  if (userType === 'manager') {
-    return <ManagerDashboard />;
-  }
-  
-  // HR, HR Manager, and Super Admin see the full dashboard below
-
+  // All hooks must be called before any conditional returns
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalEmployees: 0,
@@ -63,10 +50,9 @@ export default function HRMSDashboardPage() {
   const [activities, setActivities] = useState([]);
   const [calendarEvents, setCalendarEvents] = useState([]);
 
-  useEffect(() => {
-    fetchAllDashboardData();
-  }, []);
-
+  // Route to role-based dashboard (check BEFORE fetching data)
+  const userType = user?.userType;
+  
   const fetchAllDashboardData = async () => {
     try {
       setLoading(true);
@@ -112,6 +98,24 @@ export default function HRMSDashboardPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // Only fetch data for HR/Admin roles
+    if (userType !== 'employee' && userType !== 'manager') {
+      fetchAllDashboardData();
+    }
+  }, [userType]);
+  
+  // Render role-specific dashboard for employees and managers
+  if (userType === 'employee') {
+    return <EmployeeDashboard />;
+  }
+  
+  if (userType === 'manager') {
+    return <ManagerDashboard />;
+  }
+  
+  // HR, HR Manager, and Super Admin see the full dashboard below
 
   return (
     <>
