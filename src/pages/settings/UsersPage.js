@@ -78,9 +78,15 @@ export default function UsersPage() {
       const response = await userService.getAllUsers();
       console.log('Users API Response:', response);
       if (response && response.success && response.data) {
-        console.log('Setting users:', response.data);
-        setUsers(response.data);
-        enqueueSnackbar(`Loaded ${response.data.length} users from database`, { variant: 'success' });
+        // Map backend fields to frontend expected fields
+        const mappedUsers = response.data.map(user => ({
+          ...user,
+          role: user.role_name || 'No Role',
+          department: user.department_name || 'No Department',
+          last_login: user.last_login_at,
+        }));
+        console.log('Setting users:', mappedUsers);
+        setUsers(mappedUsers);
       }
     } catch (error) {
       console.error('Error loading users:', error);
