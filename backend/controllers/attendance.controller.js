@@ -346,12 +346,29 @@ exports.getRecords = async (req, res) => {
 // Get today's attendance record
 exports.getTodayRecord = async (req, res) => {
   try {
-    const { employeeId } = req.query;
+    const { employeeId, userId } = req.query;
     const today = new Date().toISOString().split('T')[0];
+
+    // If userId is provided instead of employeeId, look up the employee
+    let finalEmployeeId = employeeId;
+    if (!finalEmployeeId && userId) {
+      const Employee = require('../models/Employee');
+      const employee = await Employee.findOne({ where: { user_id: userId } });
+      if (employee) {
+        finalEmployeeId = employee.id;
+      }
+    }
+
+    if (!finalEmployeeId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Employee ID or User ID is required'
+      });
+    }
 
     const attendance = await Attendance.findOne({
       where: {
-        employeeId,
+        employee_id: finalEmployeeId,
         date: today,
       },
     });
@@ -572,6 +589,7 @@ exports.getRegularizations = async (req, res) => {
       include: [
         {
           model: Employee,
+          as: 'employee',
           attributes: ['id', 'employee_id', 'first_name', 'last_name', 'department_id'],
           required: false
         }
@@ -582,8 +600,8 @@ exports.getRegularizations = async (req, res) => {
     // Format the response
     const formattedRegularizations = regularizations.map(reg => ({
       id: reg.id,
-      employee_id: reg.Employee?.employee_id || 'N/A',
-      employee_name: reg.Employee ? `${reg.Employee.first_name} ${reg.Employee.last_name}` : 'Unknown',
+      employee_id: reg.employee?.employee_id || 'N/A',
+      employee_name: reg.employee ? `${reg.employee.first_name} ${reg.employee.last_name}` : 'Unknown',
       date: reg.date,
       requested_in: reg.requested_in_time,
       requested_out: reg.requested_out_time,

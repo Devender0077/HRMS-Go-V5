@@ -126,7 +126,7 @@ const setupAssociations = () => {
 
   // Attendance Regularization associations
   if (AttendanceRegularization && Employee) {
-    AttendanceRegularization.belongsTo(Employee, { foreignKey: 'employee_id', as: 'Employee' });
+    AttendanceRegularization.belongsTo(Employee, { foreignKey: 'employee_id', as: 'employee' });
     Employee.hasMany(AttendanceRegularization, { foreignKey: 'employee_id' });
   }
 
