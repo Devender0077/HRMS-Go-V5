@@ -552,3 +552,282 @@ exports.delete = async (req, res) => {
     });
   }
 };
+
+// ===================== REGULARIZATION CRUD =====================
+
+// Get all regularization requests
+exports.getRegularizations = async (req, res) => {
+  try {
+    const { userId, status } = req.query;
+    
+    let whereClause = {};
+    if (userId) whereClause.user_id = userId;
+    if (status) whereClause.status = status;
+
+    const AttendanceRegularization = require('../models/AttendanceRegularization');
+    const Employee = require('../models/Employee');
+
+    const regularizations = await AttendanceRegularization.findAll({
+      where: whereClause,
+      include: [
+        {
+          model: Employee,
+          attributes: ['id', 'employee_id', 'first_name', 'last_name', 'department_id'],
+          required: false
+        }
+      ],
+      order: [['created_at', 'DESC']]
+    });
+
+    // Format the response
+    const formattedRegularizations = regularizations.map(reg => ({
+      id: reg.id,
+      employee_id: reg.Employee?.employee_id || 'N/A',
+      employee_name: reg.Employee ? `${reg.Employee.first_name} ${reg.Employee.last_name}` : 'Unknown',
+      date: reg.date,
+      requested_in: reg.requested_in_time,
+      requested_out: reg.requested_out_time,
+      actual_in: reg.actual_in_time,
+      actual_out: reg.actual_out_time,
+      reason: reg.reason,
+      status: reg.status,
+      approved_by: reg.approved_by,
+      approved_at: reg.approved_at,
+      created_at: reg.created_at
+    }));
+
+    res.json({
+      success: true,
+      data: formattedRegularizations
+    });
+  } catch (error) {
+    console.error('Get regularizations error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch regularization requests',
+      error: error.message
+    });
+  }
+};
+
+// Create regularization request
+exports.createRegularization = async (req, res) => {
+  try {
+    const { userId, date, requested_in_time, requested_out_time, reason } = req.body;
+
+    if (!userId || !date || !reason) {
+      return res.status(400).json({
+        success: false,
+        message: 'User ID, date, and reason are required'
+      });
+    }
+
+    // Get employee_id from user_id
+    const Employee = require('../models/Employee');
+    const employee = await Employee.findOne({ where: { user_id: userId } });
+
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        message: 'Employee profile not found for this user'
+      });
+    }
+
+    const AttendanceRegularization = require('../models/AttendanceRegularization');
+
+    const regularization = await AttendanceRegularization.create({
+      employee_id: employee.id,
+      user_id: userId,
+      date,
+      requested_in_time,
+      requested_out_time,
+      reason,
+      status: 'pending'
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Regularization request created successfully',
+      data: regularization
+    });
+  } catch (error) {
+    console.error('Create regularization error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create regularization request',
+      error: error.message
+    });
+  }
+};
+
+// Update regularization request
+exports.updateRegularization = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { date, requested_in_time, requested_out_time, reason } = req.body;
+
+    const AttendanceRegularization = require('../models/AttendanceRegularization');
+
+    const regularization = await AttendanceRegularization.findByPk(id);
+
+    if (!regularization) {
+      return res.status(404).json({
+        success: false,
+        message: 'Regularization request not found'
+      });
+    }
+
+    if (regularization.status !== 'pending') {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot update a regularization that has been approved/rejected'
+      });
+    }
+
+    await regularization.update({
+      date: date || regularization.date,
+      requested_in_time: requested_in_time || regularization.requested_in_time,
+      requested_out_time: requested_out_time || regularization.requested_out_time,
+      reason: reason || regularization.reason
+    });
+
+    res.json({
+      success: true,
+      message: 'Regularization request updated successfully',
+      data: regularization
+    });
+  } catch (error) {
+    console.error('Update regularization error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update regularization request',
+      error: error.message
+    });
+  }
+};
+
+// Approve regularization request
+exports.approveRegularization = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { approved_by } = req.body;
+
+    const AttendanceRegularization = require('../models/AttendanceRegularization');
+
+    const regularization = await AttendanceRegularization.findByPk(id);
+
+    if (!regularization) {
+      return res.status(404).json({
+        success: false,
+        message: 'Regularization request not found'
+      });
+    }
+
+    await regularization.update({
+      status: 'approved',
+      approved_by: approved_by || 'Admin',
+      approved_at: new Date()
+    });
+
+    // Update the actual attendance record
+    const Attendance = require('../models/Attendance');
+    const attendance = await Attendance.findOne({
+      where: {
+        employee_id: regularization.employee_id,
+        date: regularization.date
+      }
+    });
+
+    if (attendance) {
+      await attendance.update({
+        check_in: regularization.requested_in_time,
+        check_out: regularization.requested_out_time,
+        status: 'present'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Regularization request approved successfully',
+      data: regularization
+    });
+  } catch (error) {
+    console.error('Approve regularization error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to approve regularization request',
+      error: error.message
+    });
+  }
+};
+
+// Reject regularization request
+exports.rejectRegularization = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { rejected_by, rejection_reason } = req.body;
+
+    const AttendanceRegularization = require('../models/AttendanceRegularization');
+
+    const regularization = await AttendanceRegularization.findByPk(id);
+
+    if (!regularization) {
+      return res.status(404).json({
+        success: false,
+        message: 'Regularization request not found'
+      });
+    }
+
+    await regularization.update({
+      status: 'rejected',
+      approved_by: rejected_by || 'Admin',
+      approved_at: new Date(),
+      rejection_reason: rejection_reason || 'No reason provided'
+    });
+
+    res.json({
+      success: true,
+      message: 'Regularization request rejected successfully',
+      data: regularization
+    });
+  } catch (error) {
+    console.error('Reject regularization error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to reject regularization request',
+      error: error.message
+    });
+  }
+};
+
+// Delete regularization request
+exports.deleteRegularization = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const AttendanceRegularization = require('../models/AttendanceRegularization');
+
+    const regularization = await AttendanceRegularization.findByPk(id);
+
+    if (!regularization) {
+      return res.status(404).json({
+        success: false,
+        message: 'Regularization request not found'
+      });
+    }
+
+    await regularization.destroy();
+
+    res.json({
+      success: true,
+      message: 'Regularization request deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete regularization error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete regularization request',
+      error: error.message
+    });
+  }
+};
