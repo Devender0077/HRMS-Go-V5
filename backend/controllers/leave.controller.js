@@ -1,5 +1,6 @@
 const Leave = require('../models/Leave');
 const LeaveType = require('../models/LeaveType');
+const Employee = require('../models/Employee');
 const { Op } = require('sequelize');
 
 // Get all leave requests
@@ -37,7 +38,6 @@ exports.getAll = async (req, res) => {
     if (userType === 'employee') {
       // Employees can only see their own leave requests
       try {
-        const Employee = require('../models/Employee');
         const employee = await Employee.findOne({ where: { user_id: currentUserId } });
         if (employee) {
           where.employeeId = employee.id;
@@ -68,7 +68,6 @@ exports.getAll = async (req, res) => {
     } else if (userType === 'manager') {
       // Managers can see their team's leave requests (same department)
       try {
-        const Employee = require('../models/Employee');
         const managerEmployee = await Employee.findOne({ where: { user_id: currentUserId } });
         if (managerEmployee) {
           const teamEmployees = await Employee.findAll({
@@ -215,7 +214,27 @@ exports.create = async (req, res) => {
 exports.applyLeave = async (req, res) => {
   try {
     const { leaveTypeId, startDate, endDate, days, reason } = req.body;
-    const employeeId = req.user?.id || req.body.employeeId;
+    const userId = req.user?.id;
+    
+    // Look up employeeId from userId
+    let employeeId = req.body.employeeId;
+    if (!employeeId && userId) {
+      const employee = await Employee.findOne({ where: { user_id: userId } });
+      if (!employee) {
+        return res.status(400).json({
+          success: false,
+          message: 'Employee profile not found for this user',
+        });
+      }
+      employeeId = employee.id;
+    }
+
+    if (!employeeId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Employee ID is required',
+      });
+    }
 
     const leave = await Leave.create({
       employeeId,

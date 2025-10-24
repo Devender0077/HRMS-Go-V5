@@ -1,5 +1,6 @@
 const Payroll = require('../models/Payroll');
 const SalaryComponent = require('../models/SalaryComponent');
+const Employee = require('../models/Employee');
 const { Op } = require('sequelize');
 
 // Get all payroll records
@@ -28,7 +29,6 @@ exports.getAll = async (req, res) => {
 
     if (userType === 'employee') {
       // Employees can only see their own payroll records
-      const Employee = require('../models/Employee');
       const employee = await Employee.findOne({ where: { user_id: currentUserId } });
       if (employee) {
         where.employeeId = employee.id;
@@ -46,7 +46,6 @@ exports.getAll = async (req, res) => {
       }
     } else if (userType === 'manager') {
       // Managers can see their team's payroll records (same department)
-      const Employee = require('../models/Employee');
       const managerEmployee = await Employee.findOne({ where: { user_id: currentUserId } });
       if (managerEmployee) {
         const teamEmployees = await Employee.findAll({
@@ -82,12 +81,6 @@ exports.getAll = async (req, res) => {
       limit: parseInt(limit),
       offset: parseInt(offset),
       order: [['year', 'DESC'], ['month', 'DESC']],
-      include: [
-        {
-          model: Employee,
-          attributes: ['id', 'first_name', 'last_name', 'employee_id'],
-        },
-      ],
     });
 
     console.log('Payroll records found:', count);
