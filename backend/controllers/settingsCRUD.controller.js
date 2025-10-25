@@ -136,23 +136,60 @@ exports.updateSettings = async (req, res) => {
 
     // Handle integrations (multiple models)
     if (category === 'integrations') {
-      const { slack, pusher, teams, zoom } = data;
       const updated = [];
 
-      if (slack) {
-        await IntegrationSlack.upsert(slack);
+      // Convert flat frontend data to nested structure if needed
+      const convertFrontendToBackend = (flatData) => {
+        const slackData = {};
+        const pusherData = {};
+        const teamsData = {};
+        const zoomData = {};
+
+        Object.keys(flatData).forEach(key => {
+          if (key.startsWith('slack_')) {
+            const backendKey = key.replace('slack_', '');
+            slackData[backendKey === 'enabled' ? 'is_enabled' : backendKey] = flatData[key];
+          } else if (key.startsWith('pusher_')) {
+            const backendKey = key.replace('pusher_', '');
+            pusherData[backendKey === 'enabled' ? 'is_enabled' : backendKey] = flatData[key];
+          } else if (key.startsWith('msteams_')) {
+            const backendKey = key.replace('msteams_', '');
+            teamsData[backendKey === 'enabled' ? 'is_enabled' : backendKey] = flatData[key];
+          } else if (key.startsWith('zoom_')) {
+            const backendKey = key.replace('zoom_', '');
+            zoomData[backendKey === 'enabled' ? 'is_enabled' : backendKey] = flatData[key];
+          }
+        });
+
+        return { slack: slackData, pusher: pusherData, teams: teamsData, zoom: zoomData };
+      };
+
+      // Check if data is already nested or needs conversion
+      let { slack, pusher, teams, zoom } = data;
+      
+      if (!slack && !pusher && !teams && !zoom) {
+        // Data is flat, convert it
+        const converted = convertFrontendToBackend(data);
+        slack = converted.slack;
+        pusher = converted.pusher;
+        teams = converted.teams;
+        zoom = converted.zoom;
+      }
+
+      if (slack && Object.keys(slack).length > 0) {
+        await IntegrationSlack.upsert({ id: 3, ...slack });
         updated.push('slack');
       }
-      if (pusher) {
-        await IntegrationPusher.upsert(pusher);
+      if (pusher && Object.keys(pusher).length > 0) {
+        await IntegrationPusher.upsert({ id: 3, ...pusher });
         updated.push('pusher');
       }
-      if (teams) {
-        await IntegrationTeams.upsert(teams);
+      if (teams && Object.keys(teams).length > 0) {
+        await IntegrationTeams.upsert({ id: 3, ...teams });
         updated.push('teams');
       }
-      if (zoom) {
-        await IntegrationZoom.upsert(zoom);
+      if (zoom && Object.keys(zoom).length > 0) {
+        await IntegrationZoom.upsert({ id: 3, ...zoom });
         updated.push('zoom');
       }
 
