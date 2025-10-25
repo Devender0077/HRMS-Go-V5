@@ -29,7 +29,7 @@ const generalSettingsService = {
   // Update category settings (SPECIALIZED - uses specialized tables)
   updateCategory: async (category, data) => {
     console.log('🔵 updateCategory called:', { category, data });
-    const response = await axios.put(`/settings/${category}`, data);
+    const response = await axios.put(`/general-settings/category/${category}`, data);
     console.log('🔵 updateCategory response:', response.data);
     return response.data;
   },
