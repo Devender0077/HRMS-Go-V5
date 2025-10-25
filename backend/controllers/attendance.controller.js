@@ -164,6 +164,10 @@ exports.clockIn = async (req, res) => {
     const now = new Date();
     const today = now.toISOString().split('T')[0];
 
+    console.log('=== Clock In Request ===');
+    console.log('Today date:', today);
+    console.log('User ID:', userId);
+
     // Get employeeId from userId if needed
     let employeeId = directEmployeeId;
     if (!employeeId && userId) {
@@ -175,6 +179,7 @@ exports.clockIn = async (req, res) => {
         });
       }
       employeeId = employee.id;
+      console.log('Found employee ID:', employeeId);
     }
 
     if (!employeeId) {
@@ -185,12 +190,14 @@ exports.clockIn = async (req, res) => {
     }
 
     // Check if already clocked in today
+    console.log('Checking for existing record with employeeId:', employeeId, 'date:', today);
     const existingRecord = await Attendance.findOne({
       where: {
         employeeId,
         date: today,
       },
     });
+    console.log('Existing record found:', existingRecord ? 'YES' : 'NO');
 
     if (existingRecord && existingRecord.clockIn) {
       return res.status(400).json({
@@ -222,6 +229,12 @@ exports.clockIn = async (req, res) => {
           status: 'present',
         });
 
+    console.log('✅ Clock-in saved successfully!');
+    console.log('Attendance ID:', attendance.id);
+    console.log('Employee ID:', attendance.employeeId);
+    console.log('Date:', attendance.date);
+    console.log('Clock In:', attendance.clockIn);
+
     res.json({
       success: true,
       message: 'Clocked in successfully',
@@ -244,6 +257,10 @@ exports.clockOut = async (req, res) => {
     const now = new Date();
     const today = now.toISOString().split('T')[0];
 
+    console.log('=== Clock Out Request ===');
+    console.log('Today date:', today);
+    console.log('User ID:', userId);
+
     // Get employeeId from userId if needed
     let employeeId = directEmployeeId;
     if (!employeeId && userId) {
@@ -255,6 +272,7 @@ exports.clockOut = async (req, res) => {
         });
       }
       employeeId = employee.id;
+      console.log('Found employee ID:', employeeId);
     }
 
     if (!employeeId) {
@@ -265,6 +283,7 @@ exports.clockOut = async (req, res) => {
     }
 
     // Find today's attendance record
+    console.log('Looking for attendance with employeeId:', employeeId, 'date:', today);
     const attendance = await Attendance.findOne({
       where: {
         employeeId,
@@ -272,10 +291,29 @@ exports.clockOut = async (req, res) => {
       },
     });
 
+    console.log('Found attendance record:', attendance ? 'YES' : 'NO');
+    if (attendance) {
+      console.log('Attendance ID:', attendance.id);
+      console.log('Clock In:', attendance.clockIn);
+      console.log('Clock Out:', attendance.clockOut);
+    }
+
     if (!attendance || !attendance.clockIn) {
+      // Try to find any recent record for debugging
+      const recentRecord = await Attendance.findOne({
+        where: { employeeId },
+        order: [['date', 'DESC']],
+      });
+      console.log('Most recent record date:', recentRecord ? recentRecord.date : 'NONE');
+      
       return res.status(400).json({
         success: false,
         message: 'No clock-in record found for today',
+        debug: {
+          searchDate: today,
+          employeeId,
+          recentRecordDate: recentRecord ? recentRecord.date : null,
+        },
       });
     }
 
