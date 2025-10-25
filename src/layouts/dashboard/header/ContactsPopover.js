@@ -46,7 +46,13 @@ export default function ContactsPopover() {
       setContacts(contactsList);
     } catch (error) {
       console.error('Error loading contacts:', error);
-      setContacts([]);
+      // If forbidden (role-based restriction), show helpful message
+      if (error.response?.status === 403) {
+        setContacts([]);
+        console.log('Contact list limited based on your role');
+      } else {
+        setContacts([]);
+      }
     } finally {
       setLoading(false);
     }
