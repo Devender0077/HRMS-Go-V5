@@ -48,9 +48,21 @@ export function PusherProvider({ children }) {
 
         const { pusher_enabled, pusher_key, pusher_cluster } = response.settings;
 
-        if (!pusher_enabled || !pusher_key || !pusher_cluster) {
-          console.log('⚠️  Pusher not enabled or configured');
+        if (!pusher_enabled) {
+          console.log('ℹ️  Pusher is disabled in settings');
           return;
+        }
+
+        if (!pusher_key || !pusher_cluster) {
+          console.log('⚠️  Pusher credentials incomplete');
+          return;
+        }
+
+        // Check if credentials look like test data
+        if (pusher_key.includes('test') || pusher_key.length < 10) {
+          console.warn('⚠️  Pusher: Test credentials detected. For real-time notifications, configure real Pusher credentials.');
+          console.log('ℹ️  Get free credentials at: https://pusher.com');
+          return; // Don't try to connect with test credentials
         }
 
         // Initialize Pusher client
@@ -77,7 +89,13 @@ export function PusherProvider({ children }) {
         });
 
         pusherClient.connection.bind('error', (err) => {
-          console.error('❌ Pusher connection error:', err);
+          // Graceful error handling - this is expected with test credentials
+          if (err?.error?.data?.code === 4001) {
+            console.warn('⚠️  Pusher: Invalid credentials. Please configure real Pusher credentials in Settings → Integrations.');
+          } else {
+            console.warn('⚠️  Pusher connection issue:', err?.error?.data?.message || 'Connection failed');
+          }
+          console.log('ℹ️  System works fine without Pusher. Notifications use polling instead.');
         });
 
         setPusher(pusherClient);
