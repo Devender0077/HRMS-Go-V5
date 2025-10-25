@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 import { noCase } from 'change-case';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 // @mui
 import {
   Box,
@@ -22,6 +22,8 @@ import {
 import { fToNow } from '../../../utils/formatTime';
 // services
 import notificationService from '../../../services/notificationService';
+// hooks
+import usePusherNotifications from '../../../hooks/usePusherNotifications';
 // components
 import Iconify from '../../../components/iconify';
 import Scrollbar from '../../../components/scrollbar';
@@ -40,6 +42,18 @@ export default function NotificationsPopover() {
   useEffect(() => {
     fetchNotifications();
   }, []);
+
+  // Handle real-time notifications from Pusher
+  const handlePusherNotification = useCallback((newNotification) => {
+    console.log('📬 Real-time notification:', newNotification);
+    
+    // Add to notifications list
+    setNotifications(prev => [newNotification, ...prev]);
+    setTotalUnRead(prev => prev + 1);
+  }, []);
+
+  // Subscribe to Pusher notifications
+  usePusherNotifications(handlePusherNotification);
 
   const fetchNotifications = async () => {
     try {

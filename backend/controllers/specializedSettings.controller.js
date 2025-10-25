@@ -281,11 +281,38 @@ exports.getAllSpecialized = async (req, res) => {
     };
     
     categoryCounts.integrations = countConfiguredFields({ toJSON: () => combinedIntegrations }, 'integrations');
+    
+    // Flatten integrations for frontend (frontend expects flat structure)
+    const slackData = slack ? convertKeysToSnakeCase(slack.toJSON()) : {};
+    const pusherData = pusher ? convertKeysToSnakeCase(pusher.toJSON()) : {};
+    const teamsData = teams ? convertKeysToSnakeCase(teams.toJSON()) : {};
+    const zoomData = zoom ? convertKeysToSnakeCase(zoom.toJSON()) : {};
+    
     settings.integrations = {
-      slack: slack ? convertKeysToSnakeCase(slack.toJSON()) : {},
-      pusher: pusher ? convertKeysToSnakeCase(pusher.toJSON()) : {},
-      teams: teams ? convertKeysToSnakeCase(teams.toJSON()) : {},
-      zoom: zoom ? convertKeysToSnakeCase(zoom.toJSON()) : {},
+      // Slack fields
+      slack_enabled: slackData.is_enabled || false,
+      slack_webhook_url: slackData.webhook_url || '',
+      slack_workspace_name: slackData.workspace_name || '',
+      slack_default_channel: slackData.default_channel || '',
+      
+      // Pusher fields
+      pusher_enabled: pusherData.is_enabled || false,
+      pusher_app_id: pusherData.app_id || '',
+      pusher_key: pusherData.key || '',
+      pusher_secret: pusherData.secret || '',
+      pusher_cluster: pusherData.cluster || '',
+      
+      // MS Teams fields
+      msteams_enabled: teamsData.is_enabled || false,
+      msteams_webhook_url: teamsData.webhook_url || '',
+      msteams_tenant_id: teamsData.tenant_id || '',
+      msteams_channel_id: teamsData.channel_id || '',
+      
+      // Zoom fields
+      zoom_enabled: zoomData.is_enabled || false,
+      zoom_api_key: zoomData.api_key || '',
+      zoom_api_secret: zoomData.api_secret || '',
+      zoom_account_id: zoomData.account_id || '',
     };
 
     // Security

@@ -57,6 +57,9 @@ import { AuthProvider } from './auth/JwtContext';
 // import { AuthProvider } from './auth/FirebaseContext';
 // import { AuthProvider } from './auth/AwsCognitoContext';
 
+// Pusher (Real-time)
+import { PusherProvider } from './contexts/PusherContext';
+
 // ----------------------------------------------------------------------
 
 export default function App() {
@@ -65,26 +68,28 @@ export default function App() {
       <ReduxProvider store={store}>
         <PersistGate loading={null} persistor={persistor}>
           <AuthProvider>
-            <LocalizationProvider dateAdapter={AdapterDateFns}>
-              <SettingsProvider>
-                <BrowserRouter>
-                  <ScrollToTop />
-                  <MotionLazyContainer>
-                    <ThemeProvider>
-                      <ThemeSettings>
-                        <ThemeLocalization>
-                          <SnackbarProvider>
-                            <StyledChart />
-                            <Router />
-                            <CookieConsent />
-                          </SnackbarProvider>
-                        </ThemeLocalization>
-                      </ThemeSettings>
-                    </ThemeProvider>
-                  </MotionLazyContainer>
-                </BrowserRouter>
-              </SettingsProvider>
-            </LocalizationProvider>
+            <PusherProvider>
+              <LocalizationProvider dateAdapter={AdapterDateFns}>
+                <SettingsProvider>
+                  <BrowserRouter>
+                    <ScrollToTop />
+                    <MotionLazyContainer>
+                      <ThemeProvider>
+                        <ThemeSettings>
+                          <ThemeLocalization>
+                            <SnackbarProvider>
+                              <StyledChart />
+                              <Router />
+                              <CookieConsent />
+                            </SnackbarProvider>
+                          </ThemeLocalization>
+                        </ThemeSettings>
+                      </ThemeProvider>
+                    </MotionLazyContainer>
+                  </BrowserRouter>
+                </SettingsProvider>
+              </LocalizationProvider>
+            </PusherProvider>
           </AuthProvider>
         </PersistGate>
       </ReduxProvider>

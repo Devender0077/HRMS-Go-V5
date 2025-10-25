@@ -1,5 +1,6 @@
 const Notification = require('../models/Notification');
 const { Op } = require('sequelize');
+const pusherService = require('../services/pusher.service');
 
 // Get all notifications for current user
 exports.getAll = async (req, res) => {
@@ -166,6 +167,9 @@ exports.create = async (req, res) => {
       avatar,
       isRead: false,
     });
+
+    // Send real-time notification via Pusher
+    await pusherService.sendNotification(userId, notification);
 
     res.status(201).json({
       success: true,
