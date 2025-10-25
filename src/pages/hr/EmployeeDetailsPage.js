@@ -1,6 +1,7 @@
 import { Helmet } from 'react-helmet-async';
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 // @mui
 import {
   Container,
@@ -28,6 +29,10 @@ import {
 } from '@mui/material';
 // routes
 import { PATH_DASHBOARD } from '../../routes/paths';
+// redux
+import { selectUser } from '../../redux/slices/authSlice';
+// hooks
+import usePermissions from '../../hooks/usePermissions';
 // components
 import CustomBreadcrumbs from '../../components/custom-breadcrumbs';
 import { useSettingsContext } from '../../components/settings';
@@ -48,11 +53,35 @@ export default function EmployeeDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { themeStretch } = useSettingsContext();
+  const currentUser = useSelector(selectUser);
+  const { hasPermission } = usePermissions();
   
   const [currentTab, setCurrentTab] = useState('profile');
   const [employee, setEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Check if current user can edit this employee
+  const canEditEmployee = () => {
+    if (!currentUser || !employee) return false;
+    
+    const userType = currentUser.userType;
+    
+    // Super admin and HR can edit all
+    if (userType === 'super_admin' || userType === 'hr_manager' || userType === 'hr') {
+      return true;
+    }
+    
+    // Employee can edit only their own profile
+    if (userType === 'employee') {
+      return employee.user_id === currentUser.id;
+    }
+    
+    // Manager can view but not edit (return false)
+    return false;
+  };
+
+  const isReadOnly = !canEditEmployee();
 
   // Tab-specific data
   const [attendanceData, setAttendanceData] = useState({ records: [], stats: null });
@@ -242,15 +271,26 @@ export default function EmployeeDetailsPage() {
             { name: `${employee.first_name} ${employee.last_name}` },
           ]}
           action={
-            <Button
-              variant="contained"
-              startIcon={<Iconify icon="eva:edit-fill" />}
-              onClick={() => navigate(PATH_DASHBOARD.hr.employees.edit(id))}
-            >
-              Edit Employee
-            </Button>
+            !isReadOnly && (
+              <Button
+                variant="contained"
+                startIcon={<Iconify icon="eva:edit-fill" />}
+                onClick={() => navigate(PATH_DASHBOARD.hr.employees.edit(id))}
+              >
+                Edit Employee
+              </Button>
+            )
           }
         />
+
+        {isReadOnly && currentUser?.userType === 'manager' && (
+          <Alert severity="info" sx={{ mb: 3 }}>
+            <Typography variant="body2">
+              <strong>View Only Mode:</strong> You can view this employee's details but cannot make edits.
+              Contact HR to request changes.
+            </Typography>
+          </Alert>
+        )}
 
         <Grid container spacing={3}>
           {/* Profile Card */}
