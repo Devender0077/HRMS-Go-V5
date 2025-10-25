@@ -111,6 +111,7 @@ app.use('/api/roles', require('./routes/role.routes'));
 app.use('/api/permissions', require('./routes/permission.routes'));
 app.use('/api/users', require('./routes/user.routes'));
 app.use('/api/announcements', require('./routes/announcement.routes'));
+app.use('/api/pusher', require('./routes/pusher.routes'));
 app.use('/api/configuration', configurationRoutes);
 app.use('/api/general-settings', require('./routes/generalSettings.routes'));
 app.use('/api/organization', require('./routes/organization.routes'));

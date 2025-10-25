@@ -19,7 +19,7 @@ router.get('/', async (req, res) => {
     const [announcements] = await pool.query(`
       SELECT a.*, u.name as author_name, u.avatar as author_avatar
       FROM announcements a
-      LEFT JOIN users u ON a.author_id = u.id
+      LEFT JOIN users u ON a.user_id = u.id
       ORDER BY a.created_at DESC
     `);
     
@@ -43,7 +43,7 @@ router.get('/:id', async (req, res) => {
     const [announcements] = await pool.query(`
       SELECT a.*, u.name as author_name, u.avatar as author_avatar
       FROM announcements a
-      LEFT JOIN users u ON a.author_id = u.id
+      LEFT JOIN users u ON a.user_id = u.id
       WHERE a.id = ?
     `, [req.params.id]);
     
@@ -71,7 +71,7 @@ router.get('/:id', async (req, res) => {
 // Create announcement
 router.post('/', async (req, res) => {
   try {
-    const { title, content, priority, target_audience, author_id } = req.body;
+    const { title, content, priority, target_audience, user_id } = req.body;
     
     if (!title || !content) {
       return res.status(400).json({
@@ -81,8 +81,8 @@ router.post('/', async (req, res) => {
     }
 
     const [result] = await pool.query(
-      'INSERT INTO announcements (title, content, priority, target_audience, author_id) VALUES (?, ?, ?, ?, ?)',
-      [title, content, priority || 'normal', target_audience || 'all', author_id || 1]
+      'INSERT INTO announcements (title, content, priority, target_audience, user_id) VALUES (?, ?, ?, ?, ?)',
+      [title, content, priority || 'normal', target_audience || 'all', user_id || 1]
     );
 
     res.status(201).json({

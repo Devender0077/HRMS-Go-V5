@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const mysql = require('mysql2/promise');
-const Pusher = require('pusher');
+const { authenticateToken } = require('../middleware/auth.middleware');
 
 // Database configuration
 const dbConfig = {
-  host: '127.0.0.1',
-  port: 3306,
+  host: process.env.DB_HOST || '127.0.0.1',
+  port: process.env.DB_PORT || 3306,
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'hrms_go_v5',
@@ -15,33 +15,11 @@ const dbConfig = {
   queueLimit: 0,
 };
 
-// Pusher configuration
-const pusher = new Pusher({
-  appId: process.env.PUSHER_APP_ID || 'your-app-id',
-  key: process.env.PUSHER_KEY || 'your-key',
-  secret: process.env.PUSHER_SECRET || 'your-secret',
-  cluster: process.env.PUSHER_CLUSTER || 'us2',
-  useTLS: true
-});
-
 // Create connection pool
 const pool = mysql.createPool(dbConfig);
 
-// Middleware to authenticate user (temporary bypass for development)
-const authenticateUser = (req, res, next) => {
-  // For development, we'll use a mock user
-  // In production, verify JWT token
-  req.user = {
-    id: 1,
-    name: 'Admin User',
-    email: 'admin@hrms.com',
-    avatar: '/assets/images/avatars/avatar_default.jpg'
-  };
-  next();
-};
-
 // Apply authentication middleware
-router.use(authenticateUser);
+router.use(authenticateToken);
 
 // GET /api/messenger/conversations - Get all conversations for current user
 router.get('/conversations', async (req, res) => {
@@ -210,18 +188,7 @@ router.post('/conversations/:id/messages', async (req, res) => {
       WHERE m.id = ?
     `, [messageId]);
 
-    // Trigger Pusher event for real-time updates
-    await pusher.trigger(`conversation-${conversationId}`, 'new-message', {
-      message: newMessage[0],
-      conversationId: conversationId
-    });
-
-    // Trigger event for conversation list update
-    await pusher.trigger(`user-${userId}`, 'conversation-updated', {
-      conversationId: conversationId,
-      lastMessage: content.trim(),
-      lastMessageAt: new Date().toISOString()
-    });
+    // TODO: Add Pusher real-time notifications here when configured
 
     res.json({
       success: true,
