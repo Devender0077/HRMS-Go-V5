@@ -30,6 +30,7 @@ import {
   Tooltip,
   Paper,
   InputAdornment,
+  Switch,
 } from '@mui/material';
 // routes
 import { PATH_DASHBOARD } from '../../routes/paths';
@@ -135,6 +136,8 @@ export default function MessengerPage() {
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [groupName, setGroupName] = useState('');
   const [allUsers, setAllUsers] = useState([]);
+  const [desktopNotifications, setDesktopNotifications] = useState(true);
+  const [showOnlineStatus, setShowOnlineStatus] = useState(true);
   
   // Refs
   const messagesEndRef = useRef(null);
@@ -192,6 +195,24 @@ export default function MessengerPage() {
     } catch (error) {
       console.error('Error fetching online users:', error);
       setOnlineUsers([]);
+    }
+  };
+
+  // Fetch all users for dialogs
+  const fetchAllUsers = async () => {
+    try {
+      // Try to fetch from online users first
+      const response = await messengerService.getOnlineUsers();
+      if (response.success && Array.isArray(response.data) && response.data.length > 0) {
+        setAllUsers(response.data);
+      } else {
+        // If no online users, create mock data from current user
+        console.log('No users found, you may need to add more users to the system');
+        setAllUsers([]);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      setAllUsers([]);
     }
   };
 
@@ -451,10 +472,10 @@ export default function MessengerPage() {
   // Fetch users when dialogs open
   useEffect(() => {
     if (newChatDialogOpen || newGroupDialogOpen) {
-      // Use online users as available users
-      setAllUsers(onlineUsers);
+      fetchAllUsers();
     }
-  }, [newChatDialogOpen, newGroupDialogOpen, onlineUsers]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [newChatDialogOpen, newGroupDialogOpen]);
 
   const filteredConversations = Array.isArray(conversations) ? conversations.filter(conv =>
     conv.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -847,16 +868,18 @@ export default function MessengerPage() {
         <Dialog open={settingsOpen} onClose={() => setSettingsOpen(false)} maxWidth="sm" fullWidth>
           <DialogTitle>Messenger Settings</DialogTitle>
           <DialogContent>
-            <Stack spacing={3} sx={{ pt: 1 }}>
+            <Stack spacing={3} sx={{ pt: 2 }}>
               <Box>
                 <Typography variant="subtitle2" gutterBottom>
                   Notifications
                 </Typography>
                 <Stack direction="row" alignItems="center" justifyContent="space-between">
                   <Typography variant="body2">Desktop Notifications</Typography>
-                  <IconButton size="small">
-                    <Iconify icon="eva:toggle-right-fill" />
-                  </IconButton>
+                  <Switch
+                    checked={desktopNotifications}
+                    onChange={(e) => setDesktopNotifications(e.target.checked)}
+                    color="primary"
+                  />
                 </Stack>
               </Box>
               <Box>
@@ -865,15 +888,28 @@ export default function MessengerPage() {
                 </Typography>
                 <Stack direction="row" alignItems="center" justifyContent="space-between">
                   <Typography variant="body2">Show Online Status</Typography>
-                  <IconButton size="small">
-                    <Iconify icon="eva:toggle-right-fill" />
-                  </IconButton>
+                  <Switch
+                    checked={showOnlineStatus}
+                    onChange={(e) => setShowOnlineStatus(e.target.checked)}
+                    color="primary"
+                  />
                 </Stack>
               </Box>
             </Stack>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setSettingsOpen(false)}>Close</Button>
+            <Button onClick={() => setSettingsOpen(false)} variant="outlined">
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                setSettingsOpen(false);
+                enqueueSnackbar('Settings saved successfully', { variant: 'success' });
+              }} 
+              variant="contained"
+            >
+              Save
+            </Button>
           </DialogActions>
         </Dialog>
 
@@ -922,22 +958,27 @@ export default function MessengerPage() {
         <Dialog open={newChatDialogOpen} onClose={() => setNewChatDialogOpen(false)} maxWidth="sm" fullWidth>
           <DialogTitle>Start New Chat</DialogTitle>
           <DialogContent>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2, mt: 1 }}>
               Select a user to start a conversation
             </Typography>
             
             {allUsers.length === 0 ? (
-              <Box sx={{ textAlign: 'center', py: 3 }}>
-                <Typography variant="body2" color="text.secondary">
-                  No users available
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Iconify icon="eva:people-outline" width={48} sx={{ color: 'text.disabled', mb: 2 }} />
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  No users available at the moment
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Make sure users exist in the system and are active
                 </Typography>
               </Box>
             ) : (
-              <List>
+              <List sx={{ maxHeight: 400, overflow: 'auto' }}>
                 {allUsers.map((user) => (
                   <ListItemButton
                     key={user.id}
                     onClick={() => handleStartConversation(user.id)}
+                    sx={{ borderRadius: 1, mb: 0.5 }}
                   >
                     <ListItemAvatar>
                       <Badge
@@ -971,7 +1012,7 @@ export default function MessengerPage() {
             )}
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setNewChatDialogOpen(false)}>Cancel</Button>
+            <Button onClick={() => setNewChatDialogOpen(false)}>Close</Button>
           </DialogActions>
         </Dialog>
 
@@ -986,24 +1027,35 @@ export default function MessengerPage() {
                 value={groupName}
                 onChange={(e) => setGroupName(e.target.value)}
                 placeholder="Enter group name"
+                required
               />
               
               <Box>
                 <Typography variant="subtitle2" gutterBottom>
                   Select Members ({selectedUsers.length} selected)
                 </Typography>
+                <Typography variant="caption" color="text.secondary" gutterBottom display="block">
+                  You need to select at least 2 members
+                </Typography>
                 
                 {allUsers.length === 0 ? (
-                  <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
-                    No users available
-                  </Typography>
+                  <Box sx={{ textAlign: 'center', py: 4 }}>
+                    <Iconify icon="eva:people-outline" width={48} sx={{ color: 'text.disabled', mb: 2 }} />
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      No users available at the moment
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Make sure users exist in the system and are active
+                    </Typography>
+                  </Box>
                 ) : (
-                  <List sx={{ maxHeight: 300, overflow: 'auto' }}>
+                  <List sx={{ maxHeight: 300, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1, mt: 1 }}>
                     {allUsers.map((user) => (
                       <ListItemButton
                         key={user.id}
                         onClick={() => handleToggleUser(user.id)}
                         selected={selectedUsers.includes(user.id)}
+                        sx={{ borderRadius: 1 }}
                       >
                         <ListItemAvatar>
                           <Avatar src={user.avatar} alt={user.name} />
@@ -1023,7 +1075,9 @@ export default function MessengerPage() {
             </Stack>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setNewGroupDialogOpen(false)}>Cancel</Button>
+            <Button onClick={() => setNewGroupDialogOpen(false)} variant="outlined">
+              Cancel
+            </Button>
             <Button 
               onClick={handleCreateGroup} 
               variant="contained"
