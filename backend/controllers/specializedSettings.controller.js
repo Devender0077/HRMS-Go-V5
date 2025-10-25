@@ -288,6 +288,9 @@ exports.getAllSpecialized = async (req, res) => {
     const teamsData = teams ? convertKeysToSnakeCase(teams.toJSON()) : {};
     const zoomData = zoom ? convertKeysToSnakeCase(zoom.toJSON()) : {};
     
+    console.log('🔍 GET Integration - Pusher raw data:', pusher ? pusher.toJSON() : 'null');
+    console.log('🔍 GET Integration - Pusher converted:', pusherData);
+    
     settings.integrations = {
       // Slack fields
       slack_enabled: slackData.is_enabled || false,
@@ -314,6 +317,8 @@ exports.getAllSpecialized = async (req, res) => {
       zoom_api_secret: zoomData.api_secret || '',
       zoom_account_id: zoomData.account_id || '',
     };
+    
+    console.log('🔍 GET Integration - Final settings.integrations:', settings.integrations);
 
     // Security
     const security = await SecurityPolicy.findOne();
@@ -761,13 +766,41 @@ exports.getByCategorySpecialized = async (req, res) => {
       if (data.toJSON) {
         responseData = convertKeysToSnakeCase(data.toJSON());
       } else if (category === 'integrations' && data.slack) {
-        // Special handling for integrations
+        // Special handling for integrations - FLATTEN for frontend
+        const slackData = data.slack ? convertKeysToSnakeCase(data.slack.toJSON ? data.slack.toJSON() : data.slack) : {};
+        const pusherData = data.pusher ? convertKeysToSnakeCase(data.pusher.toJSON ? data.pusher.toJSON() : data.pusher) : {};
+        const teamsData = data.teams ? convertKeysToSnakeCase(data.teams.toJSON ? data.teams.toJSON() : data.teams) : {};
+        const zoomData = data.zoom ? convertKeysToSnakeCase(data.zoom.toJSON ? data.zoom.toJSON() : data.zoom) : {};
+        
+        // Flatten to match frontend expectations
         responseData = {
-          slack: data.slack ? convertKeysToSnakeCase(data.slack.toJSON ? data.slack.toJSON() : data.slack) : {},
-          pusher: data.pusher ? convertKeysToSnakeCase(data.pusher.toJSON ? data.pusher.toJSON() : data.pusher) : {},
-          teams: data.teams ? convertKeysToSnakeCase(data.teams.toJSON ? data.teams.toJSON() : data.teams) : {},
-          zoom: data.zoom ? convertKeysToSnakeCase(data.zoom.toJSON ? data.zoom.toJSON() : data.zoom) : {},
+          // Slack fields
+          slack_enabled: slackData.is_enabled || false,
+          slack_webhook_url: slackData.webhook_url || '',
+          slack_workspace_name: slackData.workspace_name || '',
+          slack_default_channel: slackData.default_channel || '',
+          
+          // Pusher fields
+          pusher_enabled: pusherData.is_enabled || false,
+          pusher_app_id: pusherData.app_id || '',
+          pusher_key: pusherData.key || '',
+          pusher_secret: pusherData.secret || '',
+          pusher_cluster: pusherData.cluster || '',
+          
+          // MS Teams fields
+          msteams_enabled: teamsData.is_enabled || false,
+          msteams_webhook_url: teamsData.webhook_url || '',
+          msteams_tenant_id: teamsData.tenant_id || '',
+          msteams_channel_id: teamsData.channel_id || '',
+          
+          // Zoom fields
+          zoom_enabled: zoomData.is_enabled || false,
+          zoom_api_key: zoomData.api_key || '',
+          zoom_api_secret: zoomData.api_secret || '',
+          zoom_account_id: zoomData.account_id || '',
         };
+        
+        console.log('🔍 Flattened integration data for frontend:', responseData);
       } else {
         responseData = data; // Already converted (like general settings)
       }

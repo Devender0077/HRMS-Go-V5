@@ -114,6 +114,14 @@ exports.updateSettings = async (req, res) => {
     const { category } = req.params;
     const data = req.body;
 
+    console.log('\n╔════════════════════════════════════════════════════════════════╗');
+    console.log('║  🔧 UPDATE SETTINGS REQUEST RECEIVED                           ║');
+    console.log('╚════════════════════════════════════════════════════════════════╝');
+    console.log('📋 Category:', category);
+    console.log('📦 Data keys:', Object.keys(data));
+    console.log('📝 Full data:', JSON.stringify(data, null, 2));
+    console.log('👤 User:', req.user?.email || 'Not authenticated');
+
     // Handle general settings (uses general_settings table)
     if (category === 'general') {
       const updates = [];
