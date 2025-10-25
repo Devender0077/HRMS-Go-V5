@@ -100,6 +100,7 @@ app.use('/api/performance', performanceRoutes);
 app.use('/api/training', trainingRoutes);
 app.use('/api/documents', documentsRoutes);
 app.use('/api/calendar', calendarRoutes);
+app.use('/api/notifications', require('./routes/notification.routes'));
 app.use('/api/messenger', messengerRoutes);
 app.use('/api/system-setup', require('./routes/systemSetup.routes'));
 app.use('/api/assets', require('./routes/asset.routes'));

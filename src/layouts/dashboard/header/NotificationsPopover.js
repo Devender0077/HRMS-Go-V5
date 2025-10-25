@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 import { noCase } from 'change-case';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 // @mui
 import {
   Box,
@@ -20,8 +20,8 @@ import {
 } from '@mui/material';
 // utils
 import { fToNow } from '../../../utils/formatTime';
-// _mock_
-import { _notifications } from '../../../_mock/arrays';
+// services
+import notificationService from '../../../services/notificationService';
 // components
 import Iconify from '../../../components/iconify';
 import Scrollbar from '../../../components/scrollbar';
@@ -32,10 +32,31 @@ import { IconButtonAnimate } from '../../../components/animate';
 
 export default function NotificationsPopover() {
   const [openPopover, setOpenPopover] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [totalUnRead, setTotalUnRead] = useState(0);
+  const [loading, setLoading] = useState(true);
 
-  const [notifications, setNotifications] = useState(_notifications);
+  // Fetch notifications on mount
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
 
-  const totalUnRead = notifications.filter((item) => item.isUnRead === true).length;
+  const fetchNotifications = async () => {
+    try {
+      setLoading(true);
+      const response = await notificationService.getAll();
+      if (response.success) {
+        setNotifications(response.data || []);
+        setTotalUnRead(response.unreadCount || 0);
+      }
+    } catch (error) {
+      console.error('Error loading notifications:', error);
+      setNotifications([]);
+      setTotalUnRead(0);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleOpenPopover = (event) => {
     setOpenPopover(event.currentTarget);
@@ -45,13 +66,35 @@ export default function NotificationsPopover() {
     setOpenPopover(null);
   };
 
-  const handleMarkAllAsRead = () => {
-    setNotifications(
-      notifications.map((notification) => ({
-        ...notification,
-        isUnRead: false,
-      }))
-    );
+  const handleMarkAllAsRead = async () => {
+    try {
+      await notificationService.markAllAsRead();
+      // Update local state
+      setNotifications(
+        notifications.map((notification) => ({
+          ...notification,
+          isRead: true,
+        }))
+      );
+      setTotalUnRead(0);
+    } catch (error) {
+      console.error('Error marking all as read:', error);
+    }
+  };
+
+  const handleMarkAsRead = async (id) => {
+    try {
+      await notificationService.markAsRead(id);
+      // Update local state
+      setNotifications(
+        notifications.map((notification) =>
+          notification.id === id ? { ...notification, isRead: true } : notification
+        )
+      );
+      setTotalUnRead(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('Error marking as read:', error);
+    }
   };
 
   return (
@@ -97,7 +140,11 @@ export default function NotificationsPopover() {
             }
           >
             {notifications.slice(0, 2).map((notification) => (
-              <NotificationItem key={notification.id} notification={notification} />
+              <NotificationItem 
+                key={notification.id} 
+                notification={notification} 
+                onMarkAsRead={handleMarkAsRead}
+              />
             ))}
           </List>
 
@@ -110,7 +157,11 @@ export default function NotificationsPopover() {
             }
           >
             {notifications.slice(2, 5).map((notification) => (
-              <NotificationItem key={notification.id} notification={notification} />
+              <NotificationItem 
+                key={notification.id} 
+                notification={notification}
+                onMarkAsRead={handleMarkAsRead}
+              />
             ))}
           </List>
         </Scrollbar>
@@ -141,16 +192,30 @@ NotificationItem.propTypes = {
   }),
 };
 
-function NotificationItem({ notification }) {
+NotificationItem.propTypes = {
+  notification: PropTypes.object,
+  onMarkAsRead: PropTypes.func,
+};
+
+function NotificationItem({ notification, onMarkAsRead }) {
   const { avatar, title } = renderContent(notification);
+
+  const handleClick = () => {
+    if (!notification.isRead && !notification.is_read) {
+      onMarkAsRead(notification.id);
+    }
+  };
+
+  const isUnread = notification.isRead === false || notification.is_read === false;
 
   return (
     <ListItemButton
+      onClick={handleClick}
       sx={{
         py: 1.5,
         px: 2.5,
         mt: '1px',
-        ...(notification.isUnRead && {
+        ...(isUnread && {
           bgcolor: 'action.selected',
         }),
       }}
@@ -165,7 +230,9 @@ function NotificationItem({ notification }) {
         secondary={
           <Stack direction="row" sx={{ mt: 0.5, typography: 'caption', color: 'text.disabled' }}>
             <Iconify icon="eva:clock-fill" width={16} sx={{ mr: 0.5 }} />
-            <Typography variant="caption">{fToNow(notification.createdAt)}</Typography>
+            <Typography variant="caption">
+              {fToNow(notification.createdAt || notification.created_at)}
+            </Typography>
           </Stack>
         }
       />
@@ -180,37 +247,29 @@ function renderContent(notification) {
     <Typography variant="subtitle2">
       {notification.title}
       <Typography component="span" variant="body2" sx={{ color: 'text.secondary' }}>
-        &nbsp; {noCase(notification.description)}
+        &nbsp; {noCase(notification.description || '')}
       </Typography>
     </Typography>
   );
 
-  if (notification.type === 'order_placed') {
-    return {
-      avatar: <img alt={notification.title} src="/assets/icons/notification/ic_package.svg" />,
-      title,
-    };
-  }
-  if (notification.type === 'order_shipped') {
-    return {
-      avatar: <img alt={notification.title} src="/assets/icons/notification/ic_shipping.svg" />,
-      title,
-    };
-  }
-  if (notification.type === 'mail') {
-    return {
-      avatar: <img alt={notification.title} src="/assets/icons/notification/ic_mail.svg" />,
-      title,
-    };
-  }
-  if (notification.type === 'chat_message') {
-    return {
-      avatar: <img alt={notification.title} src="/assets/icons/notification/ic_chat.svg" />,
-      title,
-    };
-  }
+  // Map notification types to icons
+  const iconMap = {
+    leave_request: '/assets/icons/notification/ic_mail.svg',
+    leave_approved: '/assets/icons/notification/ic_chat.svg',
+    leave_rejected: '/assets/icons/notification/ic_mail.svg',
+    attendance_alert: '/assets/icons/notification/ic_package.svg',
+    payroll_generated: '/assets/icons/notification/ic_shipping.svg',
+    document_uploaded: '/assets/icons/notification/ic_mail.svg',
+    system_announcement: '/assets/icons/notification/ic_chat.svg',
+    task_assigned: '/assets/icons/notification/ic_package.svg',
+    performance_review: '/assets/icons/notification/ic_mail.svg',
+    training_enrollment: '/assets/icons/notification/ic_chat.svg',
+  };
+
+  const iconSrc = notification.avatar || iconMap[notification.type] || '/assets/icons/notification/ic_mail.svg';
+
   return {
-    avatar: notification.avatar ? <img alt={notification.title} src={notification.avatar} /> : null,
+    avatar: <img alt={notification.title} src={iconSrc} />,
     title,
   };
 }
