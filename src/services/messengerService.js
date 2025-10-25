@@ -30,9 +30,10 @@ class MessengerService {
   async getConversations() {
     try {
       const response = await apiClient.get('/conversations');
+      // Backend returns {success: true, data: [...]}
       return {
         success: true,
-        data: response.data,
+        data: response.data?.data || response.data || [],
       };
     } catch (error) {
       console.error('Error fetching conversations:', error);
@@ -52,9 +53,10 @@ class MessengerService {
   async getMessages(conversationId) {
     try {
       const response = await apiClient.get(`/conversations/${conversationId}/messages`);
+      // Backend returns {success: true, data: [...]}
       return {
         success: true,
-        data: response.data,
+        data: response.data?.data || response.data || [],
       };
     } catch (error) {
       console.error('Error fetching messages:', error);
@@ -79,9 +81,10 @@ class MessengerService {
         content: message,
         type,
       });
+      // Backend returns {success: true, data: {...}}
       return {
         success: true,
-        data: response.data,
+        data: response.data?.data || response.data,
       };
     } catch (error) {
       console.error('Error sending message:', error);
@@ -114,9 +117,10 @@ class MessengerService {
           };
 
       const response = await apiClient.post('/conversations', payload);
+      // Backend returns {success: true, data: {...}}
       return {
         success: true,
-        data: response.data,
+        data: response.data?.data || response.data,
       };
     } catch (error) {
       console.error('Error creating conversation:', error);
@@ -158,9 +162,10 @@ class MessengerService {
   async searchConversations(query) {
     try {
       const response = await apiClient.get(`/conversations/search?q=${encodeURIComponent(query)}`);
+      // Backend returns {success: true, data: [...]}
       return {
         success: true,
-        data: response.data,
+        data: response.data?.data || response.data || [],
       };
     } catch (error) {
       console.error('Error searching conversations:', error);
@@ -179,9 +184,11 @@ class MessengerService {
   async getOnlineUsers() {
     try {
       const response = await apiClient.get('/users/online');
+      // Backend returns {success: true, data: [...]}
+      // We need to extract the data array
       return {
         success: true,
-        data: response.data,
+        data: response.data?.data || response.data || [],
       };
     } catch (error) {
       console.error('Error fetching online users:', error);
