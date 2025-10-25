@@ -145,53 +145,106 @@ exports.updateSettings = async (req, res) => {
         const teamsData = {};
         const zoomData = {};
 
+        // Mapping for Pusher (frontend → Sequelize model)
+        const pusherFieldMap = {
+          'pusher_enabled': 'isEnabled',
+          'pusher_app_id': 'appId',
+          'pusher_key': 'key',
+          'pusher_secret': 'secret',
+          'pusher_cluster': 'cluster',
+        };
+
+        // Mapping for Slack
+        const slackFieldMap = {
+          'slack_enabled': 'isEnabled',
+          'slack_webhook_url': 'webhookUrl',
+          'slack_workspace_name': 'workspaceName',
+          'slack_default_channel': 'defaultChannel',
+        };
+
+        // Mapping for Teams
+        const teamsFieldMap = {
+          'msteams_enabled': 'isEnabled',
+          'msteams_webhook_url': 'webhookUrl',
+          'msteams_tenant_id': 'tenantId',
+          'msteams_channel_id': 'channelId',
+        };
+
+        // Mapping for Zoom
+        const zoomFieldMap = {
+          'zoom_enabled': 'isEnabled',
+          'zoom_api_key': 'apiKey',
+          'zoom_api_secret': 'apiSecret',
+          'zoom_account_id': 'accountId',
+        };
+
         Object.keys(flatData).forEach(key => {
-          if (key.startsWith('slack_')) {
-            const backendKey = key.replace('slack_', '');
-            slackData[backendKey === 'enabled' ? 'is_enabled' : backendKey] = flatData[key];
-          } else if (key.startsWith('pusher_')) {
-            const backendKey = key.replace('pusher_', '');
-            pusherData[backendKey === 'enabled' ? 'is_enabled' : backendKey] = flatData[key];
-          } else if (key.startsWith('msteams_')) {
-            const backendKey = key.replace('msteams_', '');
-            teamsData[backendKey === 'enabled' ? 'is_enabled' : backendKey] = flatData[key];
-          } else if (key.startsWith('zoom_')) {
-            const backendKey = key.replace('zoom_', '');
-            zoomData[backendKey === 'enabled' ? 'is_enabled' : backendKey] = flatData[key];
+          // Map Pusher fields
+          if (pusherFieldMap[key]) {
+            pusherData[pusherFieldMap[key]] = flatData[key];
+          }
+          // Map Slack fields
+          else if (slackFieldMap[key]) {
+            slackData[slackFieldMap[key]] = flatData[key];
+          }
+          // Map Teams fields
+          else if (teamsFieldMap[key]) {
+            teamsData[teamsFieldMap[key]] = flatData[key];
+          }
+          // Map Zoom fields
+          else if (zoomFieldMap[key]) {
+            zoomData[zoomFieldMap[key]] = flatData[key];
           }
         });
 
         return { slack: slackData, pusher: pusherData, teams: teamsData, zoom: zoomData };
       };
 
+      // Log incoming data for debugging
+      console.log('━━━ INTEGRATION UPDATE REQUEST ━━━');
+      console.log('Incoming data keys:', Object.keys(data));
+      console.log('Full data:', JSON.stringify(data, null, 2));
+
       // Check if data is already nested or needs conversion
       let { slack, pusher, teams, zoom } = data;
       
       if (!slack && !pusher && !teams && !zoom) {
         // Data is flat, convert it
+        console.log('📦 Converting flat data to nested structure...');
         const converted = convertFrontendToBackend(data);
         slack = converted.slack;
         pusher = converted.pusher;
         teams = converted.teams;
         zoom = converted.zoom;
+        
+        console.log('Converted Pusher data:', JSON.stringify(pusher, null, 2));
+        console.log('Converted Slack data:', JSON.stringify(slack, null, 2));
       }
 
       if (slack && Object.keys(slack).length > 0) {
+        console.log('💾 Saving Slack:', slack);
         await IntegrationSlack.upsert({ id: 3, ...slack });
         updated.push('slack');
       }
       if (pusher && Object.keys(pusher).length > 0) {
-        await IntegrationPusher.upsert({ id: 3, ...pusher });
+        console.log('💾 Saving Pusher:', pusher);
+        const result = await IntegrationPusher.upsert({ id: 3, ...pusher });
+        console.log('✅ Pusher save result:', result);
         updated.push('pusher');
       }
       if (teams && Object.keys(teams).length > 0) {
+        console.log('💾 Saving Teams:', teams);
         await IntegrationTeams.upsert({ id: 3, ...teams });
         updated.push('teams');
       }
       if (zoom && Object.keys(zoom).length > 0) {
+        console.log('💾 Saving Zoom:', zoom);
         await IntegrationZoom.upsert({ id: 3, ...zoom });
         updated.push('zoom');
       }
+
+      console.log('✅ Updated integrations:', updated);
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
       return res.json({
         success: true,
