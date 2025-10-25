@@ -162,10 +162,16 @@ exports.clockIn = async (req, res) => {
   try {
     const { userId, employeeId: directEmployeeId, ip, location, latitude, longitude, deviceInfo } = req.body;
     const now = new Date();
-    const today = now.toISOString().split('T')[0];
+    
+    // Use local date to avoid timezone issues
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const today = `${year}-${month}-${day}`;
 
     console.log('=== Clock In Request ===');
-    console.log('Today date:', today);
+    console.log('Server time:', now.toString());
+    console.log('Today date (local):', today);
     console.log('User ID:', userId);
 
     // Get employeeId from userId if needed
@@ -255,10 +261,16 @@ exports.clockOut = async (req, res) => {
   try {
     const { userId, employeeId: directEmployeeId, ip, location, latitude, longitude } = req.body;
     const now = new Date();
-    const today = now.toISOString().split('T')[0];
+    
+    // Use local date to avoid timezone issues
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const today = `${year}-${month}-${day}`;
 
     console.log('=== Clock Out Request ===');
-    console.log('Today date:', today);
+    console.log('Server time:', now.toString());
+    console.log('Today date (local):', today);
     console.log('User ID:', userId);
 
     // Get employeeId from userId if needed
@@ -425,7 +437,16 @@ exports.getRecords = async (req, res) => {
 exports.getTodayRecord = async (req, res) => {
   try {
     const { employeeId, userId } = req.query;
-    const today = new Date().toISOString().split('T')[0];
+    
+    // Use local date to avoid timezone issues
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const today = `${year}-${month}-${day}`;
+
+    console.log('=== Get Today Record ===');
+    console.log('Today date (local):', today);
 
     // If userId is provided instead of employeeId, look up the employee
     let finalEmployeeId = employeeId;
@@ -434,6 +455,7 @@ exports.getTodayRecord = async (req, res) => {
       const employee = await Employee.findOne({ where: { user_id: userId } });
       if (employee) {
         finalEmployeeId = employee.id;
+        console.log('Found employee ID:', finalEmployeeId);
       }
     }
 
@@ -450,6 +472,8 @@ exports.getTodayRecord = async (req, res) => {
         date: today,
       },
     });
+
+    console.log('Found attendance record:', attendance ? 'YES' : 'NO');
 
     res.json({
       success: true,
