@@ -22,6 +22,8 @@ import ContrastOptions from './ContrastOptions';
 import DirectionOptions from './DirectionOptions';
 import FullScreenOptions from './FullScreenOptions';
 import ColorPresetsOptions from './ColorPresetsOptions';
+import FontSizeOptions from './FontSizeOptions';
+import FontFamilyOptions from './FontFamilyOptions';
 
 // ----------------------------------------------------------------------
 
@@ -127,6 +129,14 @@ export default function SettingsDrawer() {
 
           <Block title="Presets">
             <ColorPresetsOptions />
+          </Block>
+
+          <Block title="Font Size">
+            <FontSizeOptions />
+          </Block>
+
+          <Block title="Font Family">
+            <FontFamilyOptions />
           </Block>
         </Scrollbar>
 

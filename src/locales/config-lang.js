@@ -26,112 +26,112 @@ export const allLangs = [
     label: 'English',
     value: 'en',
     systemValue: enUS,
-    icon: '/assets/icons/flags/ic_flag_en.svg',
+    icon: '/assets/icons/flags/ic_flag_en.svg', // ✅ Exists
     direction: 'ltr',
   },
   {
     label: 'Arabic',
     value: 'ar',
     systemValue: arSA,
-    icon: '/assets/icons/flags/ic_flag_sa.svg',
+    icon: '/assets/icons/flags/ic_flag_sa.svg', // ✅ Exists
     direction: 'rtl',
   },
   {
     label: 'Danish',
     value: 'da',
     systemValue: daDK,
-    icon: '/assets/icons/flags/ic_flag_dk.svg',
+    icon: '/assets/icons/flags/ic_flag_en.svg', // ⚠️  Using EN as fallback
     direction: 'ltr',
   },
   {
     label: 'German',
     value: 'de',
     systemValue: deDE,
-    icon: '/assets/icons/flags/ic_flag_de.svg',
+    icon: '/assets/icons/flags/ic_flag_de.svg', // ✅ Exists
     direction: 'ltr',
   },
   {
     label: 'Spanish',
     value: 'es',
     systemValue: esES,
-    icon: '/assets/icons/flags/ic_flag_es.svg',
+    icon: '/assets/icons/flags/ic_flag_en.svg', // ⚠️ Using EN as fallback
     direction: 'ltr',
   },
   {
     label: 'French',
     value: 'fr',
     systemValue: frFR,
-    icon: '/assets/icons/flags/ic_flag_fr.svg',
+    icon: '/assets/icons/flags/ic_flag_fr.svg', // ✅ Exists
     direction: 'ltr',
   },
   {
     label: 'Italian',
     value: 'it',
     systemValue: itIT,
-    icon: '/assets/icons/flags/ic_flag_it.svg',
+    icon: '/assets/icons/flags/ic_flag_en.svg', // ⚠️ Using EN as fallback
     direction: 'ltr',
   },
   {
     label: 'Japanese',
     value: 'ja',
     systemValue: jaJP,
-    icon: '/assets/icons/flags/ic_flag_jp.svg',
+    icon: '/assets/icons/flags/ic_flag_en.svg', // ⚠️ Using EN as fallback
     direction: 'ltr',
   },
   {
     label: 'Dutch',
     value: 'nl',
     systemValue: nlNL,
-    icon: '/assets/icons/flags/ic_flag_nl.svg',
+    icon: '/assets/icons/flags/ic_flag_en.svg', // ⚠️ Using EN as fallback
     direction: 'ltr',
   },
   {
     label: 'Polish',
     value: 'pl',
     systemValue: plPL,
-    icon: '/assets/icons/flags/ic_flag_pl.svg',
+    icon: '/assets/icons/flags/ic_flag_en.svg', // ⚠️ Using EN as fallback
     direction: 'ltr',
   },
   {
     label: 'Russian',
     value: 'ru',
     systemValue: ruRU,
-    icon: '/assets/icons/flags/ic_flag_ru.svg',
+    icon: '/assets/icons/flags/ic_flag_en.svg', // ⚠️ Using EN as fallback
     direction: 'ltr',
   },
   {
     label: 'Portuguese',
     value: 'pt',
     systemValue: ptPT,
-    icon: '/assets/icons/flags/ic_flag_pt.svg',
+    icon: '/assets/icons/flags/ic_flag_en.svg', // ⚠️ Using EN as fallback
     direction: 'ltr',
   },
   {
     label: 'Chinese',
     value: 'zh',
     systemValue: zhCN,
-    icon: '/assets/icons/flags/ic_flag_cn.svg',
+    icon: '/assets/icons/flags/ic_flag_cn.svg', // ✅ Exists
     direction: 'ltr',
   },
   {
     label: 'Turkish',
     value: 'tr',
     systemValue: trTR,
-    icon: '/assets/icons/flags/ic_flag_tr.svg',
+    icon: '/assets/icons/flags/ic_flag_en.svg', // ⚠️ Using EN as fallback
     direction: 'ltr',
   },
   {
     label: 'Hebrew',
     value: 'he',
     systemValue: heIL,
-    icon: '/assets/icons/flags/ic_flag_il.svg',
+    icon: '/assets/icons/flags/ic_flag_en.svg', // ⚠️ Using EN as fallback
     direction: 'rtl',
   },
   {
     label: 'Portuguese (Brazil)',
     value: 'pt-BR',
     systemValue: ptBR,
-    icon: '/assets/icons/flags/ic_flag_br.svg',
+    icon: '/assets/icons/flags/ic_flag_en.svg', // ⚠️ Using EN as fallback
     direction: 'ltr',
   },
 ];

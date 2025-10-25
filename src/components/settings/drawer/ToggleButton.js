@@ -1,9 +1,12 @@
 import PropTypes from 'prop-types';
+import { useSelector } from 'react-redux';
 // @mui
 import { alpha, useTheme } from '@mui/material/styles';
 import { Tooltip, Box } from '@mui/material';
 // utils
 import { bgBlur } from '../../../utils/cssStyles';
+// redux
+import { selectUser } from '../../../redux/slices/authSlice';
 //
 import { IconButtonAnimate } from '../../animate';
 import SvgColor from '../../svg-color';
@@ -20,6 +23,14 @@ ToggleButton.propTypes = {
 
 export default function ToggleButton({ notDefault, open, onToggle }) {
   const theme = useTheme();
+  const user = useSelector(selectUser);
+
+  // Only show settings for admin/super admin
+  const isAdmin = user && ['super_admin', 'hr_manager'].includes(user.userType);
+  
+  if (!isAdmin) {
+    return null; // Don't render settings button for non-admins
+  }
 
   return (
     <Box

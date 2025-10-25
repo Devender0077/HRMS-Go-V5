@@ -148,6 +148,24 @@ export function SettingsProvider({ children }) {
     setSettings({ ...settings, themeStretch });
   }, [setSettings, settings]);
 
+  // Font Size
+  const onChangeFontSize = useCallback(
+    (event) => {
+      const themeFontSize = event.target.value;
+      setSettings({ ...settings, themeFontSize });
+    },
+    [setSettings, settings]
+  );
+
+  // Font Family
+  const onChangeFontFamily = useCallback(
+    (event) => {
+      const themeFontFamily = event.target.value;
+      setSettings({ ...settings, themeFontFamily });
+    },
+    [setSettings, settings]
+  );
+
   // Reset
   const onResetSetting = useCallback(() => {
     setSettings(defaultSettings);
@@ -175,6 +193,9 @@ export function SettingsProvider({ children }) {
       onChangeColorPresets,
       presetsOption,
       presetsColor: getPresets(settings.themeColorPresets),
+      // Font
+      onChangeFontSize,
+      onChangeFontFamily,
       // Reset
       onResetSetting,
     }),
@@ -197,6 +218,9 @@ export function SettingsProvider({ children }) {
       onToggleStretch,
       // Color
       onChangeColorPresets,
+      // Font
+      onChangeFontSize,
+      onChangeFontFamily,
       // Reset
       onResetSetting,
     ]

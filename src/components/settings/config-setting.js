@@ -8,4 +8,6 @@ export const defaultSettings = {
   themeLayout: 'vertical',
   themeColorPresets: 'default',
   themeStretch: false,
+  themeFontSize: 'medium', // small, medium, large
+  themeFontFamily: 'Public Sans', // 'Public Sans', 'Roboto', 'Inter', 'Poppins'
 };

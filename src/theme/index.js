@@ -11,7 +11,7 @@ import {
 import { useSettingsContext } from '../components/settings';
 //
 import palette from './palette';
-import typography from './typography';
+import typography, { getTypography } from './typography';
 import shadows from './shadows';
 import customShadows from './customShadows';
 import componentsOverride from './overrides';
@@ -24,18 +24,18 @@ ThemeProvider.propTypes = {
 };
 
 export default function ThemeProvider({ children }) {
-  const { themeMode, themeDirection } = useSettingsContext();
+  const { themeMode, themeDirection, themeFontSize, themeFontFamily } = useSettingsContext();
 
   const themeOptions = useMemo(
     () => ({
       palette: palette(themeMode),
-      typography,
+      typography: getTypography(themeFontFamily, themeFontSize),
       shape: { borderRadius: 8 },
       direction: themeDirection,
       shadows: shadows(themeMode),
       customShadows: customShadows(themeMode),
     }),
-    [themeDirection, themeMode]
+    [themeDirection, themeMode, themeFontSize, themeFontFamily]
   );
 
   const theme = createTheme(themeOptions);
