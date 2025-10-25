@@ -29,7 +29,16 @@ router.get('/conversations', async (req, res) => {
     const [conversations] = await pool.execute(`
       SELECT 
         c.id,
-        c.name,
+        CASE 
+          WHEN c.type = 'group' THEN c.name
+          ELSE (
+            SELECT u2.name 
+            FROM conversation_participants cp2
+            JOIN users u2 ON cp2.user_id = u2.id
+            WHERE cp2.conversation_id = c.id AND cp2.user_id != ?
+            LIMIT 1
+          )
+        END as name,
         c.type,
         c.last_message,
         c.last_message_at,
@@ -37,20 +46,29 @@ router.get('/conversations', async (req, res) => {
         c.updated_at,
         CASE 
           WHEN c.type = 'group' THEN c.avatar
-          ELSE u.avatar
+          ELSE (
+            SELECT u2.avatar 
+            FROM conversation_participants cp2
+            JOIN users u2 ON cp2.user_id = u2.id
+            WHERE cp2.conversation_id = c.id AND cp2.user_id != ?
+            LIMIT 1
+          )
         END as avatar,
         CASE 
           WHEN c.type = 'group' THEN 'group'
-          ELSE CASE WHEN u.last_seen > DATE_SUB(NOW(), INTERVAL 5 MINUTE) THEN 'online' ELSE 'offline' END
+          ELSE (
+            SELECT CASE WHEN u2.last_seen > DATE_SUB(NOW(), INTERVAL 5 MINUTE) THEN 'online' ELSE 'offline' END
+            FROM conversation_participants cp2
+            JOIN users u2 ON cp2.user_id = u2.id
+            WHERE cp2.conversation_id = c.id AND cp2.user_id != ?
+            LIMIT 1
+          )
         END as status
       FROM conversations c
-      LEFT JOIN conversation_participants cp ON c.id = cp.conversation_id
-      LEFT JOIN users u ON (c.type = 'direct' AND u.id != ? AND u.id IN (
-        SELECT user_id FROM conversation_participants WHERE conversation_id = c.id AND user_id != ?
-      ))
+      JOIN conversation_participants cp ON c.id = cp.conversation_id
       WHERE cp.user_id = ?
       ORDER BY c.updated_at DESC
-    `, [userId, userId, userId]);
+    `, [userId, userId, userId, userId]);
 
     res.json({
       success: true,

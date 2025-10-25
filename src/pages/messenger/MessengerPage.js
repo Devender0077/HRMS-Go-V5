@@ -150,10 +150,18 @@ export default function MessengerPage() {
       setLoading(true);
       const response = await messengerService.getConversations();
       if (response.success && Array.isArray(response.data)) {
-        setConversations(response.data);
+        // Map backend snake_case to frontend camelCase
+        const mappedConversations = response.data.map(conv => ({
+          ...conv,
+          lastMessage: conv.last_message || conv.lastMessage || '',
+          lastMessageAt: conv.last_message_at || conv.lastMessageAt,
+          unreadCount: conv.unread_count || conv.unreadCount || 0,
+          time: formatConversationTime(conv.last_message_at || conv.updated_at),
+          online: conv.status === 'online'
+        }));
+        setConversations(mappedConversations);
       } else {
         setConversations([]);
-        enqueueSnackbar('No conversations found', { variant: 'info' });
       }
     } catch (error) {
       console.error('Error fetching conversations:', error);
@@ -161,6 +169,26 @@ export default function MessengerPage() {
       enqueueSnackbar('Failed to load conversations', { variant: 'error' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Helper function to format conversation time
+  const formatConversationTime = (timestamp) => {
+    if (!timestamp) return '';
+    
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInHours = (now - date) / (1000 * 60 * 60);
+    
+    if (diffInHours < 24) {
+      // Today - show time
+      return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    } else if (diffInHours < 48) {
+      return 'Yesterday';
+    } else if (diffInHours < 168) { // 7 days
+      return date.toLocaleDateString('en-US', { weekday: 'short' });
+    } else {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     }
   };
 
@@ -390,20 +418,31 @@ export default function MessengerPage() {
       const response = await messengerService.createConversation(userId);
       
       if (response.success && response.data) {
-        enqueueSnackbar('Conversation started successfully', { variant: 'success' });
+        const conversationId = response.data.id;
+        
+        if (response.data.isExisting) {
+          enqueueSnackbar('Loading existing conversation', { variant: 'info' });
+        } else {
+          enqueueSnackbar('Conversation started successfully', { variant: 'success' });
+        }
+        
         setNewChatDialogOpen(false);
         
-        // Refresh conversations list
+        // Refresh conversations list to get the conversation with proper name
         await fetchConversations();
         
-        // Select the new conversation if it was created
-        if (response.data.id) {
-          const newConv = conversations.find(c => c.id === response.data.id);
-          if (newConv) {
-            setSelectedConversation(newConv);
-            fetchMessages(response.data.id);
-          }
-        }
+        // Small delay to ensure state is updated
+        setTimeout(() => {
+          // Find and select the conversation
+          setConversations(prev => {
+            const foundConv = prev.find(c => c.id === conversationId);
+            if (foundConv) {
+              setSelectedConversation(foundConv);
+              fetchMessages(conversationId);
+            }
+            return prev;
+          });
+        }, 500);
       } else {
         enqueueSnackbar(response.message || 'Failed to start conversation', { variant: 'error' });
       }
@@ -439,12 +478,28 @@ export default function MessengerPage() {
         participants: selectedUsers
       });
       
-      if (response.success) {
+      if (response.success && response.data) {
+        const conversationId = response.data.id;
+        
         enqueueSnackbar('Group created successfully', { variant: 'success' });
         setNewGroupDialogOpen(false);
         setGroupName('');
         setSelectedUsers([]);
+        
+        // Refresh conversations list
         await fetchConversations();
+        
+        // Select the new group
+        setTimeout(() => {
+          setConversations(prev => {
+            const foundConv = prev.find(c => c.id === conversationId);
+            if (foundConv) {
+              setSelectedConversation(foundConv);
+              fetchMessages(conversationId);
+            }
+            return prev;
+          });
+        }, 500);
       } else {
         enqueueSnackbar(response.message || 'Failed to create group', { variant: 'error' });
       }
@@ -640,7 +695,7 @@ export default function MessengerPage() {
                                 variant="subtitle2"
                                 sx={{
                                   color: 'text.primary',
-                                  fontWeight: conversation.unread > 0 ? 600 : 400,
+                                  fontWeight: (conversation.unreadCount || conversation.unread_count || 0) > 0 ? 600 : 400,
                                 }}
                               >
                                 {conversation.name}
@@ -665,9 +720,9 @@ export default function MessengerPage() {
                               >
                                 {conversation.lastMessage}
                               </Typography>
-                              {conversation.unread > 0 && (
+                              {(conversation.unreadCount || conversation.unread_count || 0) > 0 && (
                                 <Chip
-                                  label={conversation.unread}
+                                  label={conversation.unreadCount || conversation.unread_count}
                                   size="small"
                                   color="primary"
                                   sx={{ minWidth: 20, height: 20, fontSize: '0.75rem' }}
