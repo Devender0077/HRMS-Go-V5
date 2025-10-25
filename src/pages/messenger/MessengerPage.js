@@ -478,8 +478,8 @@ export default function MessengerPage() {
   }, [newChatDialogOpen, newGroupDialogOpen]);
 
   const filteredConversations = Array.isArray(conversations) ? conversations.filter(conv =>
-    conv.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    conv.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
+    (conv.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (conv.lastMessage || conv.last_message || '').toLowerCase().includes(searchQuery.toLowerCase())
   ) : [];
 
   return (

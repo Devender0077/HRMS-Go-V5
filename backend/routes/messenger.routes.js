@@ -75,6 +75,22 @@ router.get('/conversations/:id/messages', async (req, res) => {
     const limit = parseInt(req.query.limit) || 50;
     const offset = (page - 1) * limit;
 
+    console.log('📨 Fetching messages for conversation:', conversationId, 'user:', userId);
+
+    // Check if conversation exists
+    const [convCheck] = await pool.execute(
+      'SELECT id FROM conversations WHERE id = ?',
+      [conversationId]
+    );
+
+    if (convCheck.length === 0) {
+      console.log('❌ Conversation not found:', conversationId);
+      return res.status(404).json({
+        success: false,
+        message: 'Conversation not found'
+      });
+    }
+
     // Verify user is participant in conversation
     const [participants] = await pool.execute(
       'SELECT user_id FROM conversation_participants WHERE conversation_id = ? AND user_id = ?',
@@ -82,6 +98,7 @@ router.get('/conversations/:id/messages', async (req, res) => {
     );
 
     if (participants.length === 0) {
+      console.log('⚠️  User not a participant in conversation:', conversationId);
       return res.status(403).json({
         success: false,
         message: 'Access denied to this conversation'
@@ -108,6 +125,8 @@ router.get('/conversations/:id/messages', async (req, res) => {
       LIMIT ? OFFSET ?
     `, [userId, conversationId, limit, offset]);
 
+    console.log('✅ Found', messages.length, 'messages');
+
     // Mark messages as read
     await pool.execute(
       'UPDATE messages SET is_read = 1 WHERE conversation_id = ? AND sender_id != ?',
@@ -119,7 +138,13 @@ router.get('/conversations/:id/messages', async (req, res) => {
       data: messages.reverse() // Return in chronological order
     });
   } catch (error) {
-    console.error('Error fetching messages:', error);
+    console.error('❌ Error fetching messages:', error);
+    console.error('Error details:', {
+      conversationId: req.params.id,
+      userId: req.user?.id,
+      message: error.message,
+      sql: error.sql
+    });
     res.status(500).json({
       success: false,
       message: 'Failed to fetch messages',

@@ -240,13 +240,13 @@ const navConfig = [
         title: 'Announcements',
         path: PATH_DASHBOARD.announcements,
         icon: ICONS.announcements,
-        permission: 'notifications.view',
+        permission: 'dashboard.view', // All users can view announcements
       },
       {
         title: 'Messenger',
         path: PATH_DASHBOARD.messenger,
         icon: ICONS.messenger,
-        permission: 'notifications.view',
+        permission: 'dashboard.view', // All users can access messenger
       },
     ],
   },

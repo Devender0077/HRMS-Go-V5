@@ -76,8 +76,9 @@ const ROUTE_PERMISSIONS = {
   // Calendar
   '/dashboard/calendar': ['calendar.view'],
   
-  // Announcements
-  '/dashboard/announcements': ['announcements.view'],
+  // Communication
+  '/dashboard/announcements': ['dashboard.view'], // All users
+  '/dashboard/messenger': ['dashboard.view'], // All users
 };
 
 /**
