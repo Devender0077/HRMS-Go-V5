@@ -87,44 +87,13 @@ router.get('/conversations', async (req, res) => {
 // GET /api/messenger/conversations/:id/messages - Get messages for a conversation
 router.get('/conversations/:id/messages', async (req, res) => {
   try {
-    const conversationId = req.params.id;
+    const conversationId = parseInt(req.params.id);
     const userId = req.user.id;
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 50;
-    const offset = (page - 1) * limit;
 
-    console.log('📨 Fetching messages for conversation:', conversationId, 'user:', userId);
+    console.log('📨 Fetching messages - Conversation:', conversationId, 'User:', userId);
 
-    // Check if conversation exists
-    const [convCheck] = await pool.execute(
-      'SELECT id FROM conversations WHERE id = ?',
-      [conversationId]
-    );
-
-    if (convCheck.length === 0) {
-      console.log('❌ Conversation not found:', conversationId);
-      return res.status(404).json({
-        success: false,
-        message: 'Conversation not found'
-      });
-    }
-
-    // Verify user is participant in conversation
-    const [participants] = await pool.execute(
-      'SELECT user_id FROM conversation_participants WHERE conversation_id = ? AND user_id = ?',
-      [conversationId, userId]
-    );
-
-    if (participants.length === 0) {
-      console.log('⚠️  User not a participant in conversation:', conversationId);
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied to this conversation'
-      });
-    }
-
-    // Get messages
-    const [messages] = await pool.execute(`
+    // Simple query - just get all messages for this conversation
+    const [messages] = await pool.query(`
       SELECT 
         m.id,
         m.content,
@@ -132,37 +101,29 @@ router.get('/conversations/:id/messages', async (req, res) => {
         m.created_at,
         m.updated_at,
         m.is_read,
-        u.id as sender_id,
+        m.sender_id,
         u.name as sender_name,
         u.avatar as sender_avatar,
         CASE WHEN m.sender_id = ? THEN 1 ELSE 0 END as is_me
       FROM messages m
-      JOIN users u ON m.sender_id = u.id
+      LEFT JOIN users u ON m.sender_id = u.id
       WHERE m.conversation_id = ?
-      ORDER BY m.created_at DESC
-      LIMIT ? OFFSET ?
-    `, [userId, conversationId, limit, offset]);
+      ORDER BY m.created_at ASC
+    `, [userId, conversationId]);
 
-    console.log('✅ Found', messages.length, 'messages');
-
-    // Mark messages as read
-    await pool.execute(
-      'UPDATE messages SET is_read = 1 WHERE conversation_id = ? AND sender_id != ?',
-      [conversationId, userId]
-    );
+    console.log('✅ Found', messages.length, 'messages for conversation', conversationId);
 
     res.json({
       success: true,
-      data: messages.reverse() // Return in chronological order
+      data: messages
     });
   } catch (error) {
-    console.error('❌ Error fetching messages:', error);
-    console.error('Error details:', {
-      conversationId: req.params.id,
-      userId: req.user?.id,
-      message: error.message,
-      sql: error.sql
-    });
+    console.error('❌ ERROR FETCHING MESSAGES:');
+    console.error('  Conversation ID:', req.params.id);
+    console.error('  User ID:', req.user?.id);
+    console.error('  Error:', error.message);
+    console.error('  Stack:', error.stack);
+    
     res.status(500).json({
       success: false,
       message: 'Failed to fetch messages',
@@ -174,9 +135,11 @@ router.get('/conversations/:id/messages', async (req, res) => {
 // POST /api/messenger/conversations/:id/messages - Send a message
 router.post('/conversations/:id/messages', async (req, res) => {
   try {
-    const conversationId = req.params.id;
+    const conversationId = parseInt(req.params.id);
     const userId = req.user.id;
     const { content, type = 'text' } = req.body;
+
+    console.log('📤 Sending message - Conversation:', conversationId, 'User:', userId, 'Content:', content);
 
     if (!content || content.trim().length === 0) {
       return res.status(400).json({
@@ -185,36 +148,24 @@ router.post('/conversations/:id/messages', async (req, res) => {
       });
     }
 
-    // Verify user is participant in conversation
-    const [participants] = await pool.execute(
-      'SELECT user_id FROM conversation_participants WHERE conversation_id = ? AND user_id = ?',
-      [conversationId, userId]
-    );
-
-    if (participants.length === 0) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied to this conversation'
-      });
-    }
-
     // Insert message
-    const [result] = await pool.execute(`
+    const [result] = await pool.query(`
       INSERT INTO messages (conversation_id, sender_id, content, type, created_at, updated_at)
       VALUES (?, ?, ?, ?, NOW(), NOW())
     `, [conversationId, userId, content.trim(), type]);
 
     const messageId = result.insertId;
+    console.log('✅ Message inserted with ID:', messageId);
 
     // Update conversation last message
-    await pool.execute(`
+    await pool.query(`
       UPDATE conversations 
       SET last_message = ?, last_message_at = NOW(), updated_at = NOW()
       WHERE id = ?
     `, [content.trim(), conversationId]);
 
     // Get the created message with sender info
-    const [newMessage] = await pool.execute(`
+    const [newMessages] = await pool.query(`
       SELECT 
         m.id,
         m.content,
@@ -222,23 +173,26 @@ router.post('/conversations/:id/messages', async (req, res) => {
         m.created_at,
         m.updated_at,
         m.is_read,
-        u.id as sender_id,
+        m.sender_id,
         u.name as sender_name,
         u.avatar as sender_avatar,
         1 as is_me
       FROM messages m
-      JOIN users u ON m.sender_id = u.id
+      LEFT JOIN users u ON m.sender_id = u.id
       WHERE m.id = ?
     `, [messageId]);
 
-    // TODO: Add Pusher real-time notifications here when configured
+    console.log('✅ Message sent successfully:', newMessages[0]);
 
     res.json({
       success: true,
-      data: newMessage[0]
+      data: newMessages[0]
     });
   } catch (error) {
-    console.error('Error sending message:', error);
+    console.error('❌ ERROR SENDING MESSAGE:');
+    console.error('  Error:', error.message);
+    console.error('  Stack:', error.stack);
+    
     res.status(500).json({
       success: false,
       message: 'Failed to send message',
