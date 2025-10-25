@@ -16,7 +16,7 @@ import {
 import Iconify from '../../../components/iconify';
 import Label from '../../../components/label';
 // utils
-import { fDate, fTime } from '../../../utils/formatTime';
+import { fDate, fDateTime } from '../../../utils/formatTime';
 
 // ----------------------------------------------------------------------
 
@@ -31,6 +31,17 @@ export default function AttendanceDetailsDialog({ open, onClose, attendance }) {
 
   const totalHours = parseFloat(attendance.totalHours || attendance.total_hours || 0);
   const overtime = parseFloat(attendance.overtime || 0);
+
+  // Helper function to format time from datetime
+  const formatTime = (dateTime) => {
+    if (!dateTime) return '-';
+    const date = new Date(dateTime);
+    return date.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: true 
+    });
+  };
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
@@ -91,7 +102,7 @@ export default function AttendanceDetailsDialog({ open, onClose, attendance }) {
                   Clock In
                 </Typography>
                 <Typography variant="body2">
-                  {attendance.clockIn ? fTime(attendance.clockIn) : '-'}
+                  {formatTime(attendance.clockIn)}
                 </Typography>
               </Grid>
               <Grid item xs={6}>
@@ -99,7 +110,7 @@ export default function AttendanceDetailsDialog({ open, onClose, attendance }) {
                   Clock Out
                 </Typography>
                 <Typography variant="body2">
-                  {attendance.clockOut ? fTime(attendance.clockOut) : '-'}
+                  {formatTime(attendance.clockOut)}
                 </Typography>
               </Grid>
             </Grid>
