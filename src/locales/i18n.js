@@ -44,12 +44,11 @@ i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
-    resources,
     lng,
     fallbackLng: defaultLang.value,
     debug: false,
-    ns: ['translations'],
-    defaultNS: 'translations',
+    ns: ['translation'],
+    defaultNS: 'translation',
     interpolation: {
       escapeValue: false,
     },
@@ -57,7 +56,7 @@ i18n
       useSuspense: false,
     },
     backend: {
-      loadPath: '/locales/{{lng}}/{{ns}}.json',
+      loadPath: '/locales/{{lng}}/translation.json',
     },
     detection: {
       order: ['localStorage', 'navigator'],

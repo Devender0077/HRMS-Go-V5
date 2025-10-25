@@ -1,0 +1,87 @@
+{
+  "navigation": {
+    "dashboard": "Panel",
+    "employees": "Empleados",
+    "attendance": "Asistencia",
+    "leaves": "Permisos",
+    "payroll": "Nómina",
+    "recruitment": "Reclutamiento",
+    "performance": "Rendimiento",
+    "training": "Formación",
+    "documents": "Documentos",
+    "assets": "Activos",
+    "reports": "Informes",
+    "settings": "Configuración",
+    "calendar": "Calendario",
+    "announcements": "Anuncios",
+    "messenger": "Mensajero"
+  },
+  "dashboard": {
+    "title": "Panel",
+    "welcome": "Bienvenido de nuevo",
+    "totalEmployees": "Total de Empleados",
+    "presentToday": "Presente Hoy",
+    "onLeave": "De Permiso",
+    "absent": "Ausente",
+    "pendingRequests": "Solicitudes Pendientes",
+    "recentActivity": "Actividad Reciente"
+  },
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "view": "Ver",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "export": "Exportar",
+    "import": "Importar",
+    "close": "Cerrar",
+    "submit": "Enviar",
+    "reset": "Restablecer",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "loading": "Cargando...",
+    "noData": "No hay datos disponibles",
+    "actions": "Acciones",
+    "status": "Estado",
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "pending": "Pendiente",
+    "approved": "Aprobado",
+    "rejected": "Rechazado"
+  },
+  "attendance": {
+    "title": "Asistencia",
+    "clockIn": "Entrada",
+    "clockOut": "Salida",
+    "records": "Registros",
+    "calendar": "Calendario",
+    "regularization": "Regularización",
+    "muster": "Informe de Asistencia"
+  },
+  "leaves": {
+    "title": "Permisos",
+    "apply": "Solicitar Permiso",
+    "applications": "Solicitudes",
+    "balance": "Saldo de Permisos",
+    "types": "Tipos de Permisos"
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "markAsRead": "Marcar como leído",
+    "markAllAsRead": "Marcar todo como leído",
+    "viewAll": "Ver todo",
+    "unreadMessages": "Tienes {{count}} mensajes sin leer"
+  },
+  "settings": {
+    "title": "Configuración",
+    "general": "General",
+    "users": "Usuarios",
+    "roles": "Roles",
+    "permissions": "Permisos",
+    "configuration": "Configuración"
+  }
+}
+

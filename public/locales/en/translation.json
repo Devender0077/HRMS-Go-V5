@@ -1,0 +1,87 @@
+{
+  "navigation": {
+    "dashboard": "Dashboard",
+    "employees": "Employees",
+    "attendance": "Attendance",
+    "leaves": "Leaves",
+    "payroll": "Payroll",
+    "recruitment": "Recruitment",
+    "performance": "Performance",
+    "training": "Training",
+    "documents": "Documents",
+    "assets": "Assets",
+    "reports": "Reports",
+    "settings": "Settings",
+    "calendar": "Calendar",
+    "announcements": "Announcements",
+    "messenger": "Messenger"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome back",
+    "totalEmployees": "Total Employees",
+    "presentToday": "Present Today",
+    "onLeave": "On Leave",
+    "absent": "Absent",
+    "pendingRequests": "Pending Requests",
+    "recentActivity": "Recent Activity"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "view": "View",
+    "search": "Search",
+    "filter": "Filter",
+    "export": "Export",
+    "import": "Import",
+    "close": "Close",
+    "submit": "Submit",
+    "reset": "Reset",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "loading": "Loading...",
+    "noData": "No data available",
+    "actions": "Actions",
+    "status": "Status",
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "approved": "Approved",
+    "rejected": "Rejected"
+  },
+  "attendance": {
+    "title": "Attendance",
+    "clockIn": "Clock In",
+    "clockOut": "Clock Out",
+    "records": "Records",
+    "calendar": "Calendar",
+    "regularization": "Regularization",
+    "muster": "Muster Report"
+  },
+  "leaves": {
+    "title": "Leaves",
+    "apply": "Apply Leave",
+    "applications": "Applications",
+    "balance": "Leave Balance",
+    "types": "Leave Types"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAsRead": "Mark as read",
+    "markAllAsRead": "Mark all as read",
+    "viewAll": "View all",
+    "unreadMessages": "You have {{count}} unread messages"
+  },
+  "settings": {
+    "title": "Settings",
+    "general": "General",
+    "users": "Users",
+    "roles": "Roles",
+    "permissions": "Permissions",
+    "configuration": "Configuration"
+  }
+}
+

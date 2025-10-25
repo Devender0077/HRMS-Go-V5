@@ -1,0 +1,87 @@
+{
+  "navigation": {
+    "dashboard": "Tableau de bord",
+    "employees": "Employés",
+    "attendance": "Présence",
+    "leaves": "Congés",
+    "payroll": "Paie",
+    "recruitment": "Recrutement",
+    "performance": "Performance",
+    "training": "Formation",
+    "documents": "Documents",
+    "assets": "Actifs",
+    "reports": "Rapports",
+    "settings": "Paramètres",
+    "calendar": "Calendrier",
+    "announcements": "Annonces",
+    "messenger": "Messagerie"
+  },
+  "dashboard": {
+    "title": "Tableau de bord",
+    "welcome": "Bon retour",
+    "totalEmployees": "Total des Employés",
+    "presentToday": "Présent Aujourd'hui",
+    "onLeave": "En Congé",
+    "absent": "Absent",
+    "pendingRequests": "Demandes en Attente",
+    "recentActivity": "Activité Récente"
+  },
+  "common": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "view": "Voir",
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "export": "Exporter",
+    "import": "Importer",
+    "close": "Fermer",
+    "submit": "Soumettre",
+    "reset": "Réinitialiser",
+    "back": "Retour",
+    "next": "Suivant",
+    "previous": "Précédent",
+    "loading": "Chargement...",
+    "noData": "Aucune donnée disponible",
+    "actions": "Actions",
+    "status": "Statut",
+    "active": "Actif",
+    "inactive": "Inactif",
+    "pending": "En attente",
+    "approved": "Approuvé",
+    "rejected": "Rejeté"
+  },
+  "attendance": {
+    "title": "Présence",
+    "clockIn": "Pointer à l'entrée",
+    "clockOut": "Pointer à la sortie",
+    "records": "Registres",
+    "calendar": "Calendrier",
+    "regularization": "Régularisation",
+    "muster": "Rapport de Présence"
+  },
+  "leaves": {
+    "title": "Congés",
+    "apply": "Demander un Congé",
+    "applications": "Demandes",
+    "balance": "Solde de Congés",
+    "types": "Types de Congés"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAsRead": "Marquer comme lu",
+    "markAllAsRead": "Tout marquer comme lu",
+    "viewAll": "Voir tout",
+    "unreadMessages": "Vous avez {{count}} messages non lus"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "general": "Général",
+    "users": "Utilisateurs",
+    "roles": "Rôles",
+    "permissions": "Autorisations",
+    "configuration": "Configuration"
+  }
+}
+

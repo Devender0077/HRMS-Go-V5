@@ -1,0 +1,87 @@
+{
+  "navigation": {
+    "dashboard": "لوحة القيادة",
+    "employees": "الموظفون",
+    "attendance": "الحضور",
+    "leaves": "الإجازات",
+    "payroll": "كشوف المرتبات",
+    "recruitment": "التوظيف",
+    "performance": "الأداء",
+    "training": "التدريب",
+    "documents": "المستندات",
+    "assets": "الأصول",
+    "reports": "التقارير",
+    "settings": "الإعدادات",
+    "calendar": "التقويم",
+    "announcements": "الإعلانات",
+    "messenger": "الرسائل"
+  },
+  "dashboard": {
+    "title": "لوحة القيادة",
+    "welcome": "مرحبا بعودتك",
+    "totalEmployees": "إجمالي الموظفين",
+    "presentToday": "الحاضرون اليوم",
+    "onLeave": "في إجازة",
+    "absent": "غائب",
+    "pendingRequests": "الطلبات المعلقة",
+    "recentActivity": "النشاط الأخير"
+  },
+  "common": {
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "view": "عرض",
+    "search": "بحث",
+    "filter": "تصفية",
+    "export": "تصدير",
+    "import": "استيراد",
+    "close": "إغلاق",
+    "submit": "إرسال",
+    "reset": "إعادة تعيين",
+    "back": "رجوع",
+    "next": "التالي",
+    "previous": "السابق",
+    "loading": "جاري التحميل...",
+    "noData": "لا توجد بيانات متاحة",
+    "actions": "الإجراءات",
+    "status": "الحالة",
+    "active": "نشط",
+    "inactive": "غير نشط",
+    "pending": "قيد الانتظار",
+    "approved": "موافق عليه",
+    "rejected": "مرفوض"
+  },
+  "attendance": {
+    "title": "الحضور",
+    "clockIn": "تسجيل الدخول",
+    "clockOut": "تسجيل الخروج",
+    "records": "السجلات",
+    "calendar": "التقويم",
+    "regularization": "التنظيم",
+    "muster": "تقرير الحضور"
+  },
+  "leaves": {
+    "title": "الإجازات",
+    "apply": "طلب إجازة",
+    "applications": "الطلبات",
+    "balance": "رصيد الإجازات",
+    "types": "أنواع الإجازات"
+  },
+  "notifications": {
+    "title": "الإشعارات",
+    "markAsRead": "وضع علامة كمقروءة",
+    "markAllAsRead": "وضع علامة على الكل كمقروء",
+    "viewAll": "عرض الكل",
+    "unreadMessages": "لديك {{count}} رسائل غير مقروءة"
+  },
+  "settings": {
+    "title": "الإعدادات",
+    "general": "عام",
+    "users": "المستخدمون",
+    "roles": "الأدوار",
+    "permissions": "الصلاحيات",
+    "configuration": "التكوين"
+  }
+}
+
