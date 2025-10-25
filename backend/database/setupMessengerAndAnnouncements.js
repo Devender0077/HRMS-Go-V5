@@ -1,10 +1,13 @@
 const mysql = require('mysql2/promise');
 
+// Load environment variables
+require('dotenv').config();
+
 const dbConfig = {
   host: process.env.DB_HOST || '127.0.0.1',
   port: process.env.DB_PORT || 3306,
   user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
+  password: process.env.DB_PASSWORD || 'root',
   database: process.env.DB_NAME || 'hrms_go_v5',
 };
 
@@ -25,7 +28,7 @@ async function setupTables() {
         priority ENUM('low', 'normal', 'high', 'urgent') DEFAULT 'normal',
         target_audience ENUM('all', 'employees', 'managers', 'hr', 'admins') DEFAULT 'all',
         status ENUM('draft', 'published', 'archived') DEFAULT 'published',
-        user_id INT NOT NULL COMMENT 'Author user ID',
+        user_id BIGINT UNSIGNED NOT NULL COMMENT 'Author user ID',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_user_id (user_id),
@@ -60,7 +63,7 @@ async function setupTables() {
       CREATE TABLE IF NOT EXISTS conversation_participants (
         id INT AUTO_INCREMENT PRIMARY KEY,
         conversation_id INT NOT NULL,
-        user_id INT NOT NULL,
+        user_id BIGINT UNSIGNED NOT NULL,
         joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         left_at TIMESTAMP NULL DEFAULT NULL,
         FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
@@ -78,7 +81,7 @@ async function setupTables() {
       CREATE TABLE IF NOT EXISTS messages (
         id INT AUTO_INCREMENT PRIMARY KEY,
         conversation_id INT NOT NULL,
-        sender_id INT NOT NULL,
+        sender_id BIGINT UNSIGNED NOT NULL,
         content TEXT NOT NULL,
         type ENUM('text', 'image', 'file', 'system') DEFAULT 'text',
         is_read TINYINT(1) DEFAULT 0,
