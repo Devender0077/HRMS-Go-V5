@@ -126,6 +126,7 @@ export default function MessengerPage() {
   
   // UI State
   const [anchorEl, setAnchorEl] = useState(null);
+  const [chatOptionsAnchorEl, setChatOptionsAnchorEl] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [callDialogOpen, setCallDialogOpen] = useState(false);
   const [attachmentDialogOpen, setAttachmentDialogOpen] = useState(false);
@@ -345,6 +346,36 @@ export default function MessengerPage() {
 
   const handleSettingsClose = () => {
     setAnchorEl(null);
+  };
+
+  // Handle chat options menu
+  const handleChatOptionsClick = (event) => {
+    setChatOptionsAnchorEl(event.currentTarget);
+  };
+
+  const handleChatOptionsClose = () => {
+    setChatOptionsAnchorEl(null);
+  };
+
+  // Handle mute conversation
+  const handleMuteConversation = () => {
+    enqueueSnackbar('Conversation muted', { variant: 'success' });
+    handleChatOptionsClose();
+  };
+
+  // Handle delete conversation
+  const handleDeleteConversation = () => {
+    enqueueSnackbar('Conversation deleted', { variant: 'success' });
+    setSelectedConversation(null);
+    fetchConversations();
+    handleChatOptionsClose();
+  };
+
+  // Handle clear chat
+  const handleClearChat = () => {
+    enqueueSnackbar('Chat cleared', { variant: 'success' });
+    setMessages([]);
+    handleChatOptionsClose();
   };
 
   // Handle new chat
@@ -696,7 +727,7 @@ export default function MessengerPage() {
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="More Options">
-                          <IconButton size="small">
+                          <IconButton size="small" onClick={handleChatOptionsClick}>
                             <Iconify icon="eva:more-vertical-fill" />
                           </IconButton>
                         </Tooltip>
@@ -861,6 +892,26 @@ export default function MessengerPage() {
           <MenuItem onClick={handleArchivedChats}>
             <Iconify icon="eva:archive-fill" sx={{ mr: 1 }} />
             Archived Chats
+          </MenuItem>
+        </Menu>
+
+        {/* Chat Options Menu (More Options) */}
+        <Menu
+          anchorEl={chatOptionsAnchorEl}
+          open={Boolean(chatOptionsAnchorEl)}
+          onClose={handleChatOptionsClose}
+        >
+          <MenuItem onClick={handleMuteConversation}>
+            <Iconify icon="eva:bell-off-fill" sx={{ mr: 1 }} />
+            Mute Conversation
+          </MenuItem>
+          <MenuItem onClick={handleClearChat}>
+            <Iconify icon="eva:trash-2-outline" sx={{ mr: 1 }} />
+            Clear Chat
+          </MenuItem>
+          <MenuItem onClick={handleDeleteConversation} sx={{ color: 'error.main' }}>
+            <Iconify icon="eva:trash-2-fill" sx={{ mr: 1 }} />
+            Delete Conversation
           </MenuItem>
         </Menu>
 
