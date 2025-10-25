@@ -441,4 +441,83 @@ router.get('/conversations/search', async (req, res) => {
   }
 });
 
+// DELETE /api/messenger/conversations/:id - Delete a conversation
+router.delete('/conversations/:id', async (req, res) => {
+  try {
+    const conversationId = req.params.id;
+    const userId = req.user.id;
+
+    // Verify user is participant
+    const [participants] = await pool.execute(
+      'SELECT user_id FROM conversation_participants WHERE conversation_id = ? AND user_id = ?',
+      [conversationId, userId]
+    );
+
+    if (participants.length === 0) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied to this conversation'
+      });
+    }
+
+    // Delete conversation (CASCADE will delete participants and messages)
+    await pool.execute('DELETE FROM conversations WHERE id = ?', [conversationId]);
+
+    res.json({
+      success: true,
+      message: 'Conversation deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting conversation:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete conversation',
+      error: error.message
+    });
+  }
+});
+
+// DELETE /api/messenger/conversations/:id/messages - Clear all messages in a conversation
+router.delete('/conversations/:id/messages', async (req, res) => {
+  try {
+    const conversationId = req.params.id;
+    const userId = req.user.id;
+
+    // Verify user is participant
+    const [participants] = await pool.execute(
+      'SELECT user_id FROM conversation_participants WHERE conversation_id = ? AND user_id = ?',
+      [conversationId, userId]
+    );
+
+    if (participants.length === 0) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied to this conversation'
+      });
+    }
+
+    // Delete all messages
+    await pool.execute('DELETE FROM messages WHERE conversation_id = ?', [conversationId]);
+
+    // Update conversation
+    await pool.execute(`
+      UPDATE conversations 
+      SET last_message = NULL, last_message_at = NULL, unread_count = 0, updated_at = NOW()
+      WHERE id = ?
+    `, [conversationId]);
+
+    res.json({
+      success: true,
+      message: 'Chat cleared successfully'
+    });
+  } catch (error) {
+    console.error('Error clearing chat:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to clear chat',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;

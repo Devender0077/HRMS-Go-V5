@@ -199,6 +199,50 @@ class MessengerService {
       };
     }
   }
+
+  /**
+   * Delete a conversation
+   * @param {string} conversationId - Conversation ID
+   * @returns {Promise} Delete response
+   */
+  async deleteConversation(conversationId) {
+    try {
+      const response = await apiClient.delete(`/conversations/${conversationId}`);
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      console.error('Error deleting conversation:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to delete conversation',
+        error,
+      };
+    }
+  }
+
+  /**
+   * Clear all messages in a conversation
+   * @param {string} conversationId - Conversation ID
+   * @returns {Promise} Clear response
+   */
+  async clearChat(conversationId) {
+    try {
+      const response = await apiClient.delete(`/conversations/${conversationId}/messages`);
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      console.error('Error clearing chat:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to clear chat',
+        error,
+      };
+    }
+  }
 }
 
 export default new MessengerService();

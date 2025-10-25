@@ -66,6 +66,9 @@ exports.login = async (req, res) => {
       });
     }
 
+    // Update last_seen for online status
+    await user.update({ last_seen: new Date() });
+
     // Generate tokens
     const token = generateToken(user);
     const refreshToken = generateRefreshToken(user);

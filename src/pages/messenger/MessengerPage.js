@@ -196,15 +196,23 @@ export default function MessengerPage() {
   const fetchMessages = async (conversationId) => {
     try {
       setMessagesLoading(true);
+      console.log('📨 Fetching messages for conversation:', conversationId);
+      
       const response = await messengerService.getMessages(conversationId);
+      console.log('📨 Messages response:', response);
+      
       if (response.success && Array.isArray(response.data)) {
+        console.log('✅ Loaded', response.data.length, 'messages');
         setMessages(response.data);
+      } else if (response.success && response.data && typeof response.data === 'object') {
+        // Handle case where backend sends single message object
+        setMessages([response.data]);
       } else {
+        console.log('⚠️ No messages or invalid format');
         setMessages([]);
-        enqueueSnackbar('No messages found', { variant: 'info' });
       }
     } catch (error) {
-      console.error('Error fetching messages:', error);
+      console.error('❌ Error fetching messages:', error);
       setMessages([]);
       enqueueSnackbar('Failed to load messages', { variant: 'error' });
     } finally {
@@ -253,15 +261,20 @@ export default function MessengerPage() {
     setNewMessage(''); // Clear input immediately for better UX
 
     try {
+      console.log('📤 Sending message:', messageText, 'to conversation:', selectedConversation.id);
+      
       const response = await messengerService.sendMessage(
         selectedConversation.id,
         messageText,
         'text'
       );
 
+      console.log('📤 Send message response:', response);
+
       if (response.success && response.data) {
         // Add the message to the list
-        setMessages(prev => Array.isArray(prev) ? [...prev, response.data] : [response.data]);
+        const newMsg = response.data;
+        setMessages(prev => Array.isArray(prev) ? [...prev, newMsg] : [newMsg]);
         
         // Update conversation list with new last message
         setConversations(prev => 
@@ -271,45 +284,21 @@ export default function MessengerPage() {
                   ...conv, 
                   lastMessage: messageText, 
                   time: 'Now',
-                  lastMessageAt: new Date().toISOString()
+                  last_message: messageText,
+                  last_message_at: new Date().toISOString()
                 }
               : conv
           ) : []
         );
 
-        enqueueSnackbar('Message sent successfully', { variant: 'success' });
+        console.log('✅ Message sent and displayed');
       } else {
-        // If API fails, still add to local state but show error
-        const tempMessage = {
-          id: Date.now(),
-          content: messageText,
-          type: 'text',
-          created_at: new Date().toISOString(),
-          sender_id: 1,
-          sender_name: 'You',
-          sender_avatar: '/assets/images/avatars/avatar_default.jpg',
-          is_me: true
-        };
-        setMessages(prev => Array.isArray(prev) ? [...prev, tempMessage] : [tempMessage]);
-        
-        // Update conversation list
-        setConversations(prev => 
-          Array.isArray(prev) ? prev.map(conv => 
-            conv.id === selectedConversation.id 
-              ? { 
-                  ...conv, 
-                  lastMessage: messageText, 
-                  time: 'Now',
-                  lastMessageAt: new Date().toISOString()
-                }
-              : conv
-          ) : []
-        );
-        
-        enqueueSnackbar('Message sent (offline mode)', { variant: 'warning' });
+        console.error('⚠️ Message send failed:', response);
+        enqueueSnackbar(response.message || 'Failed to send message', { variant: 'error' });
+        setNewMessage(messageText); // Restore message on error
       }
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('❌ Error sending message:', error);
       enqueueSnackbar('Failed to send message', { variant: 'error' });
       setNewMessage(messageText); // Restore message on error
     }
@@ -392,17 +381,47 @@ export default function MessengerPage() {
   };
 
   // Handle delete conversation
-  const handleDeleteConversation = () => {
-    enqueueSnackbar('Conversation deleted', { variant: 'success' });
-    setSelectedConversation(null);
-    fetchConversations();
+  const handleDeleteConversation = async () => {
+    if (!selectedConversation) return;
+    
+    try {
+      const response = await messengerService.deleteConversation(selectedConversation.id);
+      
+      if (response.success) {
+        enqueueSnackbar('Conversation deleted successfully', { variant: 'success' });
+        setSelectedConversation(null);
+        setMessages([]);
+        await fetchConversations();
+      } else {
+        enqueueSnackbar(response.message || 'Failed to delete conversation', { variant: 'error' });
+      }
+    } catch (error) {
+      console.error('Error deleting conversation:', error);
+      enqueueSnackbar('Failed to delete conversation', { variant: 'error' });
+    }
+    
     handleChatOptionsClose();
   };
 
   // Handle clear chat
-  const handleClearChat = () => {
-    enqueueSnackbar('Chat cleared', { variant: 'success' });
-    setMessages([]);
+  const handleClearChat = async () => {
+    if (!selectedConversation) return;
+    
+    try {
+      const response = await messengerService.clearChat(selectedConversation.id);
+      
+      if (response.success) {
+        enqueueSnackbar('Chat cleared successfully', { variant: 'success' });
+        setMessages([]);
+        await fetchConversations(); // Refresh to update last_message
+      } else {
+        enqueueSnackbar(response.message || 'Failed to clear chat', { variant: 'error' });
+      }
+    } catch (error) {
+      console.error('Error clearing chat:', error);
+      enqueueSnackbar('Failed to clear chat', { variant: 'error' });
+    }
+    
     handleChatOptionsClose();
   };
 
@@ -689,48 +708,31 @@ export default function MessengerPage() {
                           </Badge>
                         </ListItemAvatar>
                         <ListItemText
-                          primary={
-                            <Stack direction="row" alignItems="center" justifyContent="space-between">
-                              <Typography
-                                variant="subtitle2"
-                                sx={{
-                                  color: 'text.primary',
-                                  fontWeight: (conversation.unreadCount || conversation.unread_count || 0) > 0 ? 600 : 400,
-                                }}
-                              >
-                                {conversation.name}
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                {conversation.time}
-                              </Typography>
-                            </Stack>
-                          }
-                          secondary={
-                            <Stack direction="row" alignItems="center" justifyContent="space-between">
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                                sx={{
-                                  opacity: 0.8,
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  whiteSpace: 'nowrap',
-                                  maxWidth: '70%',
-                                }}
-                              >
-                                {conversation.lastMessage}
-                              </Typography>
-                              {(conversation.unreadCount || conversation.unread_count || 0) > 0 && (
-                                <Chip
-                                  label={conversation.unreadCount || conversation.unread_count}
-                                  size="small"
-                                  color="primary"
-                                  sx={{ minWidth: 20, height: 20, fontSize: '0.75rem' }}
-                                />
-                              )}
-                            </Stack>
-                          }
+                          primary={conversation.name}
+                          secondary={conversation.lastMessage}
+                          primaryTypographyProps={{
+                            variant: 'subtitle2',
+                            fontWeight: (conversation.unreadCount || conversation.unread_count || 0) > 0 ? 600 : 400,
+                            noWrap: true,
+                          }}
+                          secondaryTypographyProps={{
+                            variant: 'body2',
+                            noWrap: true,
+                          }}
                         />
+                        <Stack direction="column" alignItems="flex-end" spacing={0.5}>
+                          <Typography variant="caption" color="text.secondary">
+                            {conversation.time}
+                          </Typography>
+                          {(conversation.unreadCount || conversation.unread_count || 0) > 0 && (
+                            <Chip
+                              label={conversation.unreadCount || conversation.unread_count}
+                              size="small"
+                              color="primary"
+                              sx={{ minWidth: 20, height: 20, fontSize: '0.75rem' }}
+                            />
+                          )}
+                        </Stack>
                       </ListItemButton>
                     ))}
                   </List>
