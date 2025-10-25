@@ -208,12 +208,19 @@ router.post('/conversations/:id/messages', async (req, res) => {
 router.post('/conversations', async (req, res) => {
   try {
     const userId = req.user.id;
-    const { participantId, type = 'direct' } = req.body;
+    const { participantId, type = 'direct', name, participants } = req.body;
 
     if (type === 'direct' && !participantId) {
       return res.status(400).json({
         success: false,
         message: 'Participant ID is required for direct conversations'
+      });
+    }
+
+    if (type === 'group' && (!name || !participants || participants.length < 2)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Group name and at least 2 participants are required for group conversations'
       });
     }
 
@@ -237,21 +244,27 @@ router.post('/conversations', async (req, res) => {
     }
 
     // Create conversation
+    const conversationName = type === 'direct' ? 'Direct Message' : (name || 'Group Chat');
     const [conversationResult] = await pool.execute(`
       INSERT INTO conversations (name, type, created_at, updated_at)
       VALUES (?, ?, NOW(), NOW())
-    `, [type === 'direct' ? 'Direct Message' : req.body.name || 'Group Chat', type]);
+    `, [conversationName, type]);
 
     const conversationId = conversationResult.insertId;
 
     // Add participants
-    const participants = type === 'direct' ? [userId, participantId] : [userId, ...(req.body.participants || [])];
+    const allParticipants = type === 'direct' 
+      ? [userId, participantId] 
+      : [userId, ...participants];
     
-    for (const participantId of participants) {
+    // Remove duplicates
+    const uniqueParticipants = [...new Set(allParticipants)];
+    
+    for (const pId of uniqueParticipants) {
       await pool.execute(`
         INSERT INTO conversation_participants (conversation_id, user_id, joined_at)
         VALUES (?, ?, NOW())
-      `, [conversationId, participantId]);
+      `, [conversationId, pId]);
     }
 
     res.json({

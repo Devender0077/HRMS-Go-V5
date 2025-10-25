@@ -129,6 +129,12 @@ export default function MessengerPage() {
   const [callDialogOpen, setCallDialogOpen] = useState(false);
   const [attachmentDialogOpen, setAttachmentDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [newChatDialogOpen, setNewChatDialogOpen] = useState(false);
+  const [newGroupDialogOpen, setNewGroupDialogOpen] = useState(false);
+  const [archivedDialogOpen, setArchivedDialogOpen] = useState(false);
+  const [selectedUsers, setSelectedUsers] = useState([]);
+  const [groupName, setGroupName] = useState('');
+  const [allUsers, setAllUsers] = useState([]);
   
   // Refs
   const messagesEndRef = useRef(null);
@@ -322,23 +328,93 @@ export default function MessengerPage() {
 
   // Handle new chat
   const handleNewChat = () => {
-    // In a real implementation, you would open a dialog to select users
-    enqueueSnackbar('New chat feature coming soon!', { variant: 'info' });
+    setNewChatDialogOpen(true);
     handleSettingsClose();
+  };
+
+  // Start conversation with selected user
+  const handleStartConversation = async (userId) => {
+    try {
+      const response = await messengerService.createConversation(userId);
+      
+      if (response.success && response.data) {
+        enqueueSnackbar('Conversation started successfully', { variant: 'success' });
+        setNewChatDialogOpen(false);
+        
+        // Refresh conversations list
+        await fetchConversations();
+        
+        // Select the new conversation if it was created
+        if (response.data.id) {
+          const newConv = conversations.find(c => c.id === response.data.id);
+          if (newConv) {
+            setSelectedConversation(newConv);
+            fetchMessages(response.data.id);
+          }
+        }
+      } else {
+        enqueueSnackbar(response.message || 'Failed to start conversation', { variant: 'error' });
+      }
+    } catch (error) {
+      console.error('Error starting conversation:', error);
+      enqueueSnackbar('Failed to start conversation', { variant: 'error' });
+    }
   };
 
   // Handle new group
   const handleNewGroup = () => {
-    // In a real implementation, you would open a dialog to create a group
-    enqueueSnackbar('New group feature coming soon!', { variant: 'info' });
+    setNewGroupDialogOpen(true);
+    setSelectedUsers([]);
+    setGroupName('');
     handleSettingsClose();
+  };
+
+  // Create new group
+  const handleCreateGroup = async () => {
+    if (!groupName.trim()) {
+      enqueueSnackbar('Please enter a group name', { variant: 'warning' });
+      return;
+    }
+    
+    if (selectedUsers.length < 2) {
+      enqueueSnackbar('Please select at least 2 members', { variant: 'warning' });
+      return;
+    }
+
+    try {
+      const response = await messengerService.createConversation(null, 'group', {
+        name: groupName.trim(),
+        participants: selectedUsers
+      });
+      
+      if (response.success) {
+        enqueueSnackbar('Group created successfully', { variant: 'success' });
+        setNewGroupDialogOpen(false);
+        setGroupName('');
+        setSelectedUsers([]);
+        await fetchConversations();
+      } else {
+        enqueueSnackbar(response.message || 'Failed to create group', { variant: 'error' });
+      }
+    } catch (error) {
+      console.error('Error creating group:', error);
+      enqueueSnackbar('Failed to create group', { variant: 'error' });
+    }
   };
 
   // Handle archived chats
   const handleArchivedChats = () => {
-    // In a real implementation, you would show archived conversations
-    enqueueSnackbar('Archived chats feature coming soon!', { variant: 'info' });
+    setArchivedDialogOpen(true);
     handleSettingsClose();
+  };
+
+  // Toggle user selection for group
+  const handleToggleUser = (userId) => {
+    setSelectedUsers(prev => 
+      prev.includes(userId) 
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId]
+    );
   };
 
   // Handle search
@@ -372,6 +448,14 @@ export default function MessengerPage() {
     scrollToBottom();
   }, [messages]);
 
+  // Fetch users when dialogs open
+  useEffect(() => {
+    if (newChatDialogOpen || newGroupDialogOpen) {
+      // Use online users as available users
+      setAllUsers(onlineUsers);
+    }
+  }, [newChatDialogOpen, newGroupDialogOpen, onlineUsers]);
+
   const filteredConversations = Array.isArray(conversations) ? conversations.filter(conv =>
     conv.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     conv.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
@@ -402,7 +486,7 @@ export default function MessengerPage() {
                   <Typography variant="h6">Conversations</Typography>
                   <Stack direction="row" spacing={1}>
                     <Tooltip title="New Chat">
-                      <IconButton size="small">
+                      <IconButton size="small" onClick={handleNewChat}>
                         <Iconify icon="eva:plus-fill" />
                       </IconButton>
                     </Tooltip>
@@ -833,6 +917,149 @@ export default function MessengerPage() {
             </Button>
           </DialogActions>
         </Dialog>
+
+        {/* New Chat Dialog */}
+        <Dialog open={newChatDialogOpen} onClose={() => setNewChatDialogOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle>Start New Chat</DialogTitle>
+          <DialogContent>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Select a user to start a conversation
+            </Typography>
+            
+            {allUsers.length === 0 ? (
+              <Box sx={{ textAlign: 'center', py: 3 }}>
+                <Typography variant="body2" color="text.secondary">
+                  No users available
+                </Typography>
+              </Box>
+            ) : (
+              <List>
+                {allUsers.map((user) => (
+                  <ListItemButton
+                    key={user.id}
+                    onClick={() => handleStartConversation(user.id)}
+                  >
+                    <ListItemAvatar>
+                      <Badge
+                        overlap="circular"
+                        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                        badgeContent={
+                          user.status === 'online' ? (
+                            <Box
+                              sx={{
+                                width: 10,
+                                height: 10,
+                                borderRadius: '50%',
+                                bgcolor: 'success.main',
+                                border: 2,
+                                borderColor: 'background.paper',
+                              }}
+                            />
+                          ) : null
+                        }
+                      >
+                        <Avatar src={user.avatar} alt={user.name} />
+                      </Badge>
+                    </ListItemAvatar>
+                    <ListItemText
+                      primary={user.name}
+                      secondary={user.email}
+                    />
+                  </ListItemButton>
+                ))}
+              </List>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setNewChatDialogOpen(false)}>Cancel</Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* New Group Dialog */}
+        <Dialog open={newGroupDialogOpen} onClose={() => setNewGroupDialogOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle>Create New Group</DialogTitle>
+          <DialogContent>
+            <Stack spacing={3} sx={{ pt: 2 }}>
+              <TextField
+                fullWidth
+                label="Group Name"
+                value={groupName}
+                onChange={(e) => setGroupName(e.target.value)}
+                placeholder="Enter group name"
+              />
+              
+              <Box>
+                <Typography variant="subtitle2" gutterBottom>
+                  Select Members ({selectedUsers.length} selected)
+                </Typography>
+                
+                {allUsers.length === 0 ? (
+                  <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
+                    No users available
+                  </Typography>
+                ) : (
+                  <List sx={{ maxHeight: 300, overflow: 'auto' }}>
+                    {allUsers.map((user) => (
+                      <ListItemButton
+                        key={user.id}
+                        onClick={() => handleToggleUser(user.id)}
+                        selected={selectedUsers.includes(user.id)}
+                      >
+                        <ListItemAvatar>
+                          <Avatar src={user.avatar} alt={user.name} />
+                        </ListItemAvatar>
+                        <ListItemText
+                          primary={user.name}
+                          secondary={user.email}
+                        />
+                        {selectedUsers.includes(user.id) && (
+                          <Iconify icon="eva:checkmark-circle-2-fill" color="primary.main" width={24} />
+                        )}
+                      </ListItemButton>
+                    ))}
+                  </List>
+                )}
+              </Box>
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setNewGroupDialogOpen(false)}>Cancel</Button>
+            <Button 
+              onClick={handleCreateGroup} 
+              variant="contained"
+              disabled={!groupName.trim() || selectedUsers.length < 2}
+            >
+              Create Group
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Archived Chats Dialog */}
+        <Dialog open={archivedDialogOpen} onClose={() => setArchivedDialogOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle>Archived Chats</DialogTitle>
+          <DialogContent>
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <Iconify icon="eva:archive-outline" width={64} sx={{ color: 'text.disabled', mb: 2 }} />
+              <Typography variant="body2" color="text.secondary">
+                No archived chats
+              </Typography>
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+                Archive feature will be available soon
+              </Typography>
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setArchivedDialogOpen(false)}>Close</Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          style={{ display: 'none' }}
+          onChange={handleFileSelect}
+        />
       </Container>
     </>
   );

@@ -95,14 +95,25 @@ class MessengerService {
 
   /**
    * Create a new conversation
-   * @param {string} participantId - Participant user ID
+   * @param {string} participantId - Participant user ID (for direct chats)
+   * @param {string} type - Conversation type ('direct' or 'group')
+   * @param {object} groupData - Group data (name, participants) for group chats
    * @returns {Promise} Create response
    */
-  async createConversation(participantId) {
+  async createConversation(participantId, type = 'direct', groupData = null) {
     try {
-      const response = await apiClient.post('/conversations', {
-        participantId,
-      });
+      const payload = type === 'group' && groupData
+        ? {
+            type: 'group',
+            name: groupData.name,
+            participants: groupData.participants,
+          }
+        : {
+            participantId,
+            type: 'direct',
+          };
+
+      const response = await apiClient.post('/conversations', payload);
       return {
         success: true,
         data: response.data,
