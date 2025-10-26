@@ -1,11 +1,12 @@
 import { Helmet } from 'react-helmet-async';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 // @mui
 import {
   Container,
   Card,
   Grid,
   List,
+  ListItem,
   ListItemButton,
   ListItemAvatar,
   ListItemText,
@@ -140,14 +141,14 @@ export default function MessengerPage() {
   const [desktopNotifications, setDesktopNotifications] = useState(true);
   const [showOnlineStatus, setShowOnlineStatus] = useState(true);
   const [mutedConversations, setMutedConversations] = useState([]);
+  const [archivedConversations, setArchivedConversations] = useState([]);
   
   // Refs
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
-  const selectedConversationRef = useRef(null);
 
-  // Fetch conversations
-  const fetchConversations = async () => {
+  // Fetch conversations (wrapped in useCallback to prevent re-renders)
+  const fetchConversations = useCallback(async () => {
     try {
       setLoading(true);
       const response = await messengerService.getConversations();
@@ -168,11 +169,11 @@ export default function MessengerPage() {
     } catch (error) {
       console.error('Error fetching conversations:', error);
       setConversations([]);
-      enqueueSnackbar('Failed to load conversations', { variant: 'error' });
+     enqueueSnackbar('Failed to load conversations', { variant: 'error' });
     } finally {
       setLoading(false);
     }
-  };
+  }, [enqueueSnackbar]); // Only recreate if enqueueSnackbar changes
 
   // Helper function to format conversation time
   const formatConversationTime = (timestamp) => {
@@ -516,11 +517,21 @@ export default function MessengerPage() {
   const handleArchiveConversation = () => {
     if (!selectedConversation) return;
     
-    // For now, just show notification
-    // In production, this would update a database field
-    enqueueSnackbar('Conversation archived', { variant: 'success' });
+    // Add to archived conversations
+    setArchivedConversations(prev => {
+      if (!prev.includes(selectedConversation.id)) {
+        const updated = [...prev, selectedConversation.id];
+        localStorage.setItem('archivedConversations', JSON.stringify(updated));
+        return updated;
+      }
+      return prev;
+    });
+    
+    // Remove from active conversations
+    setConversations(prev => prev.filter(conv => conv.id !== selectedConversation.id));
+    
+    enqueueSnackbar('Conversation archived successfully', { variant: 'success' });
     setSelectedConversation(null);
-    fetchConversations();
     handleChatOptionsClose();
   };
 
@@ -664,12 +675,7 @@ export default function MessengerPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Update ref when selected conversation changes
-  useEffect(() => {
-    selectedConversationRef.current = selectedConversation;
-  }, [selectedConversation]);
-
-  // Initial load - run once on mount
+  // Initial load - run ONCE on mount
   useEffect(() => {
     fetchConversations();
     fetchOnlineUsers();
@@ -683,28 +689,34 @@ export default function MessengerPage() {
         setMutedConversations([]);
       }
     }
-
-    // Start polling for messages (only when conversation is selected)
-    const messageInterval = setInterval(() => {
-      const currentConv = selectedConversationRef.current;
-      if (currentConv && currentConv.id) {
-        fetchMessages(currentConv.id);
-        fetchConversations(); // Update conversation list
+    
+    // Load archived conversations from localStorage
+    const savedArchived = localStorage.getItem('archivedConversations');
+    if (savedArchived) {
+      try {
+        setArchivedConversations(JSON.parse(savedArchived));
+      } catch (e) {
+        setArchivedConversations([]);
       }
-    }, 5000);
-
-    // Poll for online users
-    const onlineInterval = setInterval(() => {
-      fetchOnlineUsers();
-    }, 10000);
-
-    // Cleanup both intervals
-    return () => {
-      clearInterval(messageInterval);
-      clearInterval(onlineInterval);
-    };
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty dependency array - only runs once!
+  }, []); // Empty dependency - runs ONCE, never again!
+
+  // POLLING DISABLED TO PREVENT CONTINUOUS REFRESH
+  // Real-time updates will happen on user action only
+  // To enable polling: uncomment this useEffect
+  
+  // useEffect(() => {
+  //   let messageInterval;
+  //   if (selectedConversation && selectedConversation.id) {
+  //     messageInterval = setInterval(() => {
+  //       fetchMessages(selectedConversation.id);
+  //     }, 10000); // Every 10 seconds
+  //   }
+  //   return () => {
+  //     if (messageInterval) clearInterval(messageInterval);
+  //   };
+  // }, [selectedConversation?.id]);
 
   useEffect(() => {
     scrollToBottom();
@@ -719,8 +731,11 @@ export default function MessengerPage() {
   }, [newChatDialogOpen, newGroupDialogOpen]);
 
   const filteredConversations = Array.isArray(conversations) ? conversations.filter(conv =>
-    (conv.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (conv.lastMessage || conv.last_message || '').toLowerCase().includes(searchQuery.toLowerCase())
+    // Filter by search query
+    ((conv.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (conv.lastMessage || conv.last_message || '').toLowerCase().includes(searchQuery.toLowerCase())) &&
+    // Exclude archived conversations
+    !archivedConversations.includes(conv.id)
   ) : [];
 
   return (
@@ -1382,17 +1397,66 @@ export default function MessengerPage() {
 
         {/* Archived Chats Dialog */}
         <Dialog open={archivedDialogOpen} onClose={() => setArchivedDialogOpen(false)} maxWidth="sm" fullWidth>
-          <DialogTitle>Archived Chats</DialogTitle>
+          <DialogTitle>
+            Archived Chats
+            {archivedConversations.length > 0 && (
+              <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                ({archivedConversations.length})
+              </Typography>
+            )}
+          </DialogTitle>
           <DialogContent>
-            <Box sx={{ textAlign: 'center', py: 4 }}>
-              <Iconify icon="eva:archive-outline" width={64} sx={{ color: 'text.disabled', mb: 2 }} />
-              <Typography variant="body2" color="text.secondary">
-                No archived chats
-              </Typography>
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
-                Archive feature will be available soon
-              </Typography>
-            </Box>
+            {archivedConversations.length === 0 ? (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Iconify icon="eva:archive-outline" width={64} sx={{ color: 'text.disabled', mb: 2 }} />
+                <Typography variant="body2" color="text.secondary">
+                  No archived chats
+                </Typography>
+                <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+                  Archived conversations will appear here
+                </Typography>
+              </Box>
+            ) : (
+              <List>
+                {archivedConversations.map((convId) => {
+                  // Find the conversation details from all conversations
+                  const archivedConv = conversations.find(c => c.id === convId) || {
+                    id: convId,
+                    name: `Conversation ${convId}`,
+                    lastMessage: 'Archived',
+                    time: ''
+                  };
+                  
+                  return (
+                    <ListItem
+                      key={convId}
+                      secondaryAction={
+                        <IconButton
+                          edge="end"
+                          onClick={() => {
+                            // Unarchive
+                            setArchivedConversations(prev => {
+                              const updated = prev.filter(id => id !== convId);
+                              localStorage.setItem('archivedConversations', JSON.stringify(updated));
+                              return updated;
+                            });
+                            enqueueSnackbar('Conversation unarchived', { variant: 'success' });
+                            fetchConversations(); // Refresh to show it back in main list
+                          }}
+                        >
+                          <Iconify icon="eva:archive-outline" />
+                        </IconButton>
+                      }
+                    >
+                      <ListItemText
+                        primary={archivedConv.name}
+                        secondary={archivedConv.lastMessage}
+                      />
+                    </ListItem>
+                  );
+                })}
+              </List>
+            )}
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setArchivedDialogOpen(false)}>Close</Button>
