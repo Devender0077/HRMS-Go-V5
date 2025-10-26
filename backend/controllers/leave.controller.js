@@ -1,6 +1,8 @@
 const Leave = require('../models/Leave');
 const LeaveType = require('../models/LeaveType');
 const Employee = require('../models/Employee');
+const Notification = require('../models/Notification');
+const User = require('../models/User');
 const { Op } = require('sequelize');
 
 // Get all leave requests
@@ -246,6 +248,39 @@ exports.applyLeave = async (req, res) => {
       status: 'pending',
     });
 
+    // Create notification for HR/Manager
+    try {
+      // Get employee details
+      const employee = await Employee.findByPk(employeeId);
+      const employeeName = employee ? `${employee.first_name} ${employee.last_name}` : 'An employee';
+      
+      // Get all HR and managers to notify
+      const hrUsers = await User.findAll({
+        where: {
+          userType: { [Op.in]: ['hr', 'hr_manager', 'super_admin'] },
+          status: 'active'
+        }
+      });
+      
+      // Create notification for each HR user
+      for (const hrUser of hrUsers) {
+        await Notification.create({
+          userId: hrUser.id,
+          type: 'leave_request',
+          title: 'New Leave Request',
+          description: `${employeeName} has applied for leave from ${startDate} to ${endDate} (${days} days)`,
+          relatedId: leave.id,
+          relatedType: 'leave',
+          isRead: false,
+        });
+      }
+      
+      console.log(`✅ Created leave notifications for ${hrUsers.length} HR users`);
+    } catch (notifError) {
+      console.error('Error creating leave notification:', notifError);
+      // Don't fail the request if notification fails
+    }
+
     res.status(201).json({
       success: true,
       message: 'Leave application submitted successfully',
@@ -339,6 +374,25 @@ exports.approveLeave = async (req, res) => {
       approvedAt: new Date(),
     });
 
+    // Create notification for employee
+    try {
+      const employee = await Employee.findByPk(leave.employeeId);
+      if (employee && employee.user_id) {
+        await Notification.create({
+          userId: employee.user_id,
+          type: 'leave_approved',
+          title: 'Leave Request Approved',
+          description: `Your leave request from ${leave.startDate} to ${leave.endDate} has been approved`,
+          relatedId: leave.id,
+          relatedType: 'leave',
+          isRead: false,
+        });
+        console.log('✅ Created leave approval notification for user', employee.user_id);
+      }
+    } catch (notifError) {
+      console.error('Error creating approval notification:', notifError);
+    }
+
     res.json({
       success: true,
       message: 'Leave approved successfully',
@@ -374,6 +428,25 @@ exports.rejectLeave = async (req, res) => {
       approvedBy: approverId,
       approvedAt: new Date(),
     });
+
+    // Create notification for employee
+    try {
+      const employee = await Employee.findByPk(leave.employeeId);
+      if (employee && employee.user_id) {
+        await Notification.create({
+          userId: employee.user_id,
+          type: 'leave_rejected',
+          title: 'Leave Request Rejected',
+          description: `Your leave request from ${leave.startDate} to ${leave.endDate} has been rejected`,
+          relatedId: leave.id,
+          relatedType: 'leave',
+          isRead: false,
+        });
+        console.log('✅ Created leave rejection notification for user', employee.user_id);
+      }
+    } catch (notifError) {
+      console.error('Error creating rejection notification:', notifError);
+    }
 
     res.json({
       success: true,
