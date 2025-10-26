@@ -216,7 +216,7 @@ export default function AttendanceClockPage() {
 
       <Container maxWidth={themeStretch ? false : 'lg'}>
         <Typography variant="h4" sx={{ mb: 5 }}>
-          {t('attendance.clock_in')} / {t('attendance.clock_out')}
+          Clock In / Clock Out
         </Typography>
 
         <Grid container spacing={3}>
