@@ -651,6 +651,7 @@ export default function MessengerPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // Initial load - run once on mount
   useEffect(() => {
     fetchConversations();
     fetchOnlineUsers();
@@ -664,19 +665,33 @@ export default function MessengerPage() {
         setMutedConversations([]);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    // Poll for new messages and online users every 5 seconds
+  // Polling effect - separate from initial load
+  useEffect(() => {
+    // Only start polling if we have a selected conversation
+    if (!selectedConversation) return;
+
+    // Poll for new messages every 5 seconds
     const pollInterval = setInterval(() => {
-      if (selectedConversation) {
-        fetchMessages(selectedConversation.id);
-      }
+      fetchMessages(selectedConversation.id);
       fetchConversations(); // Update conversation list
-      fetchOnlineUsers(); // Update online status
     }, 5000);
 
     return () => clearInterval(pollInterval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedConversation]);
+  }, [selectedConversation?.id]); // Only re-run if conversation ID changes
+
+  // Separate polling for online users (less frequent)
+  useEffect(() => {
+    const onlineInterval = setInterval(() => {
+      fetchOnlineUsers();
+    }, 10000); // Every 10 seconds
+
+    return () => clearInterval(onlineInterval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
