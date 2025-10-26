@@ -320,9 +320,28 @@ export default function MessengerPage() {
       console.log('📤 Send message response:', response);
 
       if (response.success && response.data) {
-        // Add the message to the list
-        const newMsg = response.data;
-        setMessages(prev => Array.isArray(prev) ? [...prev, newMsg] : [newMsg]);
+        // Map the new message to match the format expected by UI
+        const mappedNewMsg = {
+          id: response.data.id,
+          message: response.data.content, // Backend sends 'content', UI expects 'message'
+          content: response.data.content,
+          type: response.data.type || 'text',
+          isMe: response.data.is_me === 1 || response.data.is_me === true, // Backend sends 'is_me'
+          is_me: response.data.is_me,
+          sender: response.data.sender_name || 'You',
+          sender_name: response.data.sender_name,
+          sender_id: response.data.sender_id,
+          avatar: response.data.sender_avatar || '/assets/images/avatars/avatar_default.jpg',
+          sender_avatar: response.data.sender_avatar,
+          time: formatMessageTime(response.data.created_at || new Date()),
+          created_at: response.data.created_at || new Date().toISOString(),
+          is_read: response.data.is_read || 0
+        };
+        
+        console.log('📤 Mapped new message:', mappedNewMsg);
+        
+        // Add the MAPPED message to the list
+        setMessages(prev => Array.isArray(prev) ? [...prev, mappedNewMsg] : [mappedNewMsg]);
         
         // Update conversation list with new last message
         setConversations(prev => 
@@ -645,7 +664,19 @@ export default function MessengerPage() {
         setMutedConversations([]);
       }
     }
-  }, []);
+
+    // Poll for new messages and online users every 5 seconds
+    const pollInterval = setInterval(() => {
+      if (selectedConversation) {
+        fetchMessages(selectedConversation.id);
+      }
+      fetchConversations(); // Update conversation list
+      fetchOnlineUsers(); // Update online status
+    }, 5000);
+
+    return () => clearInterval(pollInterval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedConversation]);
 
   useEffect(() => {
     scrollToBottom();
