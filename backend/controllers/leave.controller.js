@@ -272,6 +272,8 @@ exports.applyLeave = async (req, res) => {
           relatedId: leave.id,
           relatedType: 'leave',
           isRead: false,
+        }, {
+          fields: ['userId', 'type', 'title', 'description', 'relatedId', 'relatedType', 'isRead', 'createdAt', 'updatedAt']
         });
       }
       
