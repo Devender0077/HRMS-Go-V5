@@ -95,6 +95,17 @@ const CATEGORIES = {
       { key: 'company_website', label: 'Company Website', type: 'text' },
     ]
   },
+  attendance: {
+    label: 'Attendance Configuration',
+    icon: 'eva:calendar-outline',
+    color: '#1565c0',
+    fields: [
+      { key: 'working_days', label: 'Working Days Per Week', type: 'number', helperText: 'Number of working days (e.g., 5 for Mon-Fri)' },
+      { key: 'week_off_days', label: 'Week Off Days', type: 'text', helperText: 'Comma-separated days (e.g., Saturday,Sunday or Friday,Saturday)' },
+      { key: 'half_day_saturday', label: 'Half Day on Saturday', type: 'boolean', helperText: 'Enable if Saturday is a half working day' },
+      { key: 'flexible_week_off', label: 'Flexible Week Off', type: 'boolean', helperText: 'Allow employees to choose their week off days' },
+    ]
+  },
   localization: {
     label: 'Localization',
     icon: 'eva:globe-fill',

@@ -1,5 +1,8 @@
 import { Helmet } from 'react-helmet-async';
 import { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { selectUser } from '../../redux/slices/authSlice';
+import usePermissions from '../../hooks/usePermissions';
 // @mui
 import {
   Card,
@@ -58,6 +61,11 @@ const STATUS_CODES = {
 
 export default function AttendanceCalendarPage() {
   const { themeStretch } = useSettingsContext();
+  const user = useSelector(selectUser);
+  const { hasPermission } = usePermissions();
+  
+  // Check if user can edit attendance (only super_admin and hr_manager)
+  const canEditAttendance = hasPermission('attendance.edit') || user?.userType === 'super_admin';
 
   const currentDate = new Date();
   const [filterMonth, setFilterMonth] = useState(currentDate.getMonth() + 1); // 1..12
@@ -151,12 +159,12 @@ export default function AttendanceCalendarPage() {
     return summary;
   };
 
-  // Render status cell (clickable for editing)
+  // Render status cell (clickable for editing only if user has permission)
   const renderStatusCell = (status, employee, date) => {
     const statusInfo = STATUS_CODES[status] || STATUS_CODES['-'];
     return (
       <Box
-        onClick={() => handleCellClick(employee, date, status)}
+        onClick={canEditAttendance ? () => handleCellClick(employee, date, status) : undefined}
         sx={{
           width: 36,
           height: 36,
@@ -168,23 +176,30 @@ export default function AttendanceCalendarPage() {
           color: statusInfo.color,
           fontWeight: 600,
           fontSize: '0.75rem',
-          cursor: 'pointer',
+          cursor: canEditAttendance ? 'pointer' : 'default',
           transition: 'all 0.2s',
-          '&:hover': {
+          ...(canEditAttendance && {
+            '&:hover': {
             transform: 'scale(1.1)',
-            boxShadow: 2,
-            opacity: 0.9,
-          },
+              boxShadow: 2,
+              opacity: 0.9,
+            },
+          }),
         }}
-        title={`${statusInfo.label} - Click to edit`}
+        title={canEditAttendance ? `${statusInfo.label} - Click to edit` : statusInfo.label}
       >
         {status}
       </Box>
     );
   };
 
-  // Handle cell click for editing
+  // Handle cell click for editing (only if user has permission)
   const handleCellClick = (employee, date, currentStatus) => {
+    if (!canEditAttendance) {
+      console.warn('User does not have permission to edit attendance');
+      return;
+    }
+    
     setSelectedAttendance({
       employee,
       date,

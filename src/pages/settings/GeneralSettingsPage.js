@@ -31,6 +31,7 @@ import generalSettingsService from '../../services/api/generalSettingsService';
 const SETTING_CATEGORIES = [
   { id: 'general', label: 'General', icon: 'eva:settings-2-fill', color: '#1976d2', description: 'App name, logo, favicon, timezone' },
   { id: 'company', label: 'Company Info', icon: 'eva:briefcase-fill', color: '#2e7d32', description: 'Company details, address, contact' },
+  { id: 'attendance', label: 'Attendance Config', icon: 'eva:calendar-outline', color: '#1565c0', description: 'Week offs, working days, shift settings' },
   { id: 'localization', label: 'Localization', icon: 'eva:globe-fill', color: '#f57c00', description: 'Language, currency, number formats' },
   { id: 'email', label: 'Email Config', icon: 'eva:email-fill', color: '#7b1fa2', description: 'SMTP and email settings' },
   { id: 'notifications', label: 'Notifications', icon: 'eva:bell-fill', color: '#c62828', description: 'Email and push notifications' },
