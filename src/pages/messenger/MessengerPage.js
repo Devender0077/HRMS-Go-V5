@@ -139,6 +139,7 @@ export default function MessengerPage() {
   const [allUsers, setAllUsers] = useState([]);
   const [desktopNotifications, setDesktopNotifications] = useState(true);
   const [showOnlineStatus, setShowOnlineStatus] = useState(true);
+  const [mutedConversations, setMutedConversations] = useState([]);
   
   // Refs
   const messagesEndRef = useRef(null);
@@ -203,10 +204,41 @@ export default function MessengerPage() {
       
       if (response.success && Array.isArray(response.data)) {
         console.log('✅ Loaded', response.data.length, 'messages');
-        setMessages(response.data);
+        
+        // Map backend field names to frontend expected names
+        const mappedMessages = response.data.map(msg => ({
+          id: msg.id,
+          message: msg.content, // Backend sends 'content', UI expects 'message'
+          content: msg.content,
+          type: msg.type || 'text',
+          isMe: msg.is_me === 1 || msg.is_me === true, // Backend sends 'is_me'
+          is_me: msg.is_me,
+          sender: msg.sender_name || 'Unknown',
+          sender_name: msg.sender_name,
+          sender_id: msg.sender_id,
+          avatar: msg.sender_avatar || '/assets/images/avatars/avatar_default.jpg',
+          sender_avatar: msg.sender_avatar,
+          time: formatMessageTime(msg.created_at),
+          created_at: msg.created_at,
+          is_read: msg.is_read
+        }));
+        
+        console.log('✅ Mapped messages:', mappedMessages);
+        setMessages(mappedMessages);
       } else if (response.success && response.data && typeof response.data === 'object') {
         // Handle case where backend sends single message object
-        setMessages([response.data]);
+        const singleMsg = {
+          id: response.data.id,
+          message: response.data.content,
+          content: response.data.content,
+          type: response.data.type || 'text',
+          isMe: response.data.is_me === 1,
+          sender: response.data.sender_name || 'Unknown',
+          avatar: response.data.sender_avatar || '/assets/images/avatars/avatar_default.jpg',
+          time: formatMessageTime(response.data.created_at),
+          created_at: response.data.created_at
+        };
+        setMessages([singleMsg]);
       } else {
         console.log('⚠️ No messages or invalid format');
         setMessages([]);
@@ -217,6 +249,22 @@ export default function MessengerPage() {
       enqueueSnackbar('Failed to load messages', { variant: 'error' });
     } finally {
       setMessagesLoading(false);
+    }
+  };
+
+  // Helper function to format message time
+  const formatMessageTime = (timestamp) => {
+    if (!timestamp) return '';
+    
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInHours = (now - date) / (1000 * 60 * 60);
+    
+    if (diffInHours < 24) {
+      // Today - show time
+      return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    } else {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
     }
   };
 
@@ -376,7 +424,26 @@ export default function MessengerPage() {
 
   // Handle mute conversation
   const handleMuteConversation = () => {
-    enqueueSnackbar('Conversation muted', { variant: 'success' });
+    if (!selectedConversation) return;
+    
+    const isMuted = mutedConversations.includes(selectedConversation.id);
+    
+    if (isMuted) {
+      // Unmute
+      setMutedConversations(prev => prev.filter(id => id !== selectedConversation.id));
+      enqueueSnackbar('Conversation unmuted', { variant: 'success' });
+    } else {
+      // Mute
+      setMutedConversations(prev => [...prev, selectedConversation.id]);
+      enqueueSnackbar('Conversation muted', { variant: 'success' });
+    }
+    
+    // Save to localStorage
+    const newMuted = isMuted 
+      ? mutedConversations.filter(id => id !== selectedConversation.id)
+      : [...mutedConversations, selectedConversation.id];
+    localStorage.setItem('mutedConversations', JSON.stringify(newMuted));
+    
     handleChatOptionsClose();
   };
 
@@ -568,6 +635,16 @@ export default function MessengerPage() {
   useEffect(() => {
     fetchConversations();
     fetchOnlineUsers();
+    
+    // Load muted conversations from localStorage
+    const savedMuted = localStorage.getItem('mutedConversations');
+    if (savedMuted) {
+      try {
+        setMutedConversations(JSON.parse(savedMuted));
+      } catch (e) {
+        setMutedConversations([]);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -645,18 +722,40 @@ export default function MessengerPage() {
               {/* Online Users */}
               {onlineUsers.length > 0 && (
                 <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                    Online ({onlineUsers.length})
+                  <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.primary' }}>
+                    Online ({onlineUsers.filter(u => u.status === 'online').length})
                   </Typography>
-                  <Stack direction="row" spacing={1} sx={{ overflowX: 'auto' }}>
-                    {onlineUsers.slice(0, 5).map((user) => (
-                      <Tooltip key={user.id} title={user.name}>
-                        <Avatar
-                          src={user.avatar}
-                          sx={{ width: 32, height: 32, cursor: 'pointer' }}
-                        />
-                      </Tooltip>
-                    ))}
+                  <Stack direction="row" spacing={1} sx={{ overflowX: 'auto', pb: 1 }}>
+                    {onlineUsers
+                      .filter(u => u.status === 'online')
+                      .slice(0, 10)
+                      .map((user) => (
+                        <Tooltip key={user.id} title={user.name} arrow>
+                          <Badge
+                            overlap="circular"
+                            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                            badgeContent={
+                              <Box
+                                sx={{
+                                  width: 10,
+                                  height: 10,
+                                  borderRadius: '50%',
+                                  bgcolor: 'success.main',
+                                  border: 2,
+                                  borderColor: 'background.paper',
+                                }}
+                              />
+                            }
+                          >
+                            <Avatar
+                              src={user.avatar || getAvatar(user.name)}
+                              alt={user.name}
+                              sx={{ width: 40, height: 40, cursor: 'pointer' }}
+                              onClick={() => handleStartConversation(user.id)}
+                            />
+                          </Badge>
+                        </Tooltip>
+                      ))}
                   </Stack>
                 </Box>
               )}
@@ -708,12 +807,30 @@ export default function MessengerPage() {
                           </Badge>
                         </ListItemAvatar>
                         <ListItemText
-                          primary={conversation.name}
+                          primary={
+                            <Stack direction="row" alignItems="center" spacing={0.5}>
+                              <Typography
+                                variant="subtitle2"
+                                noWrap
+                                sx={{
+                                  fontWeight: (conversation.unreadCount || conversation.unread_count || 0) > 0 ? 600 : 400,
+                                  flex: 1
+                                }}
+                              >
+                                {conversation.name}
+                              </Typography>
+                              {mutedConversations.includes(conversation.id) && (
+                                <Iconify 
+                                  icon="eva:bell-off-fill" 
+                                  width={16} 
+                                  sx={{ color: 'text.disabled' }}
+                                />
+                              )}
+                            </Stack>
+                          }
                           secondary={conversation.lastMessage}
                           primaryTypographyProps={{
-                            variant: 'subtitle2',
-                            fontWeight: (conversation.unreadCount || conversation.unread_count || 0) > 0 ? 600 : 400,
-                            noWrap: true,
+                            component: 'div',
                           }}
                           secondaryTypographyProps={{
                             variant: 'body2',
@@ -959,8 +1076,11 @@ export default function MessengerPage() {
           onClose={handleChatOptionsClose}
         >
           <MenuItem onClick={handleMuteConversation}>
-            <Iconify icon="eva:bell-off-fill" sx={{ mr: 1 }} />
-            Mute Conversation
+            <Iconify 
+              icon={selectedConversation && mutedConversations.includes(selectedConversation.id) ? "eva:bell-fill" : "eva:bell-off-fill"} 
+              sx={{ mr: 1 }} 
+            />
+            {selectedConversation && mutedConversations.includes(selectedConversation.id) ? 'Unmute' : 'Mute'} Conversation
           </MenuItem>
           <MenuItem onClick={handleClearChat}>
             <Iconify icon="eva:trash-2-outline" sx={{ mr: 1 }} />
