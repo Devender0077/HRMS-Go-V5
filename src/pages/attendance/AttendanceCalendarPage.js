@@ -18,6 +18,14 @@ import {
   Box,
   Chip,
   TableHead,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  FormControl,
+  InputLabel,
+  Select,
+  Alert,
 } from '@mui/material';
 // routes
 import { PATH_DASHBOARD } from '../../routes/paths';
@@ -55,10 +63,13 @@ export default function AttendanceCalendarPage() {
   const [filterMonth, setFilterMonth] = useState(currentDate.getMonth() + 1); // 1..12
   const [filterYear, setFilterYear] = useState(currentDate.getFullYear());
   const [filterDepartment, setFilterDepartment] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const [monthData, setMonthData] = useState([]); // [{ id,name,empId,department,attendanceByDate: { 'YYYY-MM-DD': 'P' } }]
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [selectedAttendance, setSelectedAttendance] = useState(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const daysInMonth = new Date(filterYear, filterMonth, 0).getDate();
 
@@ -89,11 +100,12 @@ export default function AttendanceCalendarPage() {
     return summary;
   };
 
-  // Render status cell
-  const renderStatusCell = (status) => {
+  // Render status cell (clickable for editing)
+  const renderStatusCell = (status, employee, date) => {
     const statusInfo = STATUS_CODES[status] || STATUS_CODES['-'];
     return (
       <Box
+        onClick={() => handleCellClick(employee, date, status)}
         sx={{
           width: 36,
           height: 36,
@@ -105,18 +117,50 @@ export default function AttendanceCalendarPage() {
           color: statusInfo.color,
           fontWeight: 600,
           fontSize: '0.75rem',
-          cursor: 'default',
+          cursor: 'pointer',
           transition: 'all 0.2s',
           '&:hover': {
-            transform: 'scale(1.05)',
-            boxShadow: 1,
+            transform: 'scale(1.1)',
+            boxShadow: 2,
+            opacity: 0.9,
           },
         }}
-        title={statusInfo.label}
+        title={`${statusInfo.label} - Click to edit`}
       >
         {status}
       </Box>
     );
+  };
+
+  // Handle cell click for editing
+  const handleCellClick = (employee, date, currentStatus) => {
+    setSelectedAttendance({
+      employee,
+      date,
+      currentStatus,
+    });
+    setEditDialogOpen(true);
+  };
+
+  // Handle update attendance status
+  const handleUpdateAttendance = (newStatus) => {
+    // Update local state
+    setMonthData(prevData => 
+      prevData.map(emp => {
+        if (emp.id === selectedAttendance.employee.id) {
+          return {
+            ...emp,
+            attendanceByDate: {
+              ...emp.attendanceByDate,
+              [selectedAttendance.date]: newStatus,
+            },
+          };
+        }
+        return emp;
+      })
+    );
+    setEditDialogOpen(false);
+    setSelectedAttendance(null);
   };
 
   // Fetch from API whenever filters change
@@ -161,14 +205,6 @@ export default function AttendanceCalendarPage() {
             { name: 'Calendar Muster' },
           ]}
           action={
-            <Stack direction="row" spacing={2}>
-              <Button
-                variant="outlined"
-                startIcon={<Iconify icon="eva:printer-fill" />}
-                onClick={handlePrint}
-              >
-                Print
-              </Button>
               <Button
                 variant="contained"
                 startIcon={<Iconify icon="eva:download-fill" />}
@@ -176,7 +212,6 @@ export default function AttendanceCalendarPage() {
               >
                 Export
               </Button>
-            </Stack>
           }
         />
 
@@ -229,32 +264,47 @@ export default function AttendanceCalendarPage() {
               </TextField>
             </Grid>
             <Grid item xs={12} md={3}>
-              {/* Optional: if you want manual fetch instead of auto-on-change,
-                  move the useEffect logic into a function and call it here */}
-              <Button fullWidth variant="contained" size="large">
-                Generate Calendar
-              </Button>
+              <TextField
+                fullWidth
+                placeholder="Search employees..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <Box sx={{ mr: 1, display: 'flex' }}>
+                      <Iconify icon="eva:search-fill" sx={{ color: 'text.disabled' }} />
+                    </Box>
+                  ),
+                }}
+              />
             </Grid>
           </Grid>
         </Card>
 
         {/* Legend */}
-        <Card sx={{ p: 2, mb: 3 }}>
-          <Typography variant="subtitle2" sx={{ mb: 1.5 }}>
-            Legend:
+        <Card sx={{ p: 3, mb: 3 }}>
+          <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
+            Attendance Legend
           </Typography>
-          <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
+          <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap sx={{ gap: 1.5 }}>
             {Object.entries(STATUS_CODES).map(([code, info]) => (
               code !== '-' && (
-                <Chip
+              <Chip
                   key={code}
                   label={`${code} - ${info.label}`}
-                  size="small"
-                  sx={{
+                  size="medium"
+                sx={{
                     bgcolor: info.bgColor,
                     color: info.color,
-                    fontWeight: 600,
-                    border: `1px solid ${info.color}`,
+                  fontWeight: 600,
+                    border: `1.5px solid ${info.color}`,
+                    px: 1.5,
+                    py: 2.5,
+                    height: 'auto',
+                    '& .MuiChip-label': {
+                      px: 1,
+                      py: 0.5,
+                    },
                   }}
                 />
               )
@@ -264,11 +314,11 @@ export default function AttendanceCalendarPage() {
 
         {/* Calendar Table */}
         <Card sx={{ p: 2 }}>
-          <Scrollbar>
+            <Scrollbar>
             <TableContainer sx={{ minWidth: 1200 }}>
               <Table size="small" sx={{ '& .MuiTableCell-root': { px: 1, py: 1.5 } }}>
-                <TableHead>
-                  <TableRow>
+                  <TableHead>
+                    <TableRow>
                     <TableCell
                       sx={{
                         position: 'sticky',
@@ -281,7 +331,7 @@ export default function AttendanceCalendarPage() {
                       }}
                     >
                       <Typography variant="subtitle2">Employee</Typography>
-                    </TableCell>
+                      </TableCell>
                     {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
                       const dayOfWeek = getDayOfWeek(day);
                       const isWeekend = dayOfWeek === 'Sun';
@@ -296,13 +346,13 @@ export default function AttendanceCalendarPage() {
                             borderColor: 'divider',
                           }}
                         >
-                          <Typography variant="caption" fontWeight={600}>
-                            {day}
-                          </Typography>
+                            <Typography variant="caption" fontWeight={600}>
+                              {day}
+                            </Typography>
                           <br />
-                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
                             {dayOfWeek}
-                          </Typography>
+                            </Typography>
                         </TableCell>
                       );
                     })}
@@ -347,10 +397,21 @@ export default function AttendanceCalendarPage() {
                     </TableRow>
                   )}
 
-                  {!loading && !error && monthData.map((employee) => {
+                  {!loading && !error && monthData
+                    .filter(employee => {
+                      // Search filter
+                      if (!searchQuery) return true;
+                      const query = searchQuery.toLowerCase();
+                      return (
+                        employee.name?.toLowerCase().includes(query) ||
+                        employee.empId?.toLowerCase().includes(query) ||
+                        employee.department?.toLowerCase().includes(query)
+                      );
+                    })
+                    .map((employee) => {
                     const summary = calculateSummaryByDate(employee.attendanceByDate);
-                    return (
-                      <TableRow key={employee.id} hover>
+                      return (
+                        <TableRow key={employee.id} hover>
                         <TableCell
                           sx={{
                             position: 'sticky',
@@ -369,7 +430,7 @@ export default function AttendanceCalendarPage() {
                               {employee.empId}
                             </Typography>
                           </Box>
-                        </TableCell>
+                          </TableCell>
 
                         {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
                           const dayOfWeek = getDayOfWeek(day);
@@ -386,7 +447,7 @@ export default function AttendanceCalendarPage() {
                                 borderColor: 'divider',
                               }}
                             >
-                              {renderStatusCell(code)}
+                              {renderStatusCell(code, employee, iso)}
                             </TableCell>
                           );
                         })}
@@ -408,24 +469,109 @@ export default function AttendanceCalendarPage() {
                             <Typography variant="caption">
                               <strong>L:</strong> {summary.L} | <strong>WD:</strong> {summary.WD} | <strong>LT:</strong> {summary.LT}
                             </Typography>
-                          </Stack>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Scrollbar>
-        </Card>
+                            </Stack>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Scrollbar>
+          </Card>
 
         {/* Footer Info */}
         <Card sx={{ p: 2, mt: 2 }}>
           <Typography variant="caption" color="text.secondary">
-            * Click on any date cell to view detailed attendance information
+            * Click on any attendance status cell to edit or update the record
           </Typography>
         </Card>
       </Container>
+
+      {/* Edit Attendance Dialog */}
+      <Dialog 
+        open={editDialogOpen} 
+        onClose={() => setEditDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          Edit Attendance Record
+        </DialogTitle>
+        <DialogContent>
+          {selectedAttendance && (
+            <Stack spacing={3} sx={{ pt: 2 }}>
+              <Alert severity="info">
+                Updating attendance for <strong>{selectedAttendance.employee.name}</strong> on{' '}
+                <strong>{new Date(selectedAttendance.date).toLocaleDateString('en-US', { 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}</strong>
+              </Alert>
+
+              <FormControl fullWidth>
+                <InputLabel>Attendance Status</InputLabel>
+                <Select
+                  value={selectedAttendance.currentStatus}
+                  label="Attendance Status"
+                  onChange={(e) => {
+                    setSelectedAttendance({
+                      ...selectedAttendance,
+                      currentStatus: e.target.value,
+                    });
+                  }}
+                >
+                  {Object.entries(STATUS_CODES)
+                    .filter(([code]) => code !== '-')
+                    .map(([code, info]) => (
+                      <MenuItem key={code} value={code}>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <Box
+                            sx={{
+                              width: 24,
+                              height: 24,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              borderRadius: 0.5,
+                              bgcolor: info.bgColor,
+                              color: info.color,
+                              fontWeight: 600,
+                              fontSize: '0.7rem',
+                            }}
+                          >
+                            {code}
+                          </Box>
+                          <Typography>{info.label}</Typography>
+                        </Stack>
+                      </MenuItem>
+                    ))}
+                </Select>
+              </FormControl>
+
+              <Box>
+                <Typography variant="caption" color="text.secondary">
+                  Employee: {selectedAttendance.employee.name} ({selectedAttendance.employee.empId})
+                </Typography>
+                <br />
+                <Typography variant="caption" color="text.secondary">
+                  Department: {selectedAttendance.employee.department || 'N/A'}
+                </Typography>
+              </Box>
+            </Stack>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+          <Button 
+            variant="contained" 
+            onClick={() => handleUpdateAttendance(selectedAttendance?.currentStatus)}
+          >
+            Update
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }
