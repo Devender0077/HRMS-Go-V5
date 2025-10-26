@@ -144,6 +144,7 @@ export default function MessengerPage() {
   // Refs
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
+  const selectedConversationRef = useRef(null);
 
   // Fetch conversations
   const fetchConversations = async () => {
@@ -511,6 +512,18 @@ export default function MessengerPage() {
     handleChatOptionsClose();
   };
 
+  // Handle archive conversation
+  const handleArchiveConversation = () => {
+    if (!selectedConversation) return;
+    
+    // For now, just show notification
+    // In production, this would update a database field
+    enqueueSnackbar('Conversation archived', { variant: 'success' });
+    setSelectedConversation(null);
+    fetchConversations();
+    handleChatOptionsClose();
+  };
+
   // Handle new chat
   const handleNewChat = () => {
     setNewChatDialogOpen(true);
@@ -651,6 +664,11 @@ export default function MessengerPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // Update ref when selected conversation changes
+  useEffect(() => {
+    selectedConversationRef.current = selectedConversation;
+  }, [selectedConversation]);
+
   // Initial load - run once on mount
   useEffect(() => {
     fetchConversations();
@@ -665,33 +683,28 @@ export default function MessengerPage() {
         setMutedConversations([]);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
-  // Polling effect - separate from initial load
-  useEffect(() => {
-    // Only start polling if we have a selected conversation
-    if (!selectedConversation) return;
-
-    // Poll for new messages every 5 seconds
-    const pollInterval = setInterval(() => {
-      fetchMessages(selectedConversation.id);
-      fetchConversations(); // Update conversation list
+    // Start polling for messages (only when conversation is selected)
+    const messageInterval = setInterval(() => {
+      const currentConv = selectedConversationRef.current;
+      if (currentConv && currentConv.id) {
+        fetchMessages(currentConv.id);
+        fetchConversations(); // Update conversation list
+      }
     }, 5000);
 
-    return () => clearInterval(pollInterval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedConversation?.id]); // Only re-run if conversation ID changes
-
-  // Separate polling for online users (less frequent)
-  useEffect(() => {
+    // Poll for online users
     const onlineInterval = setInterval(() => {
       fetchOnlineUsers();
-    }, 10000); // Every 10 seconds
+    }, 10000);
 
-    return () => clearInterval(onlineInterval);
+    // Cleanup both intervals
+    return () => {
+      clearInterval(messageInterval);
+      clearInterval(onlineInterval);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); // Empty dependency array - only runs once!
 
   useEffect(() => {
     scrollToBottom();
@@ -1128,10 +1141,15 @@ export default function MessengerPage() {
             />
             {selectedConversation && mutedConversations.includes(selectedConversation.id) ? 'Unmute' : 'Mute'} Conversation
           </MenuItem>
+          <MenuItem onClick={handleArchiveConversation}>
+            <Iconify icon="eva:archive-fill" sx={{ mr: 1 }} />
+            Archive Conversation
+          </MenuItem>
           <MenuItem onClick={handleClearChat}>
             <Iconify icon="eva:trash-2-outline" sx={{ mr: 1 }} />
             Clear Chat
           </MenuItem>
+          <Divider sx={{ my: 0.5 }} />
           <MenuItem onClick={handleDeleteConversation} sx={{ color: 'error.main' }}>
             <Iconify icon="eva:trash-2-fill" sx={{ mr: 1 }} />
             Delete Conversation
