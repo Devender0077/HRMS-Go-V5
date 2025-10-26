@@ -144,12 +144,21 @@ export default function AnnouncementsListPage() {
     try {
       setLoading(true);
       const response = await announcementService.getAllAnnouncements();
-      if (response.success) {
-        setAnnouncements(response.data);
+      if (response.success && Array.isArray(response.data)) {
+        // Map backend data to frontend expected format
+        const mappedAnnouncements = response.data.map(ann => ({
+          ...ann,
+          author: ann.author_name || 'Unknown',
+          type: ann.type || 'General',
+          publish_date: ann.published_at || ann.created_at,
+        }));
+        setAnnouncements(mappedAnnouncements);
+      } else {
+        setAnnouncements([]);
       }
     } catch (error) {
       console.error('Error fetching announcements:', error);
-      enqueueSnackbar('Error loading announcements', { variant: 'error' });
+      setAnnouncements([]);
     } finally {
       setLoading(false);
     }
@@ -390,6 +399,33 @@ export default function AnnouncementsListPage() {
                       isNotFound={isNotFound}
                       message={`No results found for "${filterName}"`}
                     />
+                  )}
+
+                  {!loading && !filteredAnnouncements.length && !filterName && (
+                    <TableRow>
+                      <TableCell colSpan={7} align="center" sx={{ py: 10 }}>
+                        <Box sx={{ textAlign: 'center' }}>
+                          <Iconify 
+                            icon="eva:megaphone-outline" 
+                            width={64} 
+                            sx={{ color: 'text.disabled', mb: 2 }} 
+                          />
+                          <Typography variant="h6" color="text.secondary" gutterBottom>
+                            No announcements yet
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                            Create your first announcement to keep everyone informed
+                          </Typography>
+                          <Button
+                            onClick={handleOpenDialog}
+                            variant="contained"
+                            startIcon={<Iconify icon="eva:plus-fill" />}
+                          >
+                            New Announcement
+                          </Button>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
                   )}
                 </TableBody>
               </Table>
