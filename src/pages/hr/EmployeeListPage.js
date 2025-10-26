@@ -94,21 +94,37 @@ export default function EmployeeListPage() {
     const fetchEmployees = async () => {
       setLoading(true);
       try {
+        console.log('📋 Fetching employees with filters:', { filterName, filterDepartment, filterStatus });
+        
         const response = await employeeService.getAllEmployees({
           search: filterName,
           department: filterDepartment,
           status: filterStatus,
         });
 
+        console.log('📋 Employee API response:', response);
+
         if (response.success) {
-          // Use backend data if available, otherwise use mock data
-          setTableData(response.employees || response.data || []);
+          const employees = response.employees || response.data || [];
+          console.log('✅ Loaded', employees.length, 'employees');
+          setTableData(employees);
         } else {
+          console.warn('⚠️ API returned success: false', response.message);
           setTableData([]);
+          if (response.message) {
+            enqueueSnackbar(response.message, { variant: 'warning' });
+          }
         }
       } catch (error) {
-        console.error('Error fetching employees:', error);
-        enqueueSnackbar('Error loading employees', { variant: 'error' });
+        console.error('❌ Error fetching employees:', error);
+        console.error('Error response:', error.response?.data);
+        
+        // Check if it's a permission error
+        if (error.response?.status === 403) {
+          enqueueSnackbar('You do not have permission to view all employees. Login as HR/Admin to see all employees.', { variant: 'warning' });
+        } else {
+          enqueueSnackbar('Error loading employees', { variant: 'error' });
+        }
         setTableData([]);
       } finally {
         setLoading(false);
@@ -116,7 +132,7 @@ export default function EmployeeListPage() {
     };
 
     fetchEmployees();
-  }, [filterName, filterDepartment, filterStatus]);
+  }, [filterName, filterDepartment, filterStatus, enqueueSnackbar]);
 
   const dataFiltered = applyFilter({
     inputData: tableData,
