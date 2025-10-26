@@ -23,6 +23,10 @@ import {
   Box,
   Avatar,
   CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 // components
 import Iconify from '../../components/iconify';
@@ -135,6 +139,7 @@ export default function AnnouncementsListPage() {
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [openConfirm, setOpenConfirm] = useState(false);
+  const [openViewDialog, setOpenViewDialog] = useState(false);
 
   useEffect(() => {
     fetchAnnouncements();
@@ -191,14 +196,34 @@ export default function AnnouncementsListPage() {
         if (response.success) {
           enqueueSnackbar('Announcement deleted successfully', { variant: 'success' });
           fetchAnnouncements();
-          setOpenConfirm(false);
-          setSelectedAnnouncement(null);
+        } else {
+          enqueueSnackbar(response.message || 'Failed to delete announcement', { variant: 'error' });
         }
       }
     } catch (error) {
       console.error('Error deleting announcement:', error);
       enqueueSnackbar('Error deleting announcement', { variant: 'error' });
+    } finally {
+      setOpenConfirm(false);
+      setSelectedAnnouncement(null);
     }
+  };
+
+  const handleViewAnnouncement = () => {
+    setOpenViewDialog(true);
+    handleClosePopover();
+  };
+
+  const handleDuplicateAnnouncement = () => {
+    // Create a copy without the ID for duplicating
+    const duplicated = {
+      ...selectedAnnouncement,
+      title: `${selectedAnnouncement.title} (Copy)`,
+      id: undefined, // Remove ID so it creates new
+    };
+    setSelectedAnnouncement(duplicated);
+    setOpenDialog(true);
+    handleClosePopover();
   };
 
   const handleDialogSuccess = () => {
@@ -450,12 +475,7 @@ export default function AnnouncementsListPage() {
         arrow="right-top"
         sx={{ width: 160 }}
       >
-        <MenuItem
-          onClick={() => {
-            console.log('View announcement:', selectedAnnouncement);
-            handleClosePopover();
-          }}
-        >
+        <MenuItem onClick={handleViewAnnouncement}>
           <Iconify icon="eva:eye-fill" />
           View
         </MenuItem>
@@ -465,12 +485,7 @@ export default function AnnouncementsListPage() {
           Edit
         </MenuItem>
 
-        <MenuItem
-          onClick={() => {
-            console.log('Duplicate announcement:', selectedAnnouncement);
-            handleClosePopover();
-          }}
-        >
+        <MenuItem onClick={handleDuplicateAnnouncement}>
           <Iconify icon="eva:copy-fill" />
           Duplicate
         </MenuItem>
@@ -504,6 +519,97 @@ export default function AnnouncementsListPage() {
           </Button>
         }
       />
+
+      {/* View Announcement Dialog */}
+      <Dialog 
+        open={openViewDialog} 
+        onClose={() => setOpenViewDialog(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          <Stack direction="row" alignItems="center" justifyContent="space-between">
+            <Typography variant="h6">{selectedAnnouncement?.title}</Typography>
+            <IconButton onClick={() => setOpenViewDialog(false)}>
+              <Iconify icon="eva:close-fill" />
+            </IconButton>
+          </Stack>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2}>
+            <Box>
+              <Typography variant="caption" color="text.secondary">
+                Type
+              </Typography>
+              <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.5 }}>
+                <Chip
+                  label={selectedAnnouncement?.type || 'General'}
+                  color={getTypeColor(selectedAnnouncement?.type)}
+                  size="small"
+                  variant="outlined"
+                />
+                <Chip
+                  label={selectedAnnouncement?.priority || 'normal'}
+                  color={getPriorityColor(selectedAnnouncement?.priority)}
+                  size="small"
+                />
+                <Chip
+                  label={selectedAnnouncement?.status || 'published'}
+                  color={getStatusColor(selectedAnnouncement?.status)}
+                  size="small"
+                />
+              </Stack>
+            </Box>
+
+            <Box>
+              <Typography variant="caption" color="text.secondary">
+                Author
+              </Typography>
+              <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 0.5 }}>
+                <Avatar src={selectedAnnouncement?.author_avatar} sx={{ width: 32, height: 32 }} />
+                <Typography variant="body2">{selectedAnnouncement?.author}</Typography>
+              </Stack>
+            </Box>
+
+            <Box>
+              <Typography variant="caption" color="text.secondary">
+                Published Date
+              </Typography>
+              <Typography variant="body2" sx={{ mt: 0.5 }}>
+                {selectedAnnouncement?.publish_date ? 
+                  new Date(selectedAnnouncement.publish_date).toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  }) : 
+                  'N/A'
+                }
+              </Typography>
+            </Box>
+
+            <Box>
+              <Typography variant="caption" color="text.secondary">
+                Content
+              </Typography>
+              <Typography variant="body2" sx={{ mt: 0.5, whiteSpace: 'pre-wrap' }}>
+                {selectedAnnouncement?.content}
+              </Typography>
+            </Box>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenViewDialog(false)}>Close</Button>
+          <Button 
+            variant="contained" 
+            onClick={() => {
+              setOpenViewDialog(false);
+              setOpenDialog(true);
+            }}
+          >
+            Edit
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }
