@@ -64,6 +64,11 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING,
     allowNull: true,
   },
+  lastSeen: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'last_seen',
+  },
   rememberToken: {
     type: DataTypes.STRING(100),
     allowNull: true,
@@ -75,6 +80,7 @@ const User = sequelize.define('User', {
     { fields: ['email'] },
     { fields: ['user_type'] },
     { fields: ['status'] },
+    { fields: ['last_seen'] },
   ],
 });
 

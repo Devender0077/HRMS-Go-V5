@@ -67,7 +67,7 @@ exports.login = async (req, res) => {
     }
 
     // Update last_seen for online status
-    await user.update({ last_seen: new Date() });
+    await user.update({ lastSeen: new Date() });
 
     // Generate tokens
     const token = generateToken(user);
