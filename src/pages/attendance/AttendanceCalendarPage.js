@@ -70,12 +70,57 @@ export default function AttendanceCalendarPage() {
   const [error, setError] = useState('');
   const [selectedAttendance, setSelectedAttendance] = useState(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [weekOffDays, setWeekOffDays] = useState(['Saturday', 'Sunday']); // Default week offs
 
   const daysInMonth = new Date(filterYear, filterMonth, 0).getDate();
 
   const handleExport = () => {
-    // You can export `monthData` here as CSV/XLSX if needed
-    console.log('Export calendar from real DB payload:', monthData);
+    try {
+      // Import xlsx dynamically
+      import('xlsx').then((XLSX) => {
+        // Prepare data for export
+        const exportData = monthData.map(employee => {
+          const row = {
+            'Employee Name': employee.name,
+            'Employee ID': employee.empId,
+            'Department': employee.department || 'N/A',
+          };
+          
+          // Add attendance for each day
+          Array.from({ length: daysInMonth }, (_, i) => i + 1).forEach((day) => {
+            const iso = isoFor(filterYear, filterMonth, day);
+            const code = employee.attendanceByDate?.[iso] || '-';
+            const statusInfo = STATUS_CODES[code] || STATUS_CODES['-'];
+            row[`Day ${day}`] = `${code} (${statusInfo.label})`;
+          });
+          
+          // Add summary
+          const summary = calculateSummaryByDate(employee.attendanceByDate);
+          row['Present'] = summary.P;
+          row['Absent'] = summary.A;
+          row['Half Day'] = summary.HD;
+          row['Leave'] = summary.L;
+          row['Late'] = summary.LT;
+          
+          return row;
+        });
+
+        // Create workbook and worksheet
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Attendance');
+
+        // Generate filename
+        const monthName = new Date(filterYear, filterMonth - 1).toLocaleString('default', { month: 'long' });
+        const filename = `Attendance_Calendar_${monthName}_${filterYear}.xlsx`;
+
+        // Download file
+        XLSX.writeFile(wb, filename);
+      });
+    } catch (error) {
+      console.error('Error exporting:', error);
+      alert('Export failed. Please try again.');
+    }
   };
 
   const handlePrint = () => {
@@ -86,6 +131,12 @@ export default function AttendanceCalendarPage() {
   const getDayOfWeek = (day) => {
     const date = new Date(filterYear, filterMonth - 1, day);
     return date.toLocaleDateString('en-US', { weekday: 'short' });
+  };
+
+  // Check if a day is a weekend based on configured week off days
+  const isWeekendDay = (day) => {
+    const dayName = new Date(filterYear, filterMonth - 1, day).toLocaleDateString('en-US', { weekday: 'long' });
+    return weekOffDays.includes(dayName);
   };
 
   // Build ISO date for each day cell: 'YYYY-MM-DD'
@@ -162,6 +213,32 @@ export default function AttendanceCalendarPage() {
     setEditDialogOpen(false);
     setSelectedAttendance(null);
   };
+
+  // Load week off configuration on mount
+  useEffect(() => {
+    const loadWeekOffSettings = async () => {
+      try {
+        // Import general settings service
+        const { default: generalSettingsService } = await import('../../services/api/generalSettingsService');
+        const response = await generalSettingsService.getByCategory('attendance');
+        
+        if (response.success && response.data) {
+          const weekOffSetting = response.data.week_off_days || response.data.weekOffDays;
+          if (weekOffSetting) {
+            // Parse comma-separated week off days
+            const days = weekOffSetting.split(',').map(d => d.trim());
+            setWeekOffDays(days);
+            console.log('✅ Loaded week off days:', days);
+          }
+        }
+      } catch (error) {
+        console.warn('Using default week offs (Saturday, Sunday):', error.message);
+        // Keep default ['Saturday', 'Sunday']
+      }
+    };
+    
+    loadWeekOffSettings();
+  }, []);
 
   // Fetch from API whenever filters change
   useEffect(() => {
@@ -282,31 +359,26 @@ export default function AttendanceCalendarPage() {
         </Card>
 
         {/* Legend */}
-        <Card sx={{ p: 3, mb: 3 }}>
-          <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
+        <Card sx={{ p: 2.5, mb: 3 }}>
+          <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600, color: 'text.secondary' }}>
             Attendance Legend
           </Typography>
-          <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap sx={{ gap: 1.5 }}>
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ gap: 1 }}>
             {Object.entries(STATUS_CODES).map(([code, info]) => (
               code !== '-' && (
               <Chip
                   key={code}
                   label={`${code} - ${info.label}`}
-                  size="medium"
+                size="small"
                 sx={{
                     bgcolor: info.bgColor,
                     color: info.color,
                   fontWeight: 600,
-                    border: `1.5px solid ${info.color}`,
-                    px: 1.5,
-                    py: 2.5,
-                    height: 'auto',
-                    '& .MuiChip-label': {
-                      px: 1,
-                      py: 0.5,
-                    },
-                  }}
-                />
+                    border: `1px solid ${info.color}`,
+                    fontSize: '0.75rem',
+                    height: 28,
+                }}
+              />
               )
             ))}
           </Stack>
@@ -334,7 +406,7 @@ export default function AttendanceCalendarPage() {
                       </TableCell>
                     {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
                       const dayOfWeek = getDayOfWeek(day);
-                      const isWeekend = dayOfWeek === 'Sun';
+                      const isWeekend = isWeekendDay(day);
                       return (
                         <TableCell
                           key={day}
@@ -433,8 +505,7 @@ export default function AttendanceCalendarPage() {
                           </TableCell>
 
                         {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
-                          const dayOfWeek = getDayOfWeek(day);
-                          const isWeekend = dayOfWeek === 'Sun';
+                          const isWeekend = isWeekendDay(day);
                           const iso = isoFor(filterYear, filterMonth, day);
                           const code = employee.attendanceByDate?.[iso] || '-';
                           return (
@@ -488,17 +559,17 @@ export default function AttendanceCalendarPage() {
         </Card>
       </Container>
 
-      {/* Edit Attendance Dialog */}
+        {/* Edit Attendance Dialog */}
       <Dialog 
         open={editDialogOpen} 
         onClose={() => setEditDialogOpen(false)}
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>
+          <DialogTitle>
           Edit Attendance Record
-        </DialogTitle>
-        <DialogContent>
+          </DialogTitle>
+          <DialogContent>
           {selectedAttendance && (
             <Stack spacing={3} sx={{ pt: 2 }}>
               <Alert severity="info">
@@ -561,17 +632,17 @@ export default function AttendanceCalendarPage() {
               </Box>
             </Stack>
           )}
-        </DialogContent>
-        <DialogActions>
+          </DialogContent>
+          <DialogActions>
           <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
           <Button 
             variant="contained" 
             onClick={() => handleUpdateAttendance(selectedAttendance?.currentStatus)}
           >
             Update
-          </Button>
-        </DialogActions>
-      </Dialog>
+            </Button>
+          </DialogActions>
+        </Dialog>
     </>
   );
 }
