@@ -142,6 +142,28 @@ exports.updateSettings = async (req, res) => {
       });
     }
 
+    // Handle attendance settings (uses general_settings table)
+    if (category === 'attendance') {
+      const updates = [];
+      for (const [key, value] of Object.entries(data)) {
+        await GeneralSetting.upsert({
+          settingKey: key,
+          settingValue: String(value),
+          category: 'attendance',
+          status: 'active',
+        });
+        updates.push(key);
+      }
+
+      console.log('✅ Updated attendance settings:', updates);
+
+      return res.json({
+        success: true,
+        message: `Updated ${updates.length} attendance settings`,
+        updated: updates,
+      });
+    }
+
     // Handle integrations (multiple models)
     if (category === 'integrations') {
       const updated = [];

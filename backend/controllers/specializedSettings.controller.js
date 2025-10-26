@@ -577,6 +577,19 @@ exports.getByCategorySpecialized = async (req, res) => {
         count = countConfiguredFields({ toJSON: () => combinedInt }, 'integrations');
         break;
 
+      case 'attendance':
+        // Attendance settings are stored in general_settings table
+        const db = require('../config/database');
+        const [attendanceSettings] = await db.query(
+          "SELECT setting_key, setting_value FROM general_settings WHERE category = 'attendance'"
+        );
+        data = {};
+        attendanceSettings.forEach(setting => {
+          data[setting.setting_key] = setting.setting_value;
+        });
+        count = attendanceSettings.filter(s => s.setting_value && s.setting_value !== '').length;
+        break;
+
       case 'security':
         const secData = await SecurityPolicy.findOne();
         data = secData ? {
