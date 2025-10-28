@@ -94,6 +94,37 @@ export default function ContractsListPage() {
     }
   };
 
+  const handleView = (contract) => {
+    console.log('View contract:', contract);
+    enqueueSnackbar('View functionality coming soon', { variant: 'info' });
+  };
+
+  const handleEdit = (contract) => {
+    console.log('Edit contract:', contract);
+    enqueueSnackbar('Edit functionality coming soon', { variant: 'info' });
+  };
+
+  const handleDelete = async (contractId) => {
+    if (!window.confirm('Are you sure you want to delete this contract?')) return;
+    
+    try {
+      const response = await contractService.delete(contractId);
+      if (response.success) {
+        enqueueSnackbar('Contract deleted successfully', { variant: 'success' });
+        fetchContracts();
+      } else {
+        enqueueSnackbar(response.message || 'Failed to delete contract', { variant: 'error' });
+      }
+    } catch (error) {
+      enqueueSnackbar('Error deleting contract', { variant: 'error' });
+    }
+  };
+
+  const handleDownload = (contract) => {
+    console.log('Download contract:', contract);
+    enqueueSnackbar('Download functionality coming soon', { variant: 'info' });
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'active': return 'success';
@@ -173,14 +204,17 @@ export default function ContractsListPage() {
                             />
                           </TableCell>
                           <TableCell align="right">
-                            <IconButton size="small" onClick={() => console.log('View', row.id)}>
+                            <IconButton size="small" onClick={() => handleView(row)}>
                               <Iconify icon="eva:eye-fill" />
                             </IconButton>
-                            <IconButton size="small" onClick={() => console.log('Edit', row.id)}>
+                            <IconButton size="small" onClick={() => handleEdit(row)}>
                               <Iconify icon="eva:edit-fill" />
                             </IconButton>
-                            <IconButton size="small" onClick={() => console.log('Download', row.id)}>
+                            <IconButton size="small" onClick={() => handleDownload(row)}>
                               <Iconify icon="eva:download-fill" />
+                            </IconButton>
+                            <IconButton size="small" color="error" onClick={() => handleDelete(row.id)}>
+                              <Iconify icon="eva:trash-2-outline" />
                             </IconButton>
                           </TableCell>
                         </TableRow>

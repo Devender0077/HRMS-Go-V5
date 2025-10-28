@@ -1,5 +1,5 @@
 import { Helmet } from 'react-helmet-async';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 // @mui
 import {
   Card,
@@ -14,6 +14,7 @@ import {
   Chip,
   Stack,
   Typography,
+  CircularProgress,
 } from '@mui/material';
 // routes
 import { PATH_DASHBOARD } from '../../routes/paths';
@@ -22,12 +23,18 @@ import Iconify from '../../components/iconify';
 import Scrollbar from '../../components/scrollbar';
 import CustomBreadcrumbs from '../../components/custom-breadcrumbs';
 import { useSettingsContext } from '../../components/settings';
+import { useSnackbar } from '../../components/snackbar';
 import {
   useTable,
   TableHeadCustom,
   TableNoData,
   TablePaginationCustom,
 } from '../../components/table';
+// services
+import expenseService from '../../services/api/expenseService';
+// utils
+import { fDate } from '../../utils/formatTime';
+import { fCurrency } from '../../utils/formatNumber';
 
 // ----------------------------------------------------------------------
 
@@ -62,7 +69,87 @@ export default function ExpensesPage() {
   } = useTable();
 
   const { themeStretch } = useSettingsContext();
-  const [tableData] = useState(MOCK_EXPENSES);
+  const { enqueueSnackbar } = useSnackbar();
+  
+  const [tableData, setTableData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
+
+  useEffect(() => {
+    fetchExpenses();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, rowsPerPage]);
+
+  const fetchExpenses = async () => {
+    setLoading(true);
+    try {
+      const response = await expenseService.getAll({
+        page: page + 1,
+        limit: rowsPerPage,
+      });
+
+      if (response.success && response.data) {
+        setTableData(response.data.expenses || []);
+        setTotalCount(response.data.totalCount || 0);
+      } else {
+        setTableData([]);
+      }
+    } catch (error) {
+      console.error('Error fetching expenses:', error);
+      enqueueSnackbar('Error loading expenses', { variant: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApprove = async (expenseId) => {
+    if (!window.confirm('Approve this expense claim?')) return;
+    
+    try {
+      const response = await expenseService.approve(expenseId);
+      if (response.success) {
+        enqueueSnackbar('Expense approved successfully', { variant: 'success' });
+        fetchExpenses();
+      } else {
+        enqueueSnackbar(response.message || 'Failed to approve', { variant: 'error' });
+      }
+    } catch (error) {
+      enqueueSnackbar('Error approving expense', { variant: 'error' });
+    }
+  };
+
+  const handleReject = async (expenseId) => {
+    const reason = window.prompt('Rejection reason:');
+    if (!reason) return;
+    
+    try {
+      const response = await expenseService.reject(expenseId, reason);
+      if (response.success) {
+        enqueueSnackbar('Expense rejected', { variant: 'success' });
+        fetchExpenses();
+      } else {
+        enqueueSnackbar(response.message || 'Failed to reject', { variant: 'error' });
+      }
+    } catch (error) {
+      enqueueSnackbar('Error rejecting expense', { variant: 'error' });
+    }
+  };
+
+  const handleDelete = async (expenseId) => {
+    if (!window.confirm('Delete this expense?')) return;
+    
+    try {
+      const response = await expenseService.delete(expenseId);
+      if (response.success) {
+        enqueueSnackbar('Expense deleted successfully', { variant: 'success' });
+        fetchExpenses();
+      } else {
+        enqueueSnackbar(response.message || 'Failed to delete', { variant: 'error' });
+      }
+    } catch (error) {
+      enqueueSnackbar('Error deleting expense', { variant: 'error' });
+    }
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -106,56 +193,83 @@ export default function ExpensesPage() {
                   onSort={onSort}
                 />
                 <TableBody>
-                  {tableData
-                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                    .map((row) => (
-                      <TableRow key={row.id} hover>
-                        <TableCell>{row.date}</TableCell>
-                        <TableCell>
-                          <Typography variant="subtitle2">{row.employee}</Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Chip label={row.category} size="small" variant="outlined" />
-                        </TableCell>
-                        <TableCell>{row.description}</TableCell>
-                        <TableCell align="right">
-                          <Typography variant="subtitle2" color="error.main">
-                            ${row.amount.toFixed(2)}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="center">
-                          <Chip
-                            label={row.status}
-                            size="small"
-                            color={getStatusColor(row.status)}
-                            sx={{ textTransform: 'capitalize' }}
-                          />
-                        </TableCell>
-                        <TableCell align="right">
-                          <IconButton size="small">
-                            <Iconify icon="eva:eye-fill" />
-                          </IconButton>
-                          {row.status === 'pending' && (
-                            <>
-                              <IconButton size="small" color="success">
-                                <Iconify icon="eva:checkmark-circle-fill" />
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={TABLE_HEAD.length} align="center" sx={{ py: 5 }}>
+                        <CircularProgress />
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    <>
+                      {tableData.map((row) => (
+                        <TableRow key={row.id} hover>
+                          <TableCell>{fDate(row.expenseDate || row.date)}</TableCell>
+                          <TableCell>
+                            <Stack>
+                              <Typography variant="subtitle2">{row.employeeName}</Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {row.employeeCode}
+                              </Typography>
+                            </Stack>
+                          </TableCell>
+                          <TableCell>
+                            <Chip label={row.category} size="small" variant="outlined" />
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" sx={{ maxWidth: 200 }}>
+                              {row.description}
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="right">
+                            <Typography variant="subtitle2">
+                              ₹{row.amount?.toFixed(2) || '0.00'}
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="center">
+                            <Chip
+                              label={row.status}
+                              size="small"
+                              color={getStatusColor(row.status)}
+                              sx={{ textTransform: 'capitalize' }}
+                            />
+                          </TableCell>
+                          <TableCell align="right">
+                            <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                              {row.status === 'pending' && (
+                                <>
+                                  <IconButton 
+                                    size="small" 
+                                    color="success"
+                                    onClick={() => handleApprove(row.id)}
+                                  >
+                                    <Iconify icon="eva:checkmark-circle-fill" />
+                                  </IconButton>
+                                  <IconButton 
+                                    size="small" 
+                                    color="error"
+                                    onClick={() => handleReject(row.id)}
+                                  >
+                                    <Iconify icon="eva:close-circle-fill" />
+                                  </IconButton>
+                                </>
+                              )}
+                              <IconButton size="small" color="error" onClick={() => handleDelete(row.id)}>
+                                <Iconify icon="eva:trash-2-outline" />
                               </IconButton>
-                              <IconButton size="small" color="error">
-                                <Iconify icon="eva:close-circle-fill" />
-                              </IconButton>
-                            </>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  {tableData.length === 0 && <TableNoData isNotFound={true} />}
+                            </Stack>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {tableData.length === 0 && <TableNoData isNotFound={true} />}
+                    </>
+                  )}
                 </TableBody>
               </Table>
             </TableContainer>
           </Scrollbar>
 
           <TablePaginationCustom
-            count={tableData.length}
+            count={totalCount}
             page={page}
             rowsPerPage={rowsPerPage}
             onPageChange={onChangePage}
