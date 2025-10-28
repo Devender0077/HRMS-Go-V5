@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { selectUser } from '../../redux/slices/authSlice';
 import usePermissions from '../../hooks/usePermissions';
+import useWeekOffSettings from '../../hooks/useWeekOffSettings';
 // @mui
 import {
   Card,
@@ -78,7 +79,15 @@ export default function AttendanceCalendarPage() {
   const [error, setError] = useState('');
   const [selectedAttendance, setSelectedAttendance] = useState(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [weekOffDays, setWeekOffDays] = useState(['Saturday', 'Sunday']); // Default week offs
+  
+  // DYNAMIC: Load week off settings from database (reloads when filters change)
+  const { weekOffDays, reload: reloadWeekOffs, loading: weekOffLoading } = useWeekOffSettings(`${filterYear}-${filterMonth}`);
+  
+  // Debug: Log week off days whenever they change
+  useEffect(() => {
+    console.log('📅 [Calendar] Week off days changed to:', weekOffDays);
+    console.log('📅 [Calendar] Loading state:', weekOffLoading);
+  }, [weekOffDays, weekOffLoading]);
 
   const daysInMonth = new Date(filterYear, filterMonth, 0).getDate();
 
@@ -144,7 +153,14 @@ export default function AttendanceCalendarPage() {
   // Check if a day is a weekend based on configured week off days
   const isWeekendDay = (day) => {
     const dayName = new Date(filterYear, filterMonth - 1, day).toLocaleDateString('en-US', { weekday: 'long' });
-    return weekOffDays.includes(dayName);
+    const isWeekend = weekOffDays.includes(dayName);
+    
+    // Debug Saturday and Sunday specifically
+    if (dayName === 'Saturday' || dayName === 'Sunday') {
+      console.log(`📅 [Calendar] Day ${day} (${dayName}): isWeekend=${isWeekend}, weekOffDays=`, weekOffDays);
+    }
+    
+    return isWeekend;
   };
 
   // Build ISO date for each day cell: 'YYYY-MM-DD'
@@ -159,12 +175,14 @@ export default function AttendanceCalendarPage() {
     return summary;
   };
 
-  // Render status cell (clickable for editing only if user has permission)
-  const renderStatusCell = (status, employee, date) => {
+  // Render status cell (clickable for editing only if user has permission AND not a weekend)
+  const renderStatusCell = (status, employee, date, isWeekend) => {
     const statusInfo = STATUS_CODES[status] || STATUS_CODES['-'];
+    const isEditable = canEditAttendance && !isWeekend; // Can't edit weekends
+    
     return (
       <Box
-        onClick={canEditAttendance ? () => handleCellClick(employee, date, status) : undefined}
+        onClick={isEditable ? () => handleCellClick(employee, date, status) : undefined}
         sx={{
           width: 36,
           height: 36,
@@ -176,9 +194,9 @@ export default function AttendanceCalendarPage() {
           color: statusInfo.color,
           fontWeight: 600,
           fontSize: '0.75rem',
-          cursor: canEditAttendance ? 'pointer' : 'default',
+          cursor: isEditable ? 'pointer' : 'default',
           transition: 'all 0.2s',
-          ...(canEditAttendance && {
+          ...(isEditable && {
             '&:hover': {
             transform: 'scale(1.1)',
               boxShadow: 2,
@@ -229,31 +247,8 @@ export default function AttendanceCalendarPage() {
     setSelectedAttendance(null);
   };
 
-  // Load week off configuration on mount
-  useEffect(() => {
-    const loadWeekOffSettings = async () => {
-      try {
-        // Import general settings service
-        const { default: generalSettingsService } = await import('../../services/api/generalSettingsService');
-        const response = await generalSettingsService.getByCategory('attendance');
-        
-        if (response.success && response.data) {
-          const weekOffSetting = response.data.week_off_days || response.data.weekOffDays;
-          if (weekOffSetting) {
-            // Parse comma-separated week off days
-            const days = weekOffSetting.split(',').map(d => d.trim());
-            setWeekOffDays(days);
-            console.log('✅ Loaded week off days:', days);
-          }
-        }
-      } catch (error) {
-        console.warn('Using default week offs (Saturday, Sunday):', error.message);
-        // Keep default ['Saturday', 'Sunday']
-      }
-    };
-    
-    loadWeekOffSettings();
-  }, []);
+  // Week off settings are now loaded dynamically via useWeekOffSettings hook
+  // The hook automatically reloads when filterYear or filterMonth changes
 
   // Fetch from API whenever filters change
   useEffect(() => {
@@ -522,7 +517,8 @@ export default function AttendanceCalendarPage() {
                         {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
                           const isWeekend = isWeekendDay(day);
                           const iso = isoFor(filterYear, filterMonth, day);
-                          const code = employee.attendanceByDate?.[iso] || '-';
+                          // If it's a weekend, show 'WD' (Weekly Off), otherwise show actual attendance or '-'
+                          const code = isWeekend ? 'WD' : (employee.attendanceByDate?.[iso] || '-');
                           return (
                             <TableCell
                               key={day}
@@ -533,7 +529,7 @@ export default function AttendanceCalendarPage() {
                                 borderColor: 'divider',
                               }}
                             >
-                              {renderStatusCell(code, employee, iso)}
+                              {renderStatusCell(code, employee, iso, isWeekend)}
                             </TableCell>
                           );
                         })}
@@ -569,7 +565,7 @@ export default function AttendanceCalendarPage() {
         {/* Footer Info */}
         <Card sx={{ p: 2, mt: 2 }}>
           <Typography variant="caption" color="text.secondary">
-            * Click on any attendance status cell to edit or update the record
+            * Click on any attendance status cell to edit or update the record (Weekend/WD cells are not editable)
           </Typography>
         </Card>
       </Container>

@@ -123,18 +123,25 @@ export default function PayslipsPage() {
   const fetchPayslips = async () => {
     setLoading(true);
     try {
+      console.log('🔄 [Payslips] Fetching payslips...', { page: page + 1, limit: rowsPerPage });
+      
       const response = await payrollService.getPayslips({
         page: page + 1,
         limit: rowsPerPage,
       });
 
+      console.log('📥 [Payslips] Response:', response);
+
       if (response.success) {
-        setPayslips(response.payslips || response.data?.payrolls || []);
+        const payslipData = response.payslips || response.data?.payrolls || [];
+        console.log(`✅ [Payslips] Loaded ${payslipData.length} payslips`);
+        setPayslips(payslipData);
       } else {
+        console.log('⚠️ [Payslips] No data received');
         setPayslips([]);
       }
     } catch (error) {
-      console.error('Error fetching payslips:', error);
+      console.error('❌ [Payslips] Error fetching:', error);
       enqueueSnackbar('Error loading payslips', { variant: 'error' });
       setPayslips([]);
     } finally {

@@ -148,21 +148,28 @@ export default function AnnouncementsListPage() {
   const fetchAnnouncements = async () => {
     try {
       setLoading(true);
+      console.log('🔄 [Announcements] Fetching announcements...');
+      
       const response = await announcementService.getAllAnnouncements();
+      console.log('📥 [Announcements] Response:', response);
+      
       if (response.success && Array.isArray(response.data)) {
         // Map backend data to frontend expected format
         const mappedAnnouncements = response.data.map(ann => ({
           ...ann,
-          author: ann.author_name || 'Unknown',
+          author: ann.author_name || ann.author || 'Unknown',
           type: ann.type || 'General',
           publish_date: ann.published_at || ann.created_at,
         }));
+        
+        console.log(`✅ [Announcements] Loaded ${mappedAnnouncements.length} announcements`);
         setAnnouncements(mappedAnnouncements);
       } else {
+        console.log('⚠️ [Announcements] No announcements found or invalid response');
         setAnnouncements([]);
       }
     } catch (error) {
-      console.error('Error fetching announcements:', error);
+      console.error('❌ [Announcements] Error fetching:', error);
       setAnnouncements([]);
     } finally {
       setLoading(false);

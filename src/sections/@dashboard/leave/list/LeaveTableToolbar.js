@@ -71,7 +71,6 @@ export default function LeaveTableToolbar({
       />
 
       <TextField
-        fullWidth
         select
         label="Leave Type"
         value={filterType}
@@ -86,6 +85,7 @@ export default function LeaveTableToolbar({
           },
         }}
         sx={{
+          minWidth: 200,
           maxWidth: { sm: 240 },
           textTransform: 'capitalize',
         }}
@@ -107,7 +107,6 @@ export default function LeaveTableToolbar({
       </TextField>
 
       <TextField
-        fullWidth
         select
         label="Status"
         value={filterStatus}
@@ -122,7 +121,8 @@ export default function LeaveTableToolbar({
           },
         }}
         sx={{
-          maxWidth: { sm: 240 },
+          minWidth: 160,
+          maxWidth: { sm: 200 },
           textTransform: 'capitalize',
         }}
       >

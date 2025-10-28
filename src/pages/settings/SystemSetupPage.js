@@ -40,6 +40,7 @@ const CONFIG_ITEMS = [
   // Leave
   { title: 'Leave Types', icon: 'eva:calendar-fill', color: '#f57c00', category: 'leave', key: 'leaveTypes', route: '/dashboard/settings/configuration', tab: 'leaveTypes' },
   { title: 'Leave Policies', icon: 'eva:file-text-outline', color: '#f57c00', category: 'leave', key: 'leavePolicies', route: '/dashboard/settings/configuration', tab: 'leavePolicies' },
+  { title: 'Leave Balance Allocation', icon: 'eva:people-fill', color: '#f57c00', category: 'leave', key: 'leaveBalanceAllocation', route: '/dashboard/settings/leave-balance-allocation', tab: 'allocation' },
   
   // Payroll
   { title: 'Salary Components', icon: 'eva:credit-card-fill', color: '#7b1fa2', category: 'payroll', key: 'salaryComponents', route: '/dashboard/settings/configuration', tab: 'salary' },

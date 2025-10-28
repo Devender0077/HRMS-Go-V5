@@ -13,6 +13,8 @@ router.put('/applications/:id/approve', leaveController.approveLeave);
 router.put('/applications/:id/reject', leaveController.rejectLeave);
 router.get('/balances', leaveController.getBalances);
 router.get('/types', leaveController.getTypes);
+router.post('/types', leaveController.createLeaveType);
+router.put('/types/:id', leaveController.updateLeaveType);
 
 // CRUD routes
 router.get('/', leaveController.getAll);

@@ -467,17 +467,91 @@ exports.rejectLeave = async (req, res) => {
 // Get leave balances
 exports.getBalances = async (req, res) => {
   try {
-    const employeeId = req.query.employeeId || req.user?.id;
+    const userId = req.user?.id;
     const year = req.query.year || new Date().getFullYear();
 
-    // For now, return empty array since leave_balances table might not exist
-    // This should be implemented based on actual table structure
+    console.log('🔄 [Leave Balances] Fetching for userId:', userId, 'year:', year);
+
+    // Get employee from userId
+    const employee = await Employee.findOne({ where: { user_id: userId } });
+    
+    if (!employee) {
+      console.log('❌ [Leave Balances] No employee profile found for user:', userId);
+      return res.json({
+        success: true,
+        balances: [],
+        year,
+      });
+    }
+
+    const employeeId = employee.id;
+    console.log('✅ [Leave Balances] Found employee ID:', employeeId);
+
+    // Get all active leave types
+    const leaveTypes = await LeaveType.findAll({
+      where: { status: 'active' },
+      order: [['name', 'ASC']],
+    });
+
+    console.log(`📊 [Leave Balances] Found ${leaveTypes.length} active leave types`);
+
+    // Calculate balances for each leave type
+    const balances = await Promise.all(leaveTypes.map(async (leaveType) => {
+      // Get approved leaves for this employee and leave type in current year
+      const approvedLeaves = await Leave.findAll({
+        where: {
+          employeeId,
+          leaveTypeId: leaveType.id,
+          status: 'approved',
+          [Op.and]: [
+            { startDate: { [Op.gte]: `${year}-01-01` } },
+            { startDate: { [Op.lte]: `${year}-12-31` } },
+          ],
+        },
+      });
+
+      const used = approvedLeaves.reduce((sum, leave) => sum + parseFloat(leave.days || 0), 0);
+
+      // Get pending leaves
+      const pendingLeaves = await Leave.findAll({
+        where: {
+          employeeId,
+          leaveTypeId: leaveType.id,
+          status: 'pending',
+          [Op.and]: [
+            { startDate: { [Op.gte]: `${year}-01-01` } },
+            { startDate: { [Op.lte]: `${year}-12-31` } },
+          ],
+        },
+      });
+
+      const pending = pendingLeaves.reduce((sum, leave) => sum + parseFloat(leave.days || 0), 0);
+
+      const allocated = parseFloat(leaveType.days_per_year || leaveType.daysPerYear || 0);
+      const remaining = allocated - used;
+
+      return {
+        id: leaveType.id,
+        leaveType: leaveType.name,
+        leave_type_name: leaveType.name,
+        allocated,
+        used,
+        pending,
+        remaining,
+        icon: getLeaveTypeIcon(leaveType.name),
+        color: getLeaveTypeColor(leaveType.name),
+      };
+    }));
+
+    console.log('✅ [Leave Balances] Calculated balances:', balances);
+
     res.json({
       success: true,
-      balances: [],
+      balances,
       year,
     });
   } catch (error) {
+    console.error('❌ [Leave Balances] Error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch balances',
@@ -485,6 +559,28 @@ exports.getBalances = async (req, res) => {
     });
   }
 };
+
+// Helper function to get icon for leave type
+function getLeaveTypeIcon(name) {
+  const nameLC = name.toLowerCase();
+  if (nameLC.includes('annual')) return 'eva:calendar-fill';
+  if (nameLC.includes('sick')) return 'eva:heart-fill';
+  if (nameLC.includes('casual')) return 'eva:umbrella-fill';
+  if (nameLC.includes('maternity')) return 'eva:person-add-fill';
+  if (nameLC.includes('paternity')) return 'eva:people-fill';
+  return 'eva:file-text-fill';
+}
+
+// Helper function to get color for leave type
+function getLeaveTypeColor(name) {
+  const nameLC = name.toLowerCase();
+  if (nameLC.includes('annual')) return 'primary';
+  if (nameLC.includes('sick')) return 'error';
+  if (nameLC.includes('casual')) return 'info';
+  if (nameLC.includes('maternity')) return 'success';
+  if (nameLC.includes('paternity')) return 'warning';
+  return 'default';
+}
 
 // Get leave types
 exports.getTypes = async (req, res) => {
@@ -502,6 +598,103 @@ exports.getTypes = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch leave types',
+      error: error.message,
+    });
+  }
+};
+
+// Create new leave type (organization-wide)
+exports.createLeaveType = async (req, res) => {
+  try {
+    const { name, description, days_per_year, carry_forward, max_carry_forward, type, status } = req.body;
+    
+    console.log('➕ [Leave Types] Creating new leave type:', name);
+    
+    // Validate required fields
+    if (!name || !name.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Leave type name is required',
+      });
+    }
+    
+    // Check if leave type with same name already exists
+    const existing = await LeaveType.findOne({
+      where: { name: name.trim() },
+    });
+    
+    if (existing) {
+      return res.status(400).json({
+        success: false,
+        message: `Leave type "${name}" already exists`,
+      });
+    }
+    
+    // Create the leave type (this will be available to ALL employees)
+    const leaveType = await LeaveType.create({
+      name: name.trim(),
+      description: description || '',
+      days_per_year: days_per_year || 0,
+      carry_forward: carry_forward || false,
+      max_carry_forward: max_carry_forward || 0,
+      type: type || 'paid',
+      status: status || 'active',
+    });
+    
+    console.log(`✅ [Leave Types] Created "${leaveType.name}" - ${days_per_year} days/year (available to ALL employees)`);
+    
+    res.json({
+      success: true,
+      message: `Leave type "${name}" created successfully - All employees will now have ${days_per_year} days per year`,
+      leaveType,
+    });
+  } catch (error) {
+    console.error('❌ [Leave Types] Create error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create leave type',
+      error: error.message,
+    });
+  }
+};
+
+// Update leave type (organization-wide default)
+exports.updateLeaveType = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { days_per_year, carry_forward, max_carry_forward } = req.body;
+    
+    console.log('📝 [Leave Types] Updating leave type:', id, req.body);
+    
+    // Find the leave type
+    const leaveType = await LeaveType.findByPk(id);
+    
+    if (!leaveType) {
+      return res.status(404).json({
+        success: false,
+        message: 'Leave type not found',
+      });
+    }
+    
+    // Update the leave type (this affects ALL employees organization-wide)
+    await leaveType.update({
+      days_per_year: days_per_year || leaveType.days_per_year,
+      carry_forward: carry_forward !== undefined ? carry_forward : leaveType.carry_forward,
+      max_carry_forward: max_carry_forward !== undefined ? max_carry_forward : leaveType.max_carry_forward,
+    });
+    
+    console.log(`✅ [Leave Types] Updated "${leaveType.name}" - ${days_per_year} days/year (applies to ALL employees)`);
+    
+    res.json({
+      success: true,
+      message: `Leave type updated successfully - All employees will now have ${days_per_year} ${leaveType.name} days per year`,
+      leaveType,
+    });
+  } catch (error) {
+    console.error('❌ [Leave Types] Update error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update leave type',
       error: error.message,
     });
   }

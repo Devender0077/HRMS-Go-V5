@@ -44,6 +44,49 @@ class LeaveService {
   }
 
   /**
+   * Create new leave type (organization-wide)
+   * @param {Object} data - Leave type data
+   * @returns {Promise} Create response
+   */
+  async createLeaveType(data) {
+    try {
+      console.log('➕ [Leave Service] Creating leave type:', data);
+      const response = await apiClient.post('/leaves/types', data);
+      console.log('✅ [Leave Service] Create successful:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ [Leave Service] Create error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to create leave type',
+        error,
+      };
+    }
+  }
+
+  /**
+   * Update leave type (organization-wide default)
+   * @param {number} id - Leave type ID
+   * @param {Object} data - Update data
+   * @returns {Promise} Update response
+   */
+  async updateLeaveType(id, data) {
+    try {
+      console.log('🔄 [Leave Service] Updating leave type:', id, data);
+      const response = await apiClient.put(`/leaves/types/${id}`, data);
+      console.log('✅ [Leave Service] Update successful:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ [Leave Service] Update error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to update leave type',
+        error,
+      };
+    }
+  }
+
+  /**
    * Get leave application by ID
    * @param {number} id - Leave application ID
    * @returns {Promise} Leave application response
@@ -163,13 +206,13 @@ class LeaveService {
     try {
       const url = employeeId ? `/leaves/balances/${employeeId}` : '/leaves/balances';
       const response = await apiClient.get(url);
-      return {
-        success: true,
-        data: response.data,
-      };
+      // Backend returns {success: true, balances: [...], year: 2025}
+      // Return it directly
+      return response.data;
     } catch (error) {
       return {
         success: false,
+        balances: [],
         message: error.response?.data?.message || 'Failed to fetch leave balances',
         error,
       };

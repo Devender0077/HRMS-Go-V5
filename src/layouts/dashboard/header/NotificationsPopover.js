@@ -58,13 +58,25 @@ export default function NotificationsPopover() {
   const fetchNotifications = async () => {
     try {
       setLoading(true);
+      console.log('🔔 [NotificationsPopover] Fetching notifications...');
+      
       const response = await notificationService.getAll();
+      console.log('📥 [NotificationsPopover] Response:', response);
+      
       if (response.success) {
-        setNotifications(response.data || []);
-        setTotalUnRead(response.unreadCount || 0);
+        const notifs = response.data || [];
+        const unread = response.unreadCount || 0;
+        
+        console.log(`✅ [NotificationsPopover] Loaded ${notifs.length} notifications (${unread} unread)`);
+        setNotifications(notifs);
+        setTotalUnRead(unread);
+      } else {
+        console.log('⚠️ [NotificationsPopover] No success response');
+        setNotifications([]);
+        setTotalUnRead(0);
       }
     } catch (error) {
-      console.error('Error loading notifications:', error);
+      console.error('❌ [NotificationsPopover] Error loading:', error);
       setNotifications([]);
       setTotalUnRead(0);
     } finally {

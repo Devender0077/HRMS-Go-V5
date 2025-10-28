@@ -16,7 +16,7 @@ import {
 // routes
 import { PATH_DASHBOARD } from '../../routes/paths';
 // services
-import leaveService from '../../services/leaveService';
+import leaveService from '../../services/api/leaveService';
 // components
 import Iconify from '../../components/iconify';
 import Scrollbar from '../../components/scrollbar';
@@ -92,18 +92,25 @@ export default function LeaveApplicationsPage() {
   const fetchLeaves = async () => {
     setLoading(true);
     try {
+      console.log('🔄 [Leave Applications] Fetching leaves...', { page: page + 1, limit: rowsPerPage });
+      
       const response = await leaveService.getAll({
         page: page + 1,
         limit: rowsPerPage,
       });
 
+      console.log('📥 [Leave Applications] Response:', response);
+
       if (response.success && response.data) {
-        setTableData(response.data.leaves || []);
+        const leaves = response.data.leaves || [];
+        console.log(`✅ [Leave Applications] Loaded ${leaves.length} leave applications`);
+        setTableData(leaves);
       } else {
+        console.log('⚠️ [Leave Applications] No data received');
         setTableData([]);
       }
     } catch (error) {
-      console.error('Error fetching leaves:', error);
+      console.error('❌ [Leave Applications] Error:', error);
       enqueueSnackbar('Error loading leave applications', { variant: 'error' });
       setTableData([]);
     } finally {

@@ -80,6 +80,7 @@ export default function AttendanceMusterPage() {
   const [error, setError] = useState('');
   const [employees, setEmployees] = useState([]); // from /calendar
   const [hoursByEmployee, setHoursByEmployee] = useState({}); // id -> totalHours number
+  const [dataLoaded, setDataLoaded] = useState(false); // Track if data has been generated
 
   // Helpers for month window
   const startDateISO = useMemo(
@@ -92,52 +93,71 @@ export default function AttendanceMusterPage() {
   );
 
   // Fetch calendar (employee + statusByDate) and records (hours) then merge
+  const handleGenerateReport = async () => {
+    setLoading(true);
+    setError('');
+    setDataLoaded(false);
+    
+    console.log('🔄 [Muster] Generating report for:', {
+      year: filterYear,
+      month: filterMonth,
+      department: filterDepartment,
+      dateRange: `${startDateISO} to ${endDateISO}`,
+    });
+
+    try {
+      // 1) Calendar: employees + attendanceByDate
+      console.log('📥 [Muster] Fetching calendar data...');
+      const calendar = await attendanceService.getCalendar({
+        year: filterYear,
+        month: filterMonth,
+        department: filterDepartment,
+      });
+
+      console.log('✅ [Muster] Calendar data received:', calendar);
+      const employeeList = Array.isArray(calendar) ? calendar : [];
+      setEmployees(employeeList);
+      console.log(`📊 [Muster] Loaded ${employeeList.length} employees`);
+
+      // 2) Hours: sum totalHours by employeeId in range
+      console.log('📥 [Muster] Fetching attendance records...');
+      const recordsRes = await attendanceService.getAttendanceRecordsFiltered({
+        startDate: startDateISO,
+        endDate: endDateISO,
+      });
+
+      console.log('✅ [Muster] Records data received:', recordsRes);
+      
+      const rows = recordsRes?.data?.attendance || recordsRes?.attendance || [];
+      console.log(`📊 [Muster] Processing ${rows.length} attendance records`);
+      
+      const hoursAgg = rows.reduce((acc, r) => {
+        const id = r.employeeId;
+        const hrs = parseFloat(r.totalHours ?? r.total_hours ?? 0) || 0;
+        acc[id] = (acc[id] || 0) + hrs;
+        return acc;
+      }, {});
+
+      console.log('✅ [Muster] Hours aggregated:', hoursAgg);
+      setHoursByEmployee(hoursAgg);
+      setDataLoaded(true);
+      console.log('✅ [Muster] Report generated successfully!');
+    } catch (e) {
+      console.error('❌ [Muster] Error generating report:', e);
+      const errorMsg = e?.response?.data?.message || e.message || 'Failed to load muster data';
+      setError(errorMsg);
+      setEmployees([]);
+      setHoursByEmployee({});
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Auto-generate report on mount
   useEffect(() => {
-    let alive = true;
-    (async () => {
-      setLoading(true);
-      setError('');
-      try {
-        // 1) Calendar: employees + attendanceByDate
-        const calendar = await attendanceService.getCalendar({
-          year: filterYear,
-          month: filterMonth,
-          department: filterDepartment,
-        });
-
-        if (!alive) return;
-        setEmployees(Array.isArray(calendar) ? calendar : []);
-
-        // 2) Hours: sum totalHours by employeeId in range
-        const recordsRes = await attendanceService.getAttendanceRecordsFiltered({
-          startDate: startDateISO,
-          endDate: endDateISO,
-          // backend getRecords doesn't filter by department; we filter on client
-        });
-
-        const rows = recordsRes?.data?.attendance || recordsRes?.attendance || []; // depends on your service return shape
-        const hoursAgg = rows.reduce((acc, r) => {
-          const id = r.employeeId;
-          const hrs = parseFloat(r.totalHours ?? r.total_hours ?? 0) || 0;
-          acc[id] = (acc[id] || 0) + hrs;
-          return acc;
-        }, {});
-
-        if (!alive) return;
-        setHoursByEmployee(hoursAgg);
-      } catch (e) {
-        if (!alive) return;
-        setError(e?.response?.data?.message || e.message || 'Failed to load muster data');
-        setEmployees([]);
-        setHoursByEmployee({});
-      } finally {
-        if (alive) setLoading(false);
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, [filterYear, filterMonth, filterDepartment, startDateISO, endDateISO]);
+    handleGenerateReport();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Build table rows from employees + hours + status counts
   const tableData = useMemo(() => {
@@ -182,13 +202,55 @@ export default function AttendanceMusterPage() {
     totalHours: tableData.reduce((sum, r) => sum + r.totalHours, 0),
   }), [tableData]);
 
-  const handleExport = () => {
-    // You can export `tableData` here (CSV/XLSX)
-    console.log('Export muster report', { tableData, summary, month: filterMonth, year: filterYear });
-  };
+  const handleExport = async () => {
+    try {
+      // Dynamically import xlsx library
+      const XLSX = await import('xlsx');
+      
+      // Prepare data for export
+      const exportData = tableData.map(row => ({
+        'Employee Name': row.employeeName,
+        'Employee ID': row.employeeId,
+        'Department': row.department,
+        'Present': row.present,
+        'Absent': row.absent,
+        'Half Day': row.halfDay,
+        'Late': row.late,
+        'On Leave': row.onLeave,
+        'Total Hours': row.totalHours.toFixed(2),
+      }));
 
-  const handlePrint = () => {
-    window.print();
+      // Add summary row
+      exportData.push({});
+      exportData.push({
+        'Employee Name': 'SUMMARY',
+        'Employee ID': '',
+        'Department': `Total Employees: ${summary.totalEmployees}`,
+        'Present': summary.totalPresent,
+        'Absent': summary.totalAbsent,
+        'Half Day': summary.totalHalfDay,
+        'Late': summary.totalLate,
+        'On Leave': '',
+        'Total Hours': summary.totalHours.toFixed(2),
+      });
+
+      // Create workbook and worksheet
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Muster Report');
+
+      // Generate filename with month and year
+      const monthName = new Date(filterYear, filterMonth - 1).toLocaleString('default', { month: 'long' });
+      const filename = `Attendance_Muster_${monthName}_${filterYear}.xlsx`;
+
+      // Download file
+      XLSX.writeFile(workbook, filename);
+      
+      console.log('✅ Muster report exported successfully');
+    } catch (error) {
+      console.error('❌ Error exporting muster report:', error);
+      setError('Failed to export report. Please try again.');
+    }
   };
 
   const paged = useMemo(
@@ -211,22 +273,14 @@ export default function AttendanceMusterPage() {
             { name: 'Muster Report' },
           ]}
           action={
-            <Stack direction="row" spacing={2}>
-              <Button
-                variant="outlined"
-                startIcon={<Iconify icon="eva:printer-fill" />}
-                onClick={handlePrint}
-              >
-                Print
-              </Button>
-              <Button
-                variant="contained"
-                startIcon={<Iconify icon="eva:download-fill" />}
-                onClick={handleExport}
-              >
-                Export
-              </Button>
-            </Stack>
+            <Button
+              variant="contained"
+              startIcon={<Iconify icon="eva:download-fill" />}
+              onClick={handleExport}
+              disabled={loading || tableData.length === 0}
+            >
+              Export
+            </Button>
           }
         />
 
@@ -279,10 +333,15 @@ export default function AttendanceMusterPage() {
               </TextField>
             </Grid>
             <Grid item xs={12} md={3}>
-              {/* If you want manual fetch instead of auto-on-change,
-                  move the useEffect body into a function and call it here */}
-              <Button fullWidth variant="contained" size="large">
-                Generate Report
+              <Button 
+                fullWidth 
+                variant="contained" 
+                size="large"
+                onClick={handleGenerateReport}
+                disabled={loading}
+                startIcon={loading ? <Iconify icon="eos-icons:loading" /> : <Iconify icon="eva:refresh-fill" />}
+              >
+                {loading ? 'Loading...' : 'Generate Report'}
               </Button>
             </Grid>
           </Grid>
@@ -421,7 +480,25 @@ export default function AttendanceMusterPage() {
                   ))}
 
                   {!loading && !error && tableData.length === 0 && (
-                    <TableNoData isNotFound />
+                    <TableRow>
+                      <TableCell colSpan={TABLE_HEAD.length} align="center" sx={{ py: 8 }}>
+                        <Box>
+                          <Iconify 
+                            icon="eva:file-text-outline" 
+                            sx={{ fontSize: 80, color: 'text.disabled', mb: 2 }} 
+                          />
+                          <Typography variant="h6" color="text.secondary">
+                            {dataLoaded ? 'No attendance data found' : 'Click "Generate Report" to load attendance data'}
+                          </Typography>
+                          <Typography variant="body2" color="text.disabled" sx={{ mt: 1 }}>
+                            {dataLoaded 
+                              ? 'Try changing the filters and generating the report again'
+                              : 'Select month, year, and department, then click the button above'
+                            }
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
                   )}
                 </TableBody>
               </Table>
