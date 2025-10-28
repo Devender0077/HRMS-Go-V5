@@ -49,6 +49,11 @@ const models = {
   // Calendar Models
   CalendarEvent: require('../models/CalendarEvent'),
   
+  // Contract & Finance Models
+  Contract: require('../models/Contract'),
+  Expense: require('../models/Expense'),
+  Income: require('../models/Income'),
+  
   // Settings Models
   GeneralSetting: require('../models/GeneralSetting'),
   
@@ -85,7 +90,7 @@ const models = {
 
 // Log detailed model count
 console.log('\n📊 MODEL BREAKDOWN:');
-console.log('  Core Models:        25');
+console.log('  Core Models:        28 (added Contract, Expense, Income)');
 console.log('  Settings Models:    21 (19 specialized + 2 workflow/reports)');
 console.log('  Additional Models:   3 (LeaveRequest, PaymentMethod, AttendanceRegularization)');
 console.log('  ─────────────────────');
@@ -152,6 +157,20 @@ const setupAssociations = () => {
     Employee.hasMany(LeaveRequest, { foreignKey: 'employee_id' });
   }
 
+  // Contract associations
+  const { Contract, Expense, Income } = models;
+  
+  if (Contract && Employee) {
+    Contract.belongsTo(Employee, { foreignKey: 'employeeId', as: 'employee' });
+    Employee.hasMany(Contract, { foreignKey: 'employeeId' });
+  }
+  
+  // Expense associations
+  if (Expense && Employee) {
+    Expense.belongsTo(Employee, { foreignKey: 'employeeId', as: 'employee' });
+    Employee.hasMany(Expense, { foreignKey: 'employeeId' });
+  }
+  
   // Payroll associations
   if (Payroll && Employee) {
     Payroll.belongsTo(Employee, { foreignKey: 'employeeId', as: 'Employee' });
