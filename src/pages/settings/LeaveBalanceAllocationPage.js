@@ -68,9 +68,9 @@ export default function LeaveBalanceAllocationPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      console.log('🔄 [Leave Allocation] Loading leave types (organization defaults)...');
+      console.log('🔄 [Leave Allocation] Loading ALL leave types (both active and inactive)...');
       
-      // Load leave types (organization-wide defaults)
+      // Load ALL leave types (both active and inactive)
       const typesResponse = await leaveService.getLeaveTypes();
       console.log('📥 [Leave Allocation] Leave types response:', typesResponse);
       
@@ -79,11 +79,20 @@ export default function LeaveBalanceAllocationPage() {
         const uniqueTypes = typesResponse.types.filter((type, index, self) =>
           index === self.findIndex((t) => t.id === type.id)
         );
-        setLeaveTypes(uniqueTypes);
-        console.log(`✅ [Leave Allocation] Loaded ${uniqueTypes.length} unique leave types`);
-        console.log('📋 [Leave Allocation] Leave types:', uniqueTypes.map(t => ({ 
+        
+        // Sort: active first, then inactive
+        const sortedTypes = uniqueTypes.sort((a, b) => {
+          if (a.status === 'active' && b.status !== 'active') return -1;
+          if (a.status !== 'active' && b.status === 'active') return 1;
+          return a.name.localeCompare(b.name);
+        });
+        
+        setLeaveTypes(sortedTypes);
+        console.log(`✅ [Leave Allocation] Loaded ${sortedTypes.length} leave types (active + inactive)`);
+        console.log('📋 [Leave Allocation] Leave types:', sortedTypes.map(t => ({ 
           id: t.id, 
           name: t.name, 
+          status: t.status,
           days: t.days_per_year || t.daysPerYear || 0 
         })));
       } else {
@@ -196,12 +205,25 @@ export default function LeaveBalanceAllocationPage() {
       
       const response = await leaveService.updateLeaveType(leaveType.id, { status: newStatus });
       
+      console.log('📥 [Leave Allocation] Update response:', response);
+      
       if (response.success) {
         enqueueSnackbar(
           `✅ "${leaveType.name}" ${newStatus === 'active' ? 'activated' : 'deactivated'} successfully`, 
           { variant: 'success' }
         );
-        loadData();
+        
+        // Update local state immediately for instant UI feedback
+        setLeaveTypes(prevTypes => 
+          prevTypes.map(type => 
+            type.id === leaveType.id 
+              ? { ...type, status: newStatus }
+              : type
+          )
+        );
+        
+        // Reload from server to ensure consistency
+        await loadData();
       } else {
         enqueueSnackbar(response.message || 'Error updating status', { variant: 'error' });
       }
@@ -367,17 +389,6 @@ export default function LeaveBalanceAllocationPage() {
                           
                           <TableCell align="right">
                             <Stack direction="row" spacing={1} justifyContent="flex-end">
-                              {/* View Button */}
-                              <Button
-                                size="small"
-                                variant="outlined"
-                                color="info"
-                                startIcon={<Iconify icon="eva:eye-outline" />}
-                                onClick={() => handleOpenDialog(leaveType)}
-                              >
-                                View
-                              </Button>
-
                               {/* Edit Button */}
                               <Button
                                 size="small"

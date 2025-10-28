@@ -215,20 +215,25 @@ exports.create = async (req, res) => {
 // Apply for leave (alias for create)
 exports.applyLeave = async (req, res) => {
   try {
-    const { leaveTypeId, startDate, endDate, days, reason } = req.body;
+    const { leaveTypeId, startDate, endDate, days, reason, emergencyContact } = req.body;
     const userId = req.user?.id;
+    
+    console.log('📝 [Apply Leave] Request body:', req.body);
+    console.log('👤 [Apply Leave] User ID:', userId);
     
     // Look up employeeId from userId
     let employeeId = req.body.employeeId;
     if (!employeeId && userId) {
       const employee = await Employee.findOne({ where: { user_id: userId } });
       if (!employee) {
+        console.log('❌ [Apply Leave] No employee profile found for user:', userId);
         return res.status(400).json({
           success: false,
           message: 'Employee profile not found for this user',
         });
       }
       employeeId = employee.id;
+      console.log('✅ [Apply Leave] Found employee ID:', employeeId);
     }
 
     if (!employeeId) {
@@ -238,6 +243,14 @@ exports.applyLeave = async (req, res) => {
       });
     }
 
+    console.log('💾 [Apply Leave] Creating leave request:', {
+      employeeId,
+      leaveTypeId,
+      startDate,
+      endDate,
+      days,
+    });
+
     const leave = await Leave.create({
       employeeId,
       leaveTypeId,
@@ -245,6 +258,7 @@ exports.applyLeave = async (req, res) => {
       endDate,
       days,
       reason,
+      emergencyContact: emergencyContact || null,
       status: 'pending',
     });
 
@@ -292,6 +306,128 @@ exports.applyLeave = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to apply leave',
+      error: error.message,
+    });
+  }
+};
+
+// Approve leave request
+exports.approveLeave = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const approverId = req.user?.id;
+
+    console.log(`✅ [Approve Leave] Approving leave request ${id} by user ${approverId}`);
+
+    const leave = await Leave.findByPk(id);
+    
+    if (!leave) {
+      return res.status(404).json({
+        success: false,
+        message: 'Leave request not found',
+      });
+    }
+
+    // Update leave status
+    await leave.update({
+      status: 'approved',
+      approvedBy: approverId,
+      approvedAt: new Date(),
+    });
+
+    // Create notification for employee
+    try {
+      const employee = await Employee.findByPk(leave.employeeId);
+      if (employee && employee.user_id) {
+        await Notification.create({
+          userId: employee.user_id,
+          type: 'leave_approved',
+          title: 'Leave Approved',
+          description: `Your leave request from ${leave.startDate} to ${leave.endDate} has been approved`,
+          relatedId: leave.id,
+          relatedType: 'leave',
+          isRead: false,
+        }, {
+          fields: ['userId', 'type', 'title', 'description', 'relatedId', 'relatedType', 'isRead', 'createdAt', 'updatedAt']
+        });
+        console.log('✅ Created approval notification for employee');
+      }
+    } catch (notifError) {
+      console.error('Error creating approval notification:', notifError);
+    }
+    
+    res.json({
+      success: true,
+      message: 'Leave request approved successfully',
+      data: leave,
+    });
+  } catch (error) {
+    console.error('❌ [Approve Leave] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to approve leave request',
+      error: error.message,
+    });
+  }
+};
+
+// Reject leave request
+exports.rejectLeave = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { rejectionReason } = req.body;
+    const approverId = req.user?.id;
+
+    console.log(`❌ [Reject Leave] Rejecting leave request ${id} by user ${approverId}`);
+
+    const leave = await Leave.findByPk(id);
+    
+    if (!leave) {
+      return res.status(404).json({
+        success: false,
+        message: 'Leave request not found',
+      });
+    }
+
+    // Update leave status
+    await leave.update({
+      status: 'rejected',
+      approvedBy: approverId,
+      approvedAt: new Date(),
+      rejectionReason: rejectionReason || 'No reason provided',
+    });
+
+    // Create notification for employee
+    try {
+      const employee = await Employee.findByPk(leave.employeeId);
+      if (employee && employee.user_id) {
+        await Notification.create({
+          userId: employee.user_id,
+          type: 'leave_rejected',
+          title: 'Leave Rejected',
+          description: `Your leave request from ${leave.startDate} to ${leave.endDate} has been rejected${rejectionReason ? `: ${rejectionReason}` : ''}`,
+          relatedId: leave.id,
+          relatedType: 'leave',
+          isRead: false,
+        }, {
+          fields: ['userId', 'type', 'title', 'description', 'relatedId', 'relatedType', 'isRead', 'createdAt', 'updatedAt']
+        });
+        console.log('✅ Created rejection notification for employee');
+      }
+    } catch (notifError) {
+      console.error('Error creating rejection notification:', notifError);
+    }
+    
+    res.json({
+      success: true,
+      message: 'Leave request rejected successfully',
+      data: leave,
+    });
+  } catch (error) {
+    console.error('❌ [Reject Leave] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to reject leave request',
       error: error.message,
     });
   }
@@ -354,116 +490,6 @@ exports.delete = async (req, res) => {
   }
 };
 
-// Approve leave
-exports.approveLeave = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { comments } = req.body;
-    const approverId = req.user?.id || req.body.approvedBy;
-
-    const leave = await Leave.findByPk(id);
-    
-    if (!leave) {
-      return res.status(404).json({
-        success: false,
-        message: 'Leave request not found',
-      });
-    }
-
-    await leave.update({
-      status: 'approved',
-      approvedBy: approverId,
-      approvedAt: new Date(),
-    });
-
-    // Create notification for employee
-    try {
-      const employee = await Employee.findByPk(leave.employeeId);
-      if (employee && employee.user_id) {
-        await Notification.create({
-          userId: employee.user_id,
-          type: 'leave_approved',
-          title: 'Leave Request Approved',
-          description: `Your leave request from ${leave.startDate} to ${leave.endDate} has been approved`,
-          relatedId: leave.id,
-          relatedType: 'leave',
-          isRead: false,
-        });
-        console.log('✅ Created leave approval notification for user', employee.user_id);
-      }
-    } catch (notifError) {
-      console.error('Error creating approval notification:', notifError);
-    }
-
-    res.json({
-      success: true,
-      message: 'Leave approved successfully',
-      data: leave,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to approve leave',
-      error: error.message,
-    });
-  }
-};
-
-// Reject leave
-exports.rejectLeave = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { comments } = req.body;
-    const approverId = req.user?.id || req.body.approvedBy;
-
-    const leave = await Leave.findByPk(id);
-    
-    if (!leave) {
-      return res.status(404).json({
-        success: false,
-        message: 'Leave request not found',
-      });
-    }
-
-    await leave.update({
-      status: 'rejected',
-      approvedBy: approverId,
-      approvedAt: new Date(),
-    });
-
-    // Create notification for employee
-    try {
-      const employee = await Employee.findByPk(leave.employeeId);
-      if (employee && employee.user_id) {
-        await Notification.create({
-          userId: employee.user_id,
-          type: 'leave_rejected',
-          title: 'Leave Request Rejected',
-          description: `Your leave request from ${leave.startDate} to ${leave.endDate} has been rejected`,
-          relatedId: leave.id,
-          relatedType: 'leave',
-          isRead: false,
-        });
-        console.log('✅ Created leave rejection notification for user', employee.user_id);
-      }
-    } catch (notifError) {
-      console.error('Error creating rejection notification:', notifError);
-    }
-
-    res.json({
-      success: true,
-      message: 'Leave rejected successfully',
-      data: leave,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to reject leave',
-      error: error.message,
-    });
-  }
-};
-
 // Get leave balances
 exports.getBalances = async (req, res) => {
   try {
@@ -471,6 +497,14 @@ exports.getBalances = async (req, res) => {
     const year = req.query.year || new Date().getFullYear();
 
     console.log('🔄 [Leave Balances] Fetching for userId:', userId, 'year:', year);
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required',
+        balances: [],
+      });
+    }
 
     // Get employee from userId
     const employee = await Employee.findOne({ where: { user_id: userId } });
@@ -495,52 +529,75 @@ exports.getBalances = async (req, res) => {
 
     console.log(`📊 [Leave Balances] Found ${leaveTypes.length} active leave types`);
 
+    if (leaveTypes.length === 0) {
+      return res.json({
+        success: true,
+        balances: [],
+        year,
+      });
+    }
+
     // Calculate balances for each leave type
     const balances = await Promise.all(leaveTypes.map(async (leaveType) => {
-      // Get approved leaves for this employee and leave type in current year
-      const approvedLeaves = await Leave.findAll({
-        where: {
-          employeeId,
-          leaveTypeId: leaveType.id,
-          status: 'approved',
-          [Op.and]: [
-            { startDate: { [Op.gte]: `${year}-01-01` } },
-            { startDate: { [Op.lte]: `${year}-12-31` } },
-          ],
-        },
-      });
+      try {
+        // Get approved leaves for this employee and leave type in current year
+        const approvedLeaves = await Leave.findAll({
+          where: {
+            employeeId,
+            leaveTypeId: leaveType.id,
+            status: 'approved',
+            startDate: {
+              [Op.between]: [`${year}-01-01`, `${year}-12-31`]
+            }
+          },
+        });
 
-      const used = approvedLeaves.reduce((sum, leave) => sum + parseFloat(leave.days || 0), 0);
+        const used = approvedLeaves.reduce((sum, leave) => sum + parseFloat(leave.days || 0), 0);
 
-      // Get pending leaves
-      const pendingLeaves = await Leave.findAll({
-        where: {
-          employeeId,
-          leaveTypeId: leaveType.id,
-          status: 'pending',
-          [Op.and]: [
-            { startDate: { [Op.gte]: `${year}-01-01` } },
-            { startDate: { [Op.lte]: `${year}-12-31` } },
-          ],
-        },
-      });
+        // Get pending leaves
+        const pendingLeaves = await Leave.findAll({
+          where: {
+            employeeId,
+            leaveTypeId: leaveType.id,
+            status: 'pending',
+            startDate: {
+              [Op.between]: [`${year}-01-01`, `${year}-12-31`]
+            }
+          },
+        });
 
-      const pending = pendingLeaves.reduce((sum, leave) => sum + parseFloat(leave.days || 0), 0);
+        const pending = pendingLeaves.reduce((sum, leave) => sum + parseFloat(leave.days || 0), 0);
 
-      const allocated = parseFloat(leaveType.days_per_year || leaveType.daysPerYear || 0);
-      const remaining = allocated - used;
+        const allocated = parseFloat(leaveType.days_per_year || leaveType.daysPerYear || 0);
+        const remaining = allocated - used;
 
-      return {
-        id: leaveType.id,
-        leaveType: leaveType.name,
-        leave_type_name: leaveType.name,
-        allocated,
-        used,
-        pending,
-        remaining,
-        icon: getLeaveTypeIcon(leaveType.name),
-        color: getLeaveTypeColor(leaveType.name),
-      };
+        return {
+          id: leaveType.id,
+          leaveType: leaveType.name,
+          leave_type_name: leaveType.name,
+          allocated,
+          used,
+          pending,
+          remaining,
+          icon: getLeaveTypeIcon(leaveType.name),
+          color: getLeaveTypeColor(leaveType.name),
+        };
+      } catch (leaveError) {
+        console.error(`❌ Error processing leave type ${leaveType.name}:`, leaveError);
+        // Return default values if there's an error
+        const allocated = parseFloat(leaveType.days_per_year || leaveType.daysPerYear || 0);
+        return {
+          id: leaveType.id,
+          leaveType: leaveType.name,
+          leave_type_name: leaveType.name,
+          allocated,
+          used: 0,
+          pending: 0,
+          remaining: allocated,
+          icon: getLeaveTypeIcon(leaveType.name),
+          color: getLeaveTypeColor(leaveType.name),
+        };
+      }
     }));
 
     console.log('✅ [Leave Balances] Calculated balances:', balances);
@@ -552,10 +609,12 @@ exports.getBalances = async (req, res) => {
     });
   } catch (error) {
     console.error('❌ [Leave Balances] Error:', error);
+    console.error('❌ [Leave Balances] Stack:', error.stack);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch balances',
       error: error.message,
+      balances: [],
     });
   }
 };
@@ -585,10 +644,24 @@ function getLeaveTypeColor(name) {
 // Get leave types
 exports.getTypes = async (req, res) => {
   try {
+    const { activeOnly } = req.query;
+    
+    // Build where clause
+    const where = {};
+    if (activeOnly === 'true') {
+      where.status = 'active';
+    }
+    // If activeOnly is not specified or false, return ALL types (active + inactive)
+    
     const types = await LeaveType.findAll({
-      where: { status: 'active' },
-      order: [['name', 'ASC']],
+      where,
+      order: [
+        ['status', 'DESC'], // active first
+        ['name', 'ASC']
+      ],
     });
+
+    console.log(`📊 [Leave Types] Returning ${types.length} leave types (activeOnly: ${activeOnly || 'false'})`);
 
     res.json({
       success: true,
@@ -662,7 +735,7 @@ exports.createLeaveType = async (req, res) => {
 exports.updateLeaveType = async (req, res) => {
   try {
     const { id } = req.params;
-    const { days_per_year, carry_forward, max_carry_forward } = req.body;
+    const { days_per_year, carry_forward, max_carry_forward, status } = req.body;
     
     console.log('📝 [Leave Types] Updating leave type:', id, req.body);
     
@@ -676,19 +749,26 @@ exports.updateLeaveType = async (req, res) => {
       });
     }
     
-    // Update the leave type (this affects ALL employees organization-wide)
-    await leaveType.update({
-      days_per_year: days_per_year || leaveType.days_per_year,
-      carry_forward: carry_forward !== undefined ? carry_forward : leaveType.carry_forward,
-      max_carry_forward: max_carry_forward !== undefined ? max_carry_forward : leaveType.max_carry_forward,
-    });
+    // Build update object
+    const updateData = {};
+    if (days_per_year !== undefined) updateData.days_per_year = days_per_year;
+    if (carry_forward !== undefined) updateData.carry_forward = carry_forward;
+    if (max_carry_forward !== undefined) updateData.max_carry_forward = max_carry_forward;
+    if (status !== undefined) updateData.status = status;
     
-    console.log(`✅ [Leave Types] Updated "${leaveType.name}" - ${days_per_year} days/year (applies to ALL employees)`);
+    // Update the leave type (this affects ALL employees organization-wide)
+    await leaveType.update(updateData);
+    
+    // Get updated leave type with all fields
+    const updatedLeaveType = await LeaveType.findByPk(id);
+    
+    console.log(`✅ [Leave Types] Updated "${leaveType.name}"`, updateData);
     
     res.json({
       success: true,
-      message: `Leave type updated successfully - All employees will now have ${days_per_year} ${leaveType.name} days per year`,
-      leaveType,
+      message: `Leave type updated successfully`,
+      leaveType: updatedLeaveType,
+      data: updatedLeaveType, // Add this for consistency
     });
   } catch (error) {
     console.error('❌ [Leave Types] Update error:', error);

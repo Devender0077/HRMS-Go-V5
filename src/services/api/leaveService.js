@@ -159,13 +159,12 @@ class LeaveService {
    */
   async approve(id) {
     try {
-      const response = await apiClient.post(`/leaves/${id}/approve`);
-      return {
-        success: true,
-        data: response.data,
-        message: 'Leave application approved',
-      };
+      console.log('✅ [Leave Service] Approving leave:', id);
+      const response = await apiClient.put(`/leaves/applications/${id}/approve`);
+      console.log('✅ [Leave Service] Approve response:', response.data);
+      return response.data;
     } catch (error) {
+      console.error('❌ [Leave Service] Approve error:', error);
       return {
         success: false,
         message: error.response?.data?.message || 'Failed to approve leave',
@@ -182,13 +181,12 @@ class LeaveService {
    */
   async reject(id, reason) {
     try {
-      const response = await apiClient.post(`/leaves/${id}/reject`, { reason });
-      return {
-        success: true,
-        data: response.data,
-        message: 'Leave application rejected',
-      };
+      console.log('❌ [Leave Service] Rejecting leave:', id, 'Reason:', reason);
+      const response = await apiClient.put(`/leaves/applications/${id}/reject`, { rejectionReason: reason });
+      console.log('✅ [Leave Service] Reject response:', response.data);
+      return response.data;
     } catch (error) {
+      console.error('❌ [Leave Service] Reject error:', error);
       return {
         success: false,
         message: error.response?.data?.message || 'Failed to reject leave',

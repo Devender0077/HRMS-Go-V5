@@ -34,6 +34,11 @@ const Leave = sequelize.define('Leave', {
   reason: {
     type: DataTypes.TEXT,
   },
+  emergencyContact: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
+    field: 'emergency_contact',
+  },
   status: {
     type: DataTypes.ENUM('pending', 'approved', 'rejected'),
     defaultValue: 'pending',

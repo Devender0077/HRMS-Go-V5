@@ -413,6 +413,8 @@ export default function Router() {
         { path: 'announcements', element: <AnnouncementsListPage /> },
         { path: 'messenger', element: <MessengerPage /> },
         { path: 'reports', element: <ReportsDashboardPage /> },
+          ], // End of RoutePermissionWrapper children
+        }, // End of RoutePermissionWrapper
       ],
     },
 
@@ -502,8 +504,6 @@ export default function Router() {
             },
           ],
         },
-          ], // End of RoutePermissionWrapper children
-        }, // End of RoutePermissionWrapper
       ],
     },
     {

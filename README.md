@@ -24,10 +24,10 @@ cd "HRMSGO V5"
 # Create database
 mysql -u root -p -e "CREATE DATABASE hrms_go_v5;"
 
-# Import schema (creates all 86 tables)
+# Import schema (creates base tables)
 mysql -u root -p hrms_go_v5 < backend/database/schema.sql
 
-# Import sample data (fills all tables)
+# Import sample data (permissions, roles, organization data)
 mysql -u root -p hrms_go_v5 < backend/database/seeds.sql
 ```
 
@@ -38,10 +38,19 @@ npm install
 
 # Create .env file
 cp .env.example .env
-# Edit .env with your database credentials
+# Edit .env with your database credentials:
+#   DB_HOST=localhost
+#   DB_NAME=hrms_go_v5
+#   DB_USER=root
+#   DB_PASSWORD=your_password
+#   JWT_SECRET=your-secret-key
 
-# Run reset script (creates users & employees)
+# IMPORTANT: Run these scripts in order:
+# 1. Create users and employees
 node database/COMPLETE_CLEAN_RESET.js
+
+# 2. Create leave balances (140 records)
+node database/seedLeaveData.js
 
 # Start backend
 npm start

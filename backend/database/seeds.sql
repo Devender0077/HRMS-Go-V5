@@ -17,13 +17,13 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- 1. CORE TABLES - Users & Roles
 -- ============================================================================
 
--- Insert Roles
-INSERT INTO `user_roles` (id, name, description, created_at, updated_at) VALUES
-(1, 'Super Admin', 'Full system access with all permissions', NOW(), NOW()),
-(2, 'HR Manager', 'HR management and oversight', NOW(), NOW()),
-(3, 'HR', 'HR operations and employee management', NOW(), NOW()),
-(4, 'Manager', 'Team and department management', NOW(), NOW()),
-(5, 'Employee', 'Basic employee access', NOW(), NOW());
+-- Insert Roles (with slug column - REQUIRED!)
+INSERT INTO `user_roles` (id, name, slug, description, level, is_system, status, created_at, updated_at) VALUES
+(1, 'Super Admin', 'super-admin', 'Full system access with all permissions', 1, 1, 'active', NOW(), NOW()),
+(2, 'HR Manager', 'hr-manager', 'HR management and oversight', 2, 1, 'active', NOW(), NOW()),
+(3, 'HR', 'hr', 'HR operations and employee management', 3, 1, 'active', NOW(), NOW()),
+(4, 'Manager', 'manager', 'Team and department management', 4, 1, 'active', NOW(), NOW()),
+(5, 'Employee', 'employee', 'Basic employee access', 5, 1, 'active', NOW(), NOW());
 
 -- ============================================================================
 -- COMPLETE PERMISSIONS LIST - 134 Permissions
@@ -277,6 +277,45 @@ INSERT INTO `leave_policies` (id, name, description, effective_from, effective_t
 -- Attendance Policies, Shifts, Salary Components, Training, Recruitment, etc.
 -- (Same data as in previous version to keep response concise)
 
+-- ============================================================================
+-- 18. ATTENDANCE POLICIES
+-- ============================================================================
+
+-- Attendance Policies
+INSERT INTO `attendance_policies` (id, name, description, working_hours_per_day, late_arrival_threshold, early_departure_threshold, status, created_at, updated_at) VALUES
+(1, 'Standard Policy', 'Standard 9-to-6 work policy', 8, 15, 30, 'active', NOW(), NOW()),
+(2, 'Flexible Policy', 'Flexible working hours', 8, 30, 15, 'active', NOW(), NOW());
+
+-- Shifts
+INSERT INTO `shifts` (id, name, start_time, end_time, break_duration, description, status, created_at, updated_at) VALUES
+(1, 'Morning Shift', '09:00:00', '18:00:00', 60, 'Standard morning shift', 'active', NOW(), NOW()),
+(2, 'Evening Shift', '14:00:00', '23:00:00', 60, 'Evening shift', 'active', NOW(), NOW()),
+(3, 'Night Shift', '22:00:00', '07:00:00', 60, 'Night shift', 'active', NOW(), NOW());
+
+-- ============================================================================
+-- 19. PAYROLL  
+-- ============================================================================
+
+-- Salary Components
+INSERT INTO `salary_components` (id, name, type, calculation_type, percentage, fixed_amount, is_taxable, description, status, created_at, updated_at) VALUES
+(1, 'Basic Salary', 'earning', 'fixed', 0, 0, 1, 'Basic monthly salary', 'active', NOW(), NOW()),
+(2, 'House Rent Allowance', 'earning', 'percentage', 40, 0, 1, 'HRA - 40% of basic', 'active', NOW(), NOW()),
+(3, 'Transport Allowance', 'earning', 'fixed', 0, 2000, 1, 'Transport allowance', 'active', NOW(), NOW()),
+(4, 'Provident Fund', 'deduction', 'percentage', 12, 0, 0, 'PF contribution', 'active', NOW(), NOW()),
+(5, 'Income Tax', 'deduction', 'percentage', 10, 0, 0, 'Income tax deduction', 'active', NOW(), NOW());
+
+-- Tax Settings
+INSERT INTO `tax_settings` (id, name, min_amount, max_amount, percentage, type, country, created_at, updated_at) VALUES
+(1, 'Tax Slab 1', 0, 50000, 0, 'income_tax', 'USA', NOW(), NOW()),
+(2, 'Tax Slab 2', 50001, 100000, 10, 'income_tax', 'USA', NOW(), NOW()),
+(3, 'Tax Slab 3', 100001, 999999999, 20, 'income_tax', 'USA', NOW(), NOW());
+
+-- Payment Methods
+INSERT INTO `payment_methods` (id, name, type, description, is_active, created_at, updated_at) VALUES
+(1, 'Bank Transfer', 'bank', 'Direct bank transfer', 1, NOW(), NOW()),
+(2, 'Check', 'check', 'Physical check payment', 1, NOW(), NOW()),
+(3, 'Cash', 'cash', 'Cash payment', 1, NOW(), NOW());
+
 -- Enable foreign key checks
 SET FOREIGN_KEY_CHECKS = 1;
 
@@ -291,6 +330,10 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- - Complete RBAC setup
 -- - Sample data for testing all features
 -- - NO NULL values in required fields
+-- 
+-- IMPORTANT: After running this seeds.sql, you MUST run:
+--   node backend/database/COMPLETE_CLEAN_RESET.js
+-- This will create users, employees, and leave balances!
 -- 
 -- Password for all users: password123
 -- 
