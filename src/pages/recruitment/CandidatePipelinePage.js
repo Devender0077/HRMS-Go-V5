@@ -56,7 +56,13 @@ const MOCK_CANDIDATES = {
 export default function CandidatePipelinePage() {
   const { themeStretch } = useSettingsContext();
   const { enqueueSnackbar } = useSnackbar();
-  const [pipeline, setPipeline] = useState([]);
+  // Initialize as object with stage IDs as keys
+  const [pipeline, setPipeline] = useState(
+    PIPELINE_STAGES.reduce((acc, stage) => ({
+      ...acc,
+      [stage.id]: []
+    }), {})
+  );
   const [loading, setLoading] = useState(true);
 
   // Fetch pipeline data
@@ -66,18 +72,25 @@ export default function CandidatePipelinePage() {
       const response = await recruitmentService.getJobApplications();
       if (response.success && Array.isArray(response.data)) {
         // Group applications by status
-        const groupedData = PIPELINE_STAGES.map(stage => ({
-          ...stage,
-          candidates: response.data.filter(app => app.status === stage.id)
-        }));
+        const groupedData = PIPELINE_STAGES.reduce((acc, stage) => ({
+          ...acc,
+          [stage.id]: response.data.filter(app => app.status === stage.id) || []
+        }), {});
         setPipeline(groupedData);
       } else {
-        setPipeline(PIPELINE_STAGES.map(stage => ({ ...stage, candidates: [] })));
-        enqueueSnackbar('No pipeline data found', { variant: 'info' });
+        // Set empty arrays for all stages
+        setPipeline(PIPELINE_STAGES.reduce((acc, stage) => ({
+          ...acc,
+          [stage.id]: []
+        }), {}));
       }
     } catch (error) {
       console.error('Error fetching pipeline data:', error);
-      setPipeline(PIPELINE_STAGES.map(stage => ({ ...stage, candidates: [] })));
+      // Set empty arrays for all stages
+      setPipeline(PIPELINE_STAGES.reduce((acc, stage) => ({
+        ...acc,
+        [stage.id]: []
+      }), {}));
       enqueueSnackbar('Failed to load pipeline data', { variant: 'error' });
     } finally {
       setLoading(false);

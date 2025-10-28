@@ -189,6 +189,53 @@ export default function LeaveBalanceAllocationPage() {
     }
   };
 
+  const handleToggleStatus = async (leaveType) => {
+    try {
+      const newStatus = leaveType.status === 'active' ? 'inactive' : 'active';
+      console.log(`🔄 [Leave Allocation] ${newStatus === 'active' ? 'Activating' : 'Deactivating'} leave type:`, leaveType.name);
+      
+      const response = await leaveService.updateLeaveType(leaveType.id, { status: newStatus });
+      
+      if (response.success) {
+        enqueueSnackbar(
+          `✅ "${leaveType.name}" ${newStatus === 'active' ? 'activated' : 'deactivated'} successfully`, 
+          { variant: 'success' }
+        );
+        loadData();
+      } else {
+        enqueueSnackbar(response.message || 'Error updating status', { variant: 'error' });
+      }
+    } catch (error) {
+      console.error('❌ [Leave Allocation] Error toggling status:', error);
+      enqueueSnackbar('Error updating leave type status', { variant: 'error' });
+    }
+  };
+
+  const handleDeleteLeaveType = async (leaveType) => {
+    if (!window.confirm(`Are you sure you want to delete "${leaveType.name}"?\n\nThis will remove this leave type for ALL employees. This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      console.log('🗑️ [Leave Allocation] Deleting leave type:', leaveType.name);
+      
+      const response = await leaveService.deleteLeaveType(leaveType.id);
+      
+      if (response.success) {
+        enqueueSnackbar(
+          `✅ "${leaveType.name}" deleted successfully - Removed from all employees`, 
+          { variant: 'success' }
+        );
+        loadData();
+      } else {
+        enqueueSnackbar(response.message || 'Error deleting leave type', { variant: 'error' });
+      }
+    } catch (error) {
+      console.error('❌ [Leave Allocation] Error deleting:', error);
+      enqueueSnackbar('Error deleting leave type', { variant: 'error' });
+    }
+  };
+
   return (
     <>
       <Helmet>
@@ -319,14 +366,51 @@ export default function LeaveBalanceAllocationPage() {
                           </TableCell>
                           
                           <TableCell align="right">
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              startIcon={<Iconify icon="eva:edit-fill" />}
-                              onClick={() => handleOpenDialog(leaveType)}
-                            >
-                              Edit
-                            </Button>
+                            <Stack direction="row" spacing={1} justifyContent="flex-end">
+                              {/* View Button */}
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                color="info"
+                                startIcon={<Iconify icon="eva:eye-outline" />}
+                                onClick={() => handleOpenDialog(leaveType)}
+                              >
+                                View
+                              </Button>
+
+                              {/* Edit Button */}
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                color="primary"
+                                startIcon={<Iconify icon="eva:edit-fill" />}
+                                onClick={() => handleOpenDialog(leaveType)}
+                              >
+                                Edit
+                              </Button>
+
+                              {/* Activate/Deactivate Button */}
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                color={leaveType.status === 'active' ? 'warning' : 'success'}
+                                startIcon={<Iconify icon={leaveType.status === 'active' ? 'eva:stop-circle-outline' : 'eva:play-circle-outline'} />}
+                                onClick={() => handleToggleStatus(leaveType)}
+                              >
+                                {leaveType.status === 'active' ? 'Deactivate' : 'Activate'}
+                              </Button>
+
+                              {/* Delete Button */}
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                color="error"
+                                startIcon={<Iconify icon="eva:trash-2-outline" />}
+                                onClick={() => handleDeleteLeaveType(leaveType)}
+                              >
+                                Delete
+                              </Button>
+                            </Stack>
                           </TableCell>
                         </TableRow>
                       ))

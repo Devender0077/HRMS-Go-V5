@@ -84,6 +84,15 @@ const recruitmentService = {
       throw error;
     }
   },
+
+  // Aliases for compatibility
+  getJobPostings: async function() {
+    return this.getAllJobs();
+  },
+  
+  getJobApplications: async function() {
+    return this.getAllApplications();
+  },
 };
 
 export default recruitmentService;

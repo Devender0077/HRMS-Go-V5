@@ -15,6 +15,7 @@ router.get('/balances', leaveController.getBalances);
 router.get('/types', leaveController.getTypes);
 router.post('/types', leaveController.createLeaveType);
 router.put('/types/:id', leaveController.updateLeaveType);
+router.delete('/types/:id', leaveController.deleteLeaveType);
 
 // CRUD routes
 router.get('/', leaveController.getAll);

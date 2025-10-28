@@ -210,8 +210,15 @@ export default function LeaveApplyForm() {
                 sm: 'repeat(2, 1fr)',
               }}
             >
-              <RHFSelect native name="leaveTypeId" label="Leave Type" disabled={leaveTypes.length === 0}>
-                <option value="">Select Leave Type</option>
+              <RHFSelect 
+                native 
+                name="leaveTypeId" 
+                label="Leave Type" 
+                disabled={leaveTypes.length === 0}
+                sx={{ minWidth: 200 }}
+                InputLabelProps={{ shrink: true }}
+              >
+                <option value="">-- Select --</option>
                 {leaveTypes.map((type) => (
                   <option key={type.id} value={type.id}>
                     {type.name}

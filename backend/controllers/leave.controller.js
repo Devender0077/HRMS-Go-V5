@@ -699,3 +699,41 @@ exports.updateLeaveType = async (req, res) => {
     });
   }
 };
+
+// Delete leave type (removes from all employees)
+exports.deleteLeaveType = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    console.log('🗑️ [Leave Types] Deleting leave type:', id);
+    
+    // Find the leave type
+    const leaveType = await LeaveType.findByPk(id);
+    
+    if (!leaveType) {
+      return res.status(404).json({
+        success: false,
+        message: 'Leave type not found',
+      });
+    }
+    
+    const leaveTypeName = leaveType.name;
+    
+    // Delete the leave type (cascade will handle leave_balances)
+    await leaveType.destroy();
+    
+    console.log(`✅ [Leave Types] Deleted "${leaveTypeName}" - Removed from all employees`);
+    
+    res.json({
+      success: true,
+      message: `Leave type "${leaveTypeName}" deleted successfully - Removed from all employees`,
+    });
+  } catch (error) {
+    console.error('❌ [Leave Types] Delete error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete leave type',
+      error: error.message,
+    });
+  }
+};
