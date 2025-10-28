@@ -1,18 +1,16 @@
 -- ============================================================================
 -- HRMS Go V5 - Complete Sample Data for All Modules
 -- ============================================================================
--- This script adds comprehensive sample data for all modules
+-- This script adds comprehensive sample data matching exact Sequelize models
 -- Run this AFTER importing schema.sql and seeds.sql
 -- ============================================================================
 
 USE hrms_go_v5;
 
 -- ============================================================================
--- 1. PAYROLL DATA
+-- 1. PAYROLL DATA (Table: payrolls)
 -- ============================================================================
 
--- Sample Payroll Runs (matching actual Sequelize model structure)
--- Table: payrolls (plural), Status: 'draft', 'approved', 'paid'
 INSERT INTO payrolls (employee_id, month, year, basic_salary, gross_salary, total_deductions, net_salary, status, paid_at, created_at, updated_at) VALUES
 (1, 10, 2025, 50000.00, 65000.00, 8500.00, 56500.00, 'paid', '2025-10-05', NOW(), NOW()),
 (2, 10, 2025, 45000.00, 58000.00, 7400.00, 50600.00, 'paid', '2025-10-05', NOW(), NOW()),
@@ -31,14 +29,16 @@ INSERT INTO payrolls (employee_id, month, year, basic_salary, gross_salary, tota
 -- 2. RECRUITMENT DATA
 -- ============================================================================
 
--- Sample Job Postings (more detailed)
-INSERT INTO job_postings (title, department_id, location, job_type, experience_required, description, requirements, responsibilities, salary_range_min, salary_range_max, openings, deadline, status, posted_by, created_at, updated_at) VALUES
-('Senior Backend Developer', 1, 'Remote', 'full-time', '3-5 years', 'We are looking for an experienced Backend Developer to join our growing team. You will be responsible for building scalable backend services.', 'Node.js, Express, MySQL, REST APIs, AWS', 'Develop and maintain backend services, Write clean code, Review pull requests, Mentor junior developers', 60000.00, 90000.00, 2, '2025-12-31', 'active', 1, NOW(), NOW()),
-('HR Coordinator', 2, 'Mumbai', 'full-time', '1-3 years', 'HR Coordinator to support recruitment and employee relations. Must have excellent communication skills.', 'HR experience, Communication skills, MS Office', 'Assist in recruitment, Conduct onboarding, Support employee engagement programs, Maintain HR records', 35000.00, 50000.00, 1, '2025-11-30', 'active', 1, NOW(), NOW()),
-('UI/UX Designer', 1, 'Bangalore', 'contract', '2-4 years', 'Creative UI/UX Designer for web and mobile applications. Must have strong portfolio.', 'Figma, Adobe XD, User Research, Wireframing, Prototyping', 'Design intuitive interfaces, Conduct user research, Create wireframes and prototypes, Collaborate with developers', 45000.00, 70000.00, 1, '2025-12-15', 'active', 1, NOW(), NOW()),
-('DevOps Engineer', 1, 'Hyderabad', 'full-time', '3-5 years', 'DevOps Engineer to manage CI/CD pipelines and cloud infrastructure.', 'Docker, Kubernetes, AWS/Azure, Jenkins, Linux', 'Manage deployments, Monitor infrastructure, Optimize performance, Implement security best practices', 70000.00, 100000.00, 1, '2025-12-20', 'active', 1, NOW(), NOW());
+-- Job Postings (matching actual JobPosting model)
+-- Fields: employment_type (not job_type), salary_range (string), positions (not openings)
+-- Status: 'open', 'closed', 'on_hold' (not 'active')
+INSERT INTO job_postings (title, department_id, location, employment_type, experience_required, salary_range, positions, description, requirements, status, posted_date, closing_date, created_at, updated_at) VALUES
+('Senior Backend Developer', 1, 'Remote', 'full_time', '3-5 years', '₹60,000 - ₹90,000', 2, 'We are looking for an experienced Backend Developer to join our growing team. You will be responsible for building scalable backend services and mentoring junior developers.', 'Node.js, Express, MySQL, REST APIs, AWS, Docker, Git', 'open', '2025-10-15', '2025-12-31', NOW(), NOW()),
+('HR Coordinator', 2, 'Mumbai', 'full_time', '1-3 years', '₹35,000 - ₹50,000', 1, 'HR Coordinator to support recruitment and employee relations. Must have excellent communication skills and experience with HRIS systems.', 'HR experience, Communication skills, MS Office, HRIS knowledge', 'open', '2025-10-18', '2025-11-30', NOW(), NOW()),
+('UI/UX Designer', 1, 'Bangalore', 'contract', '2-4 years', '₹45,000 - ₹70,000', 1, 'Creative UI/UX Designer for web and mobile applications. Must have strong portfolio and user-centered design approach.', 'Figma, Adobe XD, User Research, Wireframing, Prototyping, HTML/CSS basics', 'open', '2025-10-20', '2025-12-15', NOW(), NOW()),
+('DevOps Engineer', 1, 'Hyderabad', 'full_time', '3-5 years', '₹70,000 - ₹1,00,000', 1, 'DevOps Engineer to manage CI/CD pipelines and cloud infrastructure. Experience with containerization and orchestration required.', 'Docker, Kubernetes, AWS/Azure, Jenkins, Linux, Terraform, CI/CD', 'open', '2025-10-22', '2025-12-20', NOW(), NOW());
 
--- Sample Job Applications
+-- Job Applications (matching actual JobApplication model)
 INSERT INTO job_applications (job_id, candidate_name, email, phone, resume_url, cover_letter, experience_years, current_company, current_designation, expected_salary, notice_period, status, applied_date, last_updated, created_at, updated_at) VALUES
 (1, 'Amit Sharma', 'amit.sharma@email.com', '+91-9876543210', '/uploads/resumes/amit_resume.pdf', 'I am excited to apply for the Backend Developer position. With 4 years of experience in Node.js and Express, I believe I can contribute significantly to your team.', 4, 'Tech Corp India', 'Senior Developer', 75000.00, 30, 'interview', '2025-10-15', NOW(), NOW(), NOW()),
 (1, 'Priya Patel', 'priya.patel@email.com', '+91-9876543211', '/uploads/resumes/priya_resume.pdf', 'My experience in backend development aligns well with your requirements. I have worked extensively with MySQL and AWS.', 5, 'Software Solutions Inc', 'Lead Developer', 85000.00, 60, 'screening', '2025-10-18', NOW(), NOW(), NOW()),
@@ -48,10 +48,9 @@ INSERT INTO job_applications (job_id, candidate_name, email, phone, resume_url, 
 (1, 'Anjali Gupta', 'anjali.gupta@email.com', '+91-9876543215', '/uploads/resumes/anjali_resume.pdf', 'Full-stack developer with strong backend skills. Looking for challenging opportunities.', 3, 'StartupXYZ', 'Full Stack Developer', 65000.00, 30, 'applied', '2025-10-26', NOW(), NOW(), NOW());
 
 -- ============================================================================
--- 3. TRAINING DATA
+-- 3. TRAINING DATA (Table: training_programs)
 -- ============================================================================
 
--- Sample Training Programs
 INSERT INTO training_programs (title, description, category, duration_days, max_participants, instructor_name, instructor_email, start_date, end_date, location, mode, cost_per_participant, status, created_by, created_at, updated_at) VALUES
 ('Leadership Development Program', 'Comprehensive leadership training for managers and senior employees. Covers strategic thinking, team management, and decision making.', 'Leadership', 5, 20, 'Dr. Rajesh Kumar', 'rajesh.kumar@training.com', '2025-11-15', '2025-11-19', 'Conference Hall A', 'offline', 15000.00, 'upcoming', 1, NOW(), NOW()),
 ('Advanced Excel & Data Analysis', 'Master Excel and data analysis techniques. Learn pivot tables, VLOOKUP, macros, and data visualization.', 'Technical', 3, 30, 'Anjali Mehta', 'anjali.mehta@training.com', '2025-11-05', '2025-11-07', 'Training Room 2', 'hybrid', 8000.00, 'upcoming', 1, NOW(), NOW()),
@@ -62,10 +61,9 @@ INSERT INTO training_programs (title, description, category, duration_days, max_
 ('SQL for Data Analysis', 'Comprehensive SQL training covering queries, joins, subqueries, and database optimization.', 'Technical', 5, 20, 'Arjun Nair', 'arjun.nair@training.com', '2025-11-20', '2025-11-24', 'Lab 3', 'offline', 12000.00, 'upcoming', 1, NOW(), NOW());
 
 -- ============================================================================
--- 4. PERFORMANCE DATA
+-- 4. PERFORMANCE DATA (Table: performance_goals)
 -- ============================================================================
 
--- Sample Performance Goals
 INSERT INTO performance_goals (employee_id, title, description, category, target_value, current_value, unit, start_date, end_date, weight, status, progress, created_by, created_at, updated_at) VALUES
 (1, 'Complete Backend Refactoring', 'Refactor legacy backend code to modern architecture using best practices and design patterns', 'technical', 100, 65, 'percentage', '2025-10-01', '2025-12-31', 30, 'in_progress', 65, 3, NOW(), NOW()),
 (1, 'Reduce API Response Time', 'Optimize APIs to reduce average response time from 500ms to 200ms', 'performance', 200, 280, 'milliseconds', '2025-10-01', '2025-11-30', 25, 'in_progress', 56, 3, NOW(), NOW()),
@@ -80,7 +78,7 @@ INSERT INTO performance_goals (employee_id, title, description, category, target
 -- 5. ASSETS DATA
 -- ============================================================================
 
--- Sample Asset Categories (if not exists)
+-- Asset Categories (if not exists)
 INSERT INTO asset_categories (name, description, status, created_at, updated_at) VALUES
 ('Laptops', 'Company laptops and notebooks', 'active', NOW(), NOW()),
 ('Monitors', 'Computer monitors and displays', 'active', NOW(), NOW()),
@@ -89,7 +87,7 @@ INSERT INTO asset_categories (name, description, status, created_at, updated_at)
 ('Vehicles', 'Company vehicles', 'active', NOW(), NOW())
 ON DUPLICATE KEY UPDATE name = name;
 
--- Sample Assets
+-- Assets
 INSERT INTO assets (name, asset_code, category_id, description, purchase_date, purchase_cost, current_value, depreciation_rate, warranty_expiry, location, status, created_at, updated_at) VALUES
 ('Dell Latitude 5420 Laptop', 'LT-2025-001', 1, 'Intel i7 11th Gen, 16GB RAM, 512GB SSD', '2025-01-15', 85000.00, 80000.00, 15, '2028-01-15', 'IT Department', 'available', NOW(), NOW()),
 ('Dell Latitude 5420 Laptop', 'LT-2025-002', 1, 'Intel i7 11th Gen, 16GB RAM, 512GB SSD', '2025-01-15', 85000.00, 80000.00, 15, '2028-01-15', 'Development Team', 'assigned', NOW(), NOW()),
@@ -102,7 +100,7 @@ INSERT INTO assets (name, asset_code, category_id, description, purchase_date, p
 ('Samsung 24" Monitor', 'MON-2025-002', 2, '24 inch Full HD, HDMI', '2025-03-15', 15000.00, 14500.00, 10, '2028-03-15', 'Finance Department', 'assigned', NOW(), NOW()),
 ('iPad Pro 12.9"', 'MOB-2025-002', 4, '256GB, Wi-Fi + Cellular, Space Gray', '2025-05-10', 95000.00, 90000.00, 20, '2026-05-10', 'Marketing Department', 'assigned', NOW(), NOW());
 
--- Sample Asset Assignments
+-- Asset Assignments
 INSERT INTO asset_assignments (asset_id, employee_id, assigned_date, expected_return_date, return_date, condition_at_assignment, condition_at_return, notes, status, created_at, updated_at) VALUES
 (2, 1, '2025-01-20', NULL, NULL, 'excellent', NULL, 'Assigned for backend development work', 'active', NOW(), NOW()),
 (4, 2, '2025-03-15', NULL, NULL, 'excellent', NULL, 'Assigned to HR Manager for department operations', 'active', NOW(), NOW()),
@@ -116,7 +114,7 @@ INSERT INTO asset_assignments (asset_id, employee_id, assigned_date, expected_re
 -- 6. DOCUMENTS DATA
 -- ============================================================================
 
--- Sample Company Documents Library
+-- Company Documents Library
 INSERT INTO documents (title, description, category, file_name, file_path, file_type, file_size, uploaded_by, access_level, tags, version, status, is_template, created_at, updated_at) VALUES
 ('Employee Handbook 2025', 'Complete employee handbook with company policies, benefits, code of conduct, and guidelines', 'Policy', 'employee_handbook_2025.pdf', '/uploads/documents/handbook_2025.pdf', 'application/pdf', 2458624, 1, 'all', 'handbook,policy,guidelines,2025', '2.0', 'active', 1, NOW(), NOW()),
 ('Leave Policy', 'Comprehensive leave policy document covering all types of leaves, eligibility, and application process', 'Policy', 'leave_policy.pdf', '/uploads/documents/leave_policy.pdf', 'application/pdf', 524288, 1, 'all', 'leave,policy,hr,benefits', '1.5', 'active', 1, NOW(), NOW()),
