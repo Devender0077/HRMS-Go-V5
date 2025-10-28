@@ -273,14 +273,14 @@ export default function AttendanceMusterPage() {
             { name: 'Muster Report' },
           ]}
           action={
-            <Button
-              variant="contained"
-              startIcon={<Iconify icon="eva:download-fill" />}
-              onClick={handleExport}
+              <Button
+                variant="contained"
+                startIcon={<Iconify icon="eva:download-fill" />}
+                onClick={handleExport}
               disabled={loading || tableData.length === 0}
-            >
-              Export
-            </Button>
+              >
+                Export
+              </Button>
           }
         />
 
@@ -333,9 +333,9 @@ export default function AttendanceMusterPage() {
               </TextField>
             </Grid>
             <Grid item xs={12} md={3}>
-              <Button 
-                fullWidth 
-                variant="contained" 
+              <Button
+                fullWidth
+                variant="contained"
                 size="large"
                 onClick={handleGenerateReport}
                 disabled={loading}
@@ -348,25 +348,25 @@ export default function AttendanceMusterPage() {
         </Card>
 
         {/* Summary Cards */}
-        <Grid container spacing={3} sx={{ mb: 3 }}>
+          <Grid container spacing={3} sx={{ mb: 3 }}>
           <Grid item xs={12} sm={6} md={2}>
-            <Card sx={{ p: 2, textAlign: 'center' }}>
+              <Card sx={{ p: 2, textAlign: 'center' }}>
               <Typography variant="h4" color="primary.main">{summary.totalEmployees}</Typography>
-              <Typography variant="body2" color="text.secondary">Total Employees</Typography>
-            </Card>
-          </Grid>
+                <Typography variant="body2" color="text.secondary">Total Employees</Typography>
+              </Card>
+            </Grid>
           <Grid item xs={12} sm={6} md={2}>
-            <Card sx={{ p: 2, textAlign: 'center' }}>
+              <Card sx={{ p: 2, textAlign: 'center' }}>
               <Typography variant="h4" color="success.main">{summary.totalPresent}</Typography>
-              <Typography variant="body2" color="text.secondary">Total Present</Typography>
-            </Card>
-          </Grid>
+                <Typography variant="body2" color="text.secondary">Total Present</Typography>
+              </Card>
+            </Grid>
           <Grid item xs={12} sm={6} md={2}>
-            <Card sx={{ p: 2, textAlign: 'center' }}>
+              <Card sx={{ p: 2, textAlign: 'center' }}>
               <Typography variant="h4" color="error.main">{summary.totalAbsent}</Typography>
-              <Typography variant="body2" color="text.secondary">Total Absent</Typography>
-            </Card>
-          </Grid>
+                <Typography variant="body2" color="text.secondary">Total Absent</Typography>
+              </Card>
+            </Grid>
           <Grid item xs={12} sm={6} md={2}>
             <Card sx={{ p: 2, textAlign: 'center' }}>
               <Typography variant="h4" color="warning.main">{summary.totalHalfDay}</Typography>
@@ -374,32 +374,32 @@ export default function AttendanceMusterPage() {
             </Card>
           </Grid>
           <Grid item xs={12} sm={6} md={2}>
-            <Card sx={{ p: 2, textAlign: 'center' }}>
+              <Card sx={{ p: 2, textAlign: 'center' }}>
               <Typography variant="h4" color="info.main">{summary.totalLate}</Typography>
               <Typography variant="body2" color="text.secondary">Late Count</Typography>
-            </Card>
-          </Grid>
+              </Card>
+            </Grid>
           <Grid item xs={12} sm={6} md={2}>
-            <Card sx={{ p: 2, textAlign: 'center' }}>
+              <Card sx={{ p: 2, textAlign: 'center' }}>
               <Typography variant="h4" color="primary.main">{summary.totalHours.toFixed(1)}h</Typography>
-              <Typography variant="body2" color="text.secondary">Total Hours</Typography>
-            </Card>
+                <Typography variant="body2" color="text.secondary">Total Hours</Typography>
+              </Card>
+            </Grid>
           </Grid>
-        </Grid>
 
         {/* Table */}
         <Card>
-          <Scrollbar>
-            <TableContainer sx={{ minWidth: 800 }}>
-              <Table>
-                <TableHeadCustom
-                  order={order}
-                  orderBy={orderBy}
-                  headLabel={TABLE_HEAD}
-                  onSort={onSort}
-                />
+              <Scrollbar>
+                <TableContainer sx={{ minWidth: 800 }}>
+                  <Table>
+                    <TableHeadCustom
+                      order={order}
+                      orderBy={orderBy}
+                      headLabel={TABLE_HEAD}
+                      onSort={onSort}
+                    />
 
-                <TableBody>
+                    <TableBody>
                   {loading && (
                     <TableRow>
                       <TableCell colSpan={TABLE_HEAD.length} align="center">
@@ -417,16 +417,16 @@ export default function AttendanceMusterPage() {
                   )}
 
                   {!loading && !error && paged.map((row) => (
-                    <TableRow key={row.id} hover>
-                      <TableCell>
+                          <TableRow key={row.id} hover>
+                            <TableCell>
                         <strong>{row.employeeName}</strong>
                         <br />
                         <span style={{ fontSize: '0.75rem', color: '#637381' }}>
-                          {row.employeeId}
+                                {row.employeeId}
         </span>
-                      </TableCell>
-                      <TableCell>{row.department}</TableCell>
-                      <TableCell align="center">
+                            </TableCell>
+                            <TableCell>{row.department}</TableCell>
+                            <TableCell align="center">
                         <Box
                           sx={{
                             display: 'inline-block',
@@ -440,8 +440,8 @@ export default function AttendanceMusterPage() {
                         >
                           {row.present}
                         </Box>
-                      </TableCell>
-                      <TableCell align="center">
+                            </TableCell>
+                            <TableCell align="center">
                         <Box
                           sx={{
                             display: 'inline-block',
@@ -455,8 +455,8 @@ export default function AttendanceMusterPage() {
                         >
                           {row.absent}
                         </Box>
-                      </TableCell>
-                      <TableCell align="center">
+                            </TableCell>
+                            <TableCell align="center">
                         <Box
                           sx={{
                             display: 'inline-block',
@@ -470,14 +470,14 @@ export default function AttendanceMusterPage() {
                         >
                           {row.halfDay}
                         </Box>
-                      </TableCell>
+                            </TableCell>
                       <TableCell align="center">{row.late}</TableCell>
                       <TableCell align="center">{row.onLeave}</TableCell>
-                      <TableCell align="center">
+                            <TableCell align="center">
                         <Typography variant="subtitle2">{row.totalHours.toFixed(1)}h</Typography>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                            </TableCell>
+                          </TableRow>
+                        ))}
 
                   {!loading && !error && tableData.length === 0 && (
                     <TableRow>
@@ -500,18 +500,18 @@ export default function AttendanceMusterPage() {
                       </TableCell>
                     </TableRow>
                   )}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Scrollbar>
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Scrollbar>
 
-          <TablePaginationCustom
-            count={tableData.length}
-            page={page}
-            rowsPerPage={rowsPerPage}
-            onPageChange={onChangePage}
-            onRowsPerPageChange={onChangeRowsPerPage}
-          />
+              <TablePaginationCustom
+                count={tableData.length}
+                page={page}
+                rowsPerPage={rowsPerPage}
+                onPageChange={onChangePage}
+                onRowsPerPageChange={onChangeRowsPerPage}
+              />
         </Card>
       </Container>
     </>
