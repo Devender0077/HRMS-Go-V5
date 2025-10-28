@@ -54,6 +54,7 @@ const getEvents = async (req, res) => {
 
     // Transform to FullCalendar format
     const formattedEvents = filteredEvents.map(event => {
+      const creatorName = event.creator ? event.creator.name : null;
       const formatted = {
         id: event.id,
         title: event.title,
@@ -68,10 +69,10 @@ const getEvents = async (req, res) => {
         reminder: event.reminder,
         color: event.color,
         textColor: event.text_color,
-        createdBy: event.creator ? event.creator.name : (event.created_by || null),
+        createdBy: creatorName,
       };
       
-      console.log(`Event ${event.id}: "${event.title}" | Visibility: ${event.visibility} | All-Day: ${event.all_day}`);
+      console.log(`Event ${event.id}: "${event.title}" | Creator: ${creatorName || 'Unknown'} | Visibility: ${event.visibility}`);
       
       return formatted;
     });
