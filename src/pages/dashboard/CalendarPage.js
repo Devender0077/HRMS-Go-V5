@@ -8,9 +8,10 @@ import timelinePlugin from '@fullcalendar/timeline';
 import { Helmet } from 'react-helmet-async';
 import { useState, useRef, useEffect } from 'react';
 // @mui
-import { Card, Button, Container, DialogTitle, Dialog, Grid, Stack, Typography, Box, Chip, Avatar } from '@mui/material';
+import { Card, Button, Container, DialogTitle, Dialog, Grid, Stack, Typography, Box, Chip, Avatar, IconButton } from '@mui/material';
 // redux
 import { useDispatch, useSelector } from '../../redux/store';
+import { useAuthContext } from '../../auth/useAuthContext';
 import {
   setEvents,
   addEvent,
@@ -55,6 +56,7 @@ const COLOR_OPTIONS = [
 ];
 
 export default function CalendarPage() {
+  const { user } = useAuthContext();
   const { enqueueSnackbar } = useSnackbar();
 
   const { themeStretch } = useSettingsContext();
@@ -68,6 +70,10 @@ export default function CalendarPage() {
   const { events, openModal, selectedRange, selectedEventId } = useSelector(
     (state) => state.calendar
   );
+
+  // For dropdown menu on event click
+  // Removed unused dropdown state
+  const [modalMode, setModalMode] = useState('edit'); // 'edit' or 'view'
 
   // Find selected event from events array
   const selectedEvent = selectedEventId 
@@ -177,12 +183,15 @@ export default function CalendarPage() {
 
   const handleSelectEvent = (arg) => {
     const eventId = arg.event.id;
-    console.log('Event clicked:', eventId, arg.event);
-    console.log('All events:', events);
-    const foundEvent = events.find((event) => String(event.id) === String(eventId));
-    console.log('Found event:', foundEvent);
+    setModalMode('view');
     dispatch(selectEvent(eventId));
+    dispatch(onOpenModal());
   };
+
+  const handleCloseEventMenu = () => {
+  };
+
+    // Removed unused dropdown handlers
 
   const handleResizeEvent = async ({ event }) => {
     try {
@@ -223,6 +232,7 @@ export default function CalendarPage() {
   };
 
   const handleOpenModal = () => {
+    setModalMode('edit');
     dispatch(onOpenModal());
   };
 
@@ -247,8 +257,12 @@ export default function CalendarPage() {
         
         enqueueSnackbar('Event updated successfully!');
       } else {
-        // Create new event
-        const createdEvent = await calendarService.createEvent(newEvent);
+        // Create new event, add createdBy from logged in user
+        const eventWithCreator = {
+          ...newEvent,
+          createdBy: user?.displayName || user?.name || 'Unknown',
+        };
+        const createdEvent = await calendarService.createEvent(eventWithCreator);
         console.log('Event created:', createdEvent);
         dispatch(addEvent(createdEvent));
         enqueueSnackbar('Event created successfully!');
@@ -439,31 +453,60 @@ export default function CalendarPage() {
                         '&:hover': { bgcolor: 'action.hover' },
                       }}
                       onClick={() => {
+                        setModalMode('view');
                         dispatch(selectEvent(event.id));
-                        handleOpenModal();
+                        dispatch(onOpenModal());
                       }}
                     >
-                      <Stack direction="row" spacing={2} alignItems="flex-start">
+                      <Stack direction="row" spacing={2} alignItems="center">
                         {/* Date Block */}
                         <Box
                           sx={{
                             minWidth: 60,
-                            height: 60,
+                            height: 80,
                             borderRadius: 1,
                             bgcolor: event.color || '#1890FF',
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'center',
-                            justifyContent: 'center',
+                            justifyContent: 'flex-start',
                             color: 'white',
+                            position: 'relative',
+                            py: 1.2,
                           }}
                         >
-                          <Typography variant="h6" fontWeight="bold">
+                          <Typography variant="h6" fontWeight="bold" sx={{ mb: 0.2 }}>
                             {new Date(event.start).getDate()}
                           </Typography>
-                          <Typography variant="caption">
+                          <Typography variant="caption" sx={{ mb: event.createdBy ? 1.2 : 0 }}>
                             {new Date(event.start).toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}
                           </Typography>
+                          {event.createdBy && (
+                            <Box
+                              sx={{
+                                position: 'absolute',
+                                bottom: 6,
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                width: 'auto',
+                                minWidth: 40,
+                                height: 24,
+                                borderRadius: 6,
+                                bgcolor: event.color || '#1890FF',
+                                color: 'white',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '0.675rem',
+                                fontWeight: 500,
+                                boxShadow: 1,
+                                px: 1,
+                                letterSpacing: 0.1,
+                              }}
+                            >
+                              {event.createdBy}
+                            </Box>
+                          )}
                         </Box>
 
                         {/* Event Details */}
@@ -499,17 +542,20 @@ export default function CalendarPage() {
                           )}
                           
                           {/* Event Type Badge */}
-                          <Box sx={{ mt: 1 }}>
-                            <Chip 
-                              label={event.eventType || 'Event'} 
-                              size="small" 
-                              sx={{ 
-                                height: 20,
-                                fontSize: '0.7rem',
-                                bgcolor: event.color || '#1890FF',
-                                color: 'white'
-                              }} 
-                            />
+                          <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Box sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              bgcolor: event.color || '#1890FF',
+                              color: 'white',
+                              borderRadius: 1,
+                              px: 1,
+                              height: 24,
+                              fontSize: '0.75rem',
+                              minWidth: 0,
+                            }}>
+                              <span>{event.eventType || 'Event'}</span>
+                            </Box>
                           </Box>
                         </Box>
                       </Stack>
@@ -567,15 +613,39 @@ export default function CalendarPage() {
       </Container>
 
       <Dialog fullWidth maxWidth="md" open={openModal} onClose={handleCloseModal}>
-
-        <CalendarForm
-          event={selectedEvent}
-          range={selectedRange}
-          onCancel={handleCloseModal}
-          onCreateUpdateEvent={handleCreateUpdateEvent}
-          onDeleteEvent={handleDeleteEvent}
-          colorOptions={COLOR_OPTIONS}
-        />
+        {modalMode === 'edit' ? (
+          <CalendarForm
+            event={selectedEvent}
+            range={selectedRange}
+            onCancel={handleCloseModal}
+            onCreateUpdateEvent={handleCreateUpdateEvent}
+            onDeleteEvent={handleDeleteEvent}
+            colorOptions={COLOR_OPTIONS}
+          />
+        ) : (
+          <Box sx={{ p: 3, position: 'relative' }}>
+            <DialogTitle sx={{ pr: 6 }}>
+              View Event
+              <IconButton
+                aria-label="Edit"
+                onClick={() => setModalMode('edit')}
+                sx={{ position: 'absolute', right: 16, top: 16 }}
+              >
+                <Iconify icon="eva:edit-2-outline" />
+              </IconButton>
+            </DialogTitle>
+            <Stack spacing={2}>
+              <Typography variant="h6">{selectedEvent?.title}</Typography>
+              <Typography variant="body2">{selectedEvent?.description}</Typography>
+              <Typography variant="body2">
+                {selectedEvent?.allDay ? 'All Day' : `${new Date(selectedEvent?.start).toLocaleString()} - ${new Date(selectedEvent?.end).toLocaleString()}`}
+              </Typography>
+              <Typography variant="body2">Type: {selectedEvent?.eventType}</Typography>
+              {selectedEvent?.location && <Typography variant="body2">Location: {selectedEvent.location}</Typography>}
+              <Button variant="contained" onClick={handleCloseModal}>Close</Button>
+            </Stack>
+          </Box>
+        )}
       </Dialog>
 
       <CalendarFilterDrawer
@@ -596,8 +666,9 @@ export default function CalendarPage() {
         }}
         onSelectEvent={(eventId) => {
           if (eventId) {
-            handleOpenModal();
+            setModalMode('view');
             dispatch(selectEvent(eventId));
+            dispatch(onOpenModal());
           }
         }}
       />

@@ -11,9 +11,16 @@ const getEvents = async (req, res) => {
     console.log('=== Fetching Calendar Events ===');
     console.log('User type:', userType, 'User ID:', userId);
 
-    // Get all events first
+    // Get all events with creator info
     const allEvents = await CalendarEvent.findAll({
       order: [['start', 'ASC']],
+      include: [
+        {
+          model: require('../models/User'),
+          as: 'creator',
+          attributes: ['id', 'name', 'email'],
+        },
+      ],
     });
 
     console.log('Total events in database:', allEvents.length);
@@ -61,6 +68,7 @@ const getEvents = async (req, res) => {
         reminder: event.reminder,
         color: event.color,
         textColor: event.text_color,
+        createdBy: event.creator ? event.creator.name : (event.created_by || null),
       };
       
       console.log(`Event ${event.id}: "${event.title}" | Visibility: ${event.visibility} | All-Day: ${event.all_day}`);
@@ -125,6 +133,15 @@ const createEvent = async (req, res) => {
       all_day: event.all_day
     });
 
+    // Fetch creator name for response
+    let creatorName = null;
+    try {
+      const User = require('../models/User');
+      const creator = await User.findByPk(event.created_by);
+      creatorName = creator ? creator.name : event.created_by;
+    } catch (e) {
+      creatorName = event.created_by;
+    }
     res.status(201).json({
       id: event.id,
       title: event.title,
@@ -139,6 +156,7 @@ const createEvent = async (req, res) => {
       reminder: event.reminder,
       color: event.color,
       textColor: event.text_color,
+      createdBy: creatorName,
     });
   } catch (error) {
     console.error('Error creating calendar event:', error);

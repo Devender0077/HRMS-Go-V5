@@ -58,7 +58,6 @@ const CalendarEvent = sequelize.define('CalendarEvent', {
   created_by: {
     type: DataTypes.INTEGER,
     allowNull: true,
-    // Remove foreign key constraint to avoid issues
   },
 }, {
   tableName: 'calendar_events',
@@ -67,4 +66,9 @@ const CalendarEvent = sequelize.define('CalendarEvent', {
   updatedAt: 'updated_at',
 });
 
+// Add association for creator
+CalendarEvent.belongsTo(require('./User'), {
+  foreignKey: 'created_by',
+  as: 'creator',
+});
 module.exports = CalendarEvent;

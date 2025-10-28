@@ -71,21 +71,6 @@ const slice = createSlice({
         return event;
       });
     },
-    
-    // UPDATE EVENT (direct action for calendar service)
-    updateEvent(state, action) {
-      const { id, data } = action.payload;
-      // Create a new array to ensure React detects the change
-      state.events = state.events.map((event) => {
-        if (String(event.id) === String(id)) {
-          return { ...event, ...data, id: event.id };
-        }
-        return event;
-      });
-      state.openModal = false;
-      state.selectedEventId = null;
-    },
-
     // DELETE EVENT
     deleteEventSuccess(state, action) {
       const eventId = action.payload;
@@ -104,15 +89,15 @@ const slice = createSlice({
     // SELECT EVENT
     selectEvent(state, action) {
       const eventId = action.payload;
-      state.openModal = true;
       state.selectedEventId = eventId;
+      // Do NOT open modal here
     },
 
     // SELECT RANGE
     selectRange(state, action) {
       const { start, end } = action.payload;
-      state.openModal = true;
       state.selectedRange = { start, end };
+      // Do NOT open modal here
     },
 
     // OPEN MODAL
