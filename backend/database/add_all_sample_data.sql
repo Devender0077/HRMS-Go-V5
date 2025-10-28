@@ -11,18 +11,21 @@ USE hrms_go_v5;
 -- 1. PAYROLL DATA
 -- ============================================================================
 
--- Sample Payroll Runs (matching actual table structure)
-INSERT INTO payroll (employee_id, month, year, basic_salary, gross_salary, total_deductions, net_salary, status, payment_date, payment_method, notes, created_at, updated_at) VALUES
-(1, 10, 2025, 50000.00, 65000.00, 8500.00, 56500.00, 'paid', '2025-10-05', 'bank_transfer', 'October 2025 salary', NOW(), NOW()),
-(2, 10, 2025, 45000.00, 58000.00, 7400.00, 50600.00, 'paid', '2025-10-05', 'bank_transfer', 'October 2025 salary', NOW(), NOW()),
-(3, 10, 2025, 60000.00, 78000.00, 10200.00, 67800.00, 'paid', '2025-10-05', 'bank_transfer', 'October 2025 salary', NOW(), NOW()),
-(4, 10, 2025, 55000.00, 71500.00, 9350.00, 62150.00, 'pending', NULL, 'bank_transfer', 'October 2025 salary - pending', NOW(), NOW()),
-(5, 10, 2025, 48000.00, 62400.00, 7920.00, 54480.00, 'pending', NULL, 'bank_transfer', 'October 2025 salary - pending', NOW(), NOW()),
-(6, 10, 2025, 52000.00, 67600.00, 8840.00, 58760.00, 'paid', '2025-10-05', 'bank_transfer', 'October 2025 salary', NOW(), NOW()),
-(7, 10, 2025, 47000.00, 61100.00, 7987.00, 53113.00, 'paid', '2025-10-05', 'bank_transfer', 'October 2025 salary', NOW(), NOW()),
-(1, 9, 2025, 50000.00, 65000.00, 8500.00, 56500.00, 'paid', '2025-09-05', 'bank_transfer', 'September 2025 salary', NOW(), NOW()),
-(2, 9, 2025, 45000.00, 58000.00, 7400.00, 50600.00, 'paid', '2025-09-05', 'bank_transfer', 'September 2025 salary', NOW(), NOW()),
-(3, 9, 2025, 60000.00, 78000.00, 10200.00, 67800.00, 'paid', '2025-09-05', 'bank_transfer', 'September 2025 salary', NOW(), NOW());
+-- Sample Payroll Runs (matching actual Sequelize model structure)
+-- Table: payrolls (plural), Status: 'draft', 'approved', 'paid'
+INSERT INTO payrolls (employee_id, month, year, basic_salary, gross_salary, total_deductions, net_salary, status, paid_at, created_at, updated_at) VALUES
+(1, 10, 2025, 50000.00, 65000.00, 8500.00, 56500.00, 'paid', '2025-10-05', NOW(), NOW()),
+(2, 10, 2025, 45000.00, 58000.00, 7400.00, 50600.00, 'paid', '2025-10-05', NOW(), NOW()),
+(3, 10, 2025, 60000.00, 78000.00, 10200.00, 67800.00, 'paid', '2025-10-05', NOW(), NOW()),
+(4, 10, 2025, 55000.00, 71500.00, 9350.00, 62150.00, 'approved', NULL, NOW(), NOW()),
+(5, 10, 2025, 48000.00, 62400.00, 7920.00, 54480.00, 'draft', NULL, NOW(), NOW()),
+(6, 10, 2025, 52000.00, 67600.00, 8840.00, 58760.00, 'paid', '2025-10-05', NOW(), NOW()),
+(7, 10, 2025, 47000.00, 61100.00, 7987.00, 53113.00, 'paid', '2025-10-05', NOW(), NOW()),
+(8, 10, 2025, 51000.00, 66300.00, 8673.00, 57627.00, 'paid', '2025-10-05', NOW(), NOW()),
+(1, 9, 2025, 50000.00, 65000.00, 8500.00, 56500.00, 'paid', '2025-09-05', NOW(), NOW()),
+(2, 9, 2025, 45000.00, 58000.00, 7400.00, 50600.00, 'paid', '2025-09-05', NOW(), NOW()),
+(3, 9, 2025, 60000.00, 78000.00, 10200.00, 67800.00, 'paid', '2025-09-05', NOW(), NOW()),
+(4, 9, 2025, 55000.00, 71500.00, 9350.00, 62150.00, 'paid', '2025-09-05', NOW(), NOW());
 
 -- ============================================================================
 -- 2. RECRUITMENT DATA
@@ -131,7 +134,7 @@ INSERT INTO documents (title, description, category, file_name, file_path, file_
 SELECT '✅ Sample data added successfully for all modules!' AS Status;
 SELECT 'Total records added in this session:' AS Info;
 SELECT 
-    (SELECT COUNT(*) FROM payroll WHERE created_at > DATE_SUB(NOW(), INTERVAL 1 MINUTE)) AS Payroll,
+    (SELECT COUNT(*) FROM payrolls WHERE created_at > DATE_SUB(NOW(), INTERVAL 1 MINUTE)) AS Payroll,
     (SELECT COUNT(*) FROM job_postings WHERE created_at > DATE_SUB(NOW(), INTERVAL 1 MINUTE)) AS Job_Postings,
     (SELECT COUNT(*) FROM job_applications WHERE created_at > DATE_SUB(NOW(), INTERVAL 1 MINUTE)) AS Applications,
     (SELECT COUNT(*) FROM training_programs WHERE created_at > DATE_SUB(NOW(), INTERVAL 1 MINUTE)) AS Training_Programs,
