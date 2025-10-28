@@ -208,6 +208,33 @@ export default function CalendarForm({
           </Typography>
         </Stack>
 
+        {/* Creator Info - Show for existing events */}
+        {hasEventData && event?.createdBy && (
+          <Box sx={{ mb: 3, p: 2, bgcolor: 'background.neutral', borderRadius: 1.5 }}>
+            <Stack direction="row" alignItems="center" spacing={1.5}>
+              <Avatar 
+                sx={{ 
+                  width: 36, 
+                  height: 36, 
+                  bgcolor: 'primary.main',
+                  fontSize: 14,
+                  fontWeight: 600
+                }}
+              >
+                {event.createdBy.charAt(0).toUpperCase()}
+              </Avatar>
+              <Stack spacing={0.25}>
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: 11 }}>
+                  Created by
+                </Typography>
+                <Typography variant="subtitle2" sx={{ fontSize: 13 }}>
+                  {event.createdBy}
+                </Typography>
+              </Stack>
+            </Stack>
+          </Box>
+        )}
+
         <Stack spacing={3}>
           {/* Event Title */}
           <RHFTextField 
