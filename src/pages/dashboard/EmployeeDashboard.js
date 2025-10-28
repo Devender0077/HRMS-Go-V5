@@ -2,25 +2,37 @@ import { Helmet } from 'react-helmet-async';
 import { useState, useEffect } from 'react';
 // @mui
 import { useTheme } from '@mui/material/styles';
-import { Grid, Container, Typography, Card, CardContent, Stack, Box, Button } from '@mui/material';
+import { Grid, Container, Typography, Card, CardHeader, CardContent, Stack, Button, Divider } from '@mui/material';
+// date pickers
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { CalendarPicker } from '@mui/x-date-pickers/CalendarPicker';
 // components
 import { useSettingsContext } from '../../components/settings';
 import Iconify from '../../components/iconify';
+// auth
+import { useAuthContext } from '../../auth/useAuthContext';
 // sections
 import {
   AppWidgetSummary,
   AppCurrentDownload,
   AppAreaInstalled,
 } from '../../sections/@dashboard/general/app';
+import { AppWelcome } from '../../sections/@dashboard/general/app';
 // services
 import attendanceService from '../../services/attendanceService';
 import leaveService from '../../services/leaveService';
+
+// assets
+import { SeoIllustration } from '../../assets/illustrations';
 
 // ----------------------------------------------------------------------
 
 export default function EmployeeDashboard() {
   const theme = useTheme();
   const { themeStretch } = useSettingsContext();
+  const { user } = useAuthContext();
+  const [selectedDate, setSelectedDate] = useState(new Date());
   
   const [stats, setStats] = useState({
     presentDays: 0,
@@ -30,7 +42,7 @@ export default function EmployeeDashboard() {
     leaveBalance: 0,
   });
   
-  const [loading, setLoading] = useState(true);
+  // loading state removed (not required here)
 
   useEffect(() => {
     fetchEmployeeStats();
@@ -38,7 +50,6 @@ export default function EmployeeDashboard() {
 
   const fetchEmployeeStats = async () => {
     try {
-      setLoading(true);
       
       // Fetch attendance
       const attendanceData = await attendanceService.getAttendanceRecords();
@@ -59,8 +70,6 @@ export default function EmployeeDashboard() {
       });
     } catch (error) {
       console.error('Error fetching employee stats:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -71,9 +80,102 @@ export default function EmployeeDashboard() {
       </Helmet>
 
       <Container maxWidth={themeStretch ? false : 'xl'}>
-        <Typography variant="h4" sx={{ mb: 5 }}>
-          Welcome back! 👋
-        </Typography>
+  <Grid container spacing={3} sx={{ py: 3 }}>
+          <Grid item xs={12} md={8}>
+            <AppWelcome
+              title={`Welcome back! \n ${user?.displayName || user?.name || 'User'}`}
+              description="Manage your human resources efficiently with your personal dashboard. Track attendance, leaves, and more."
+              img={
+                <SeoIllustration
+                  sx={{
+                    p: 3,
+                    width: 240,
+                    margin: { xs: 'auto', md: 'inherit' },
+                  }}
+                />
+              }
+              action={<Button variant="contained" href="/dashboard/user/profile">My Profile</Button>}
+              sx={{ p: 3 }}
+            />
+          </Grid>
+
+          {/* Calendar beside Welcome Card */}
+          <Grid item xs={12} md={4}>
+            <Card>
+              <CardHeader title=" Calendar" sx={{ mb: 1 }} />
+              <Divider />
+              <CardContent
+                sx={{
+                  p: 0,
+                  pt: 1,
+                  '&:last-child': { p: 0 },
+                  '.MuiPickersCalendarHeader-root': { mb: 1, pb: 0 },
+                  '.MuiDayCalendar-header': { mb: 0 },
+                  '.MuiDayCalendar-weekContainer': { mb: 0 },
+                  '.MuiDayCalendar-week': { mb: 0 },
+                }}
+              >
+                <LocalizationProvider dateAdapter={AdapterDateFns}>
+                  <CalendarPicker
+                    date={selectedDate}
+                    onChange={(newDate) => setSelectedDate(newDate)}
+                    sx={{
+                      p: 0,
+                      m: 0,
+                      width: '100%',
+                      // Ensure the picker doesn't enforce a fixed min width
+                      '.MuiCalendarPicker-root': { width: '100%', minWidth: 0 },
+                      // Make the day calendar expand and distribute 7 equal columns
+                      '.MuiDayCalendar-root': { width: '100%' },
+                      '.MuiDayCalendar-weekContainer': {
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(7, 1fr)',
+                        gap: 0,
+                      },
+                      // Make the weekday header align to the same 7-column grid and center labels
+                      '.MuiDayCalendar-header': {
+                          display: 'grid !important',
+                          gridTemplateColumns: 'repeat(7, 1fr) !important',
+                          alignItems: 'center !important',
+                          gap: '0 !important',
+                          width: '100% !important',
+                          minWidth: '0 !important',
+                          maxWidth: '100% !important',
+                          overflow: 'hidden',
+                          '& .MuiTypography-root': {
+                            width: '100% !important',
+                            textAlign: 'center !important',
+                            fontSize: 'clamp(10px, 2vw, 16px) !important',
+                            fontWeight: 500,
+                            letterSpacing: 1,
+                            m: 0,
+                            p: 0,
+                            lineHeight: 1.2,
+                            display: 'block',
+                          },
+                      },
+                      // Make each pickers day fill its grid cell
+                      '.MuiPickersDay-root': {
+                        width: '100%',
+                        minWidth: '24px',
+                        maxWidth: '100%',
+                        height: 'auto',
+                        aspectRatio: '1 / 1',
+                        fontSize: 'clamp(10px, 2vw, 16px)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxSizing: 'border-box',
+                      },
+                      '& .MuiTypography-root': { fontSize: { xs: 12, sm: 13 } },
+                    }}
+                  />
+                </LocalizationProvider>
+              </CardContent>
+            </Card>
+          </Grid>
+
+        </Grid>
 
         <Grid container spacing={3}>
           {/* Quick Stats */}
