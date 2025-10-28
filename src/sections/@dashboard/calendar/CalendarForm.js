@@ -21,7 +21,8 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Chip
+  Chip,
+  Avatar
 } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import { MobileDateTimePicker, MobileDatePicker, MobileTimePicker } from '@mui/x-date-pickers';
@@ -437,10 +438,61 @@ export default function CalendarForm({
               render={({ field }) => (
                 <FormControl fullWidth>
                   <Select {...field} displayEmpty>
-                    <MenuItem value="Everyone">Everyone</MenuItem>
-                    <MenuItem value="Team">Team</MenuItem>
-                    <MenuItem value="Private">Private</MenuItem>
-                    <MenuItem value="Public">Public</MenuItem>
+                    <MenuItem value="Everyone">
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Iconify icon="eva:globe-2-outline" width={20} />
+                        <Box>
+                          <Typography variant="body2">Everyone</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            All employees can see this event
+                          </Typography>
+                        </Box>
+                      </Stack>
+                    </MenuItem>
+                    <MenuItem value="Team">
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Iconify icon="eva:people-outline" width={20} />
+                        <Box>
+                          <Typography variant="body2">Team</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Only your team/department can see
+                          </Typography>
+                        </Box>
+                      </Stack>
+                    </MenuItem>
+                    <MenuItem value="HR Only">
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Iconify icon="eva:briefcase-outline" width={20} />
+                        <Box>
+                          <Typography variant="body2">HR Only</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Only HR team can see
+                          </Typography>
+                        </Box>
+                      </Stack>
+                    </MenuItem>
+                    <MenuItem value="Managers Only">
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Iconify icon="eva:star-outline" width={20} />
+                        <Box>
+                          <Typography variant="body2">Managers Only</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Only managers can see
+                          </Typography>
+                        </Box>
+                      </Stack>
+                    </MenuItem>
+                    <MenuItem value="Private">
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Iconify icon="eva:lock-outline" width={20} />
+                        <Box>
+                          <Typography variant="body2">Private</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Only you can see this event
+                          </Typography>
+                        </Box>
+                      </Stack>
+                    </MenuItem>
                   </Select>
                 </FormControl>
               )}
