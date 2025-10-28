@@ -207,6 +207,65 @@ exports.delete = async (req, res) => {
   }
 };
 
+// Get all employee salaries
+exports.getSalaries = async (req, res) => {
+  try {
+    const db = require('../config/database');
+    
+    // Get all employees with their salary structures
+    const [employees] = await db.query(\`
+      SELECT 
+        e.id,
+        e.employee_id,
+        e.first_name,
+        e.last_name,
+        d.name as designation,
+        SUM(CASE 
+          WHEN sc.type = 'earning' AND ess.is_percentage = 1 THEN 
+            (SELECT amount FROM employee_salary_structure WHERE employee_id = e.id AND component_id = 1) * ess.percentage_value / 100
+          WHEN sc.type = 'earning' AND ess.is_percentage = 0 THEN ess.amount
+          ELSE 0
+        END) as gross_salary,
+        SUM(CASE 
+          WHEN sc.type = 'deduction' AND ess.is_percentage = 1 THEN 
+            (SELECT amount FROM employee_salary_structure WHERE employee_id = e.id AND component_id = 1) * ess.percentage_value / 100
+          WHEN sc.type = 'deduction' AND ess.is_percentage = 0 THEN ess.amount
+          ELSE 0
+        END) as total_deductions,
+        (SELECT amount FROM employee_salary_structure WHERE employee_id = e.id AND component_id = 1 LIMIT 1) as basic_salary
+      FROM employees e
+      LEFT JOIN designations d ON e.designation_id = d.id
+      LEFT JOIN employee_salary_structure ess ON e.id = ess.employee_id
+      LEFT JOIN salary_components sc ON ess.component_id = sc.id
+      GROUP BY e.id, e.employee_id, e.first_name, e.last_name, d.name
+      ORDER BY e.employee_id
+    \`);
+    
+    const formattedSalaries = employees.map(emp => ({
+      id: emp.id,
+      employeeId: emp.employee_id,
+      employeeName: \`\${emp.first_name} \${emp.last_name}\`,
+      designation: emp.designation || 'N/A',
+      basicSalary: parseFloat(emp.basic_salary || 0),
+      grossSalary: parseFloat(emp.gross_salary || 0),
+      totalDeductions: parseFloat(emp.total_deductions || 0),
+      netSalary: parseFloat(emp.gross_salary || 0) - parseFloat(emp.total_deductions || 0),
+    }));
+    
+    res.json({
+      success: true,
+      data: formattedSalaries,
+    });
+  } catch (error) {
+    console.error('Get salaries error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch employee salaries',
+      error: error.message,
+    });
+  }
+};
+
 // Get payroll runs (special endpoint)
 exports.getRuns = async (req, res) => {
   try {

@@ -262,6 +262,26 @@ exports.applyLeave = async (req, res) => {
       status: 'pending',
     });
 
+    // Update leave_balances table to reflect pending days
+    try {
+      const db = require('../config/database');
+      const year = new Date(startDate).getFullYear();
+      
+      // Update pending_days in leave_balances
+      await db.query(`
+        UPDATE leave_balances 
+        SET 
+          pending_days = pending_days + ?,
+          remaining_days = total_days - used_days - (pending_days + ?)
+        WHERE employee_id = ? AND leave_type_id = ? AND year = ?
+      `, [days, days, employeeId, leaveTypeId, year]);
+      
+      console.log(`✅ Updated leave balance: Employee ${employeeId}, Type ${leaveTypeId}, Pending +${days} days`);
+    } catch (balanceError) {
+      console.error('Error updating leave balance:', balanceError);
+      // Don't fail the application if balance update fails
+    }
+
     // Create notification for HR/Manager
     try {
       // Get employee details
@@ -334,6 +354,27 @@ exports.approveLeave = async (req, res) => {
       approvedBy: approverId,
       approvedAt: new Date(),
     });
+
+    // Update leave_balances table to reflect used days
+    try {
+      const db = require('../config/database');
+      const year = new Date(leave.startDate).getFullYear();
+      
+      // Update used_days and remaining_days in leave_balances
+      await db.query(`
+        UPDATE leave_balances 
+        SET 
+          used_days = used_days + ?,
+          pending_days = GREATEST(pending_days - ?, 0),
+          remaining_days = total_days - (used_days + ?)
+        WHERE employee_id = ? AND leave_type_id = ? AND year = ?
+      `, [leave.days, leave.days, leave.days, leave.employeeId, leave.leaveTypeId, year]);
+      
+      console.log(`✅ Updated leave balance: Employee ${leave.employeeId}, Type ${leave.leaveTypeId}, Used +${leave.days} days`);
+    } catch (balanceError) {
+      console.error('Error updating leave balance:', balanceError);
+      // Don't fail the approval if balance update fails
+    }
 
     // Create notification for employee
     try {
@@ -497,7 +538,7 @@ exports.getBalances = async (req, res) => {
     const year = req.query.year || new Date().getFullYear();
 
     console.log('🔄 [Leave Balances] Fetching for userId:', userId, 'year:', year);
-
+    
     if (!userId) {
       return res.status(401).json({
         success: false,
@@ -545,7 +586,7 @@ exports.getBalances = async (req, res) => {
           where: {
             employeeId,
             leaveTypeId: leaveType.id,
-            status: 'approved',
+      status: 'approved',
             startDate: {
               [Op.between]: [`${year}-01-01`, `${year}-12-31`]
             }
@@ -715,7 +756,7 @@ exports.createLeaveType = async (req, res) => {
     });
     
     console.log(`✅ [Leave Types] Created "${leaveType.name}" - ${days_per_year} days/year (available to ALL employees)`);
-    
+
     res.json({
       success: true,
       message: `Leave type "${name}" created successfully - All employees will now have ${days_per_year} days per year`,
@@ -803,7 +844,7 @@ exports.deleteLeaveType = async (req, res) => {
     await leaveType.destroy();
     
     console.log(`✅ [Leave Types] Deleted "${leaveTypeName}" - Removed from all employees`);
-    
+
     res.json({
       success: true,
       message: `Leave type "${leaveTypeName}" deleted successfully - Removed from all employees`,

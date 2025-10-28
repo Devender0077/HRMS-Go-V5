@@ -1,5 +1,5 @@
 import { Helmet } from 'react-helmet-async';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 // @mui
 import {
   Card,
@@ -14,6 +14,7 @@ import {
   Chip,
   Stack,
   Typography,
+  CircularProgress,
 } from '@mui/material';
 // routes
 import { PATH_DASHBOARD } from '../../routes/paths';
@@ -22,12 +23,17 @@ import Iconify from '../../components/iconify';
 import Scrollbar from '../../components/scrollbar';
 import CustomBreadcrumbs from '../../components/custom-breadcrumbs';
 import { useSettingsContext } from '../../components/settings';
+import { useSnackbar } from '../../components/snackbar';
 import {
   useTable,
   TableHeadCustom,
   TableNoData,
   TablePaginationCustom,
 } from '../../components/table';
+// services
+import contractService from '../../services/api/contractService';
+// utils
+import { fDate } from '../../utils/formatTime';
 
 // ----------------------------------------------------------------------
 
@@ -39,13 +45,6 @@ const TABLE_HEAD = [
   { id: 'duration', label: 'Duration', align: 'center' },
   { id: 'status', label: 'Status', align: 'center' },
   { id: '', label: 'Actions', align: 'right' },
-];
-
-const MOCK_CONTRACTS = [
-  { id: 1, employee: 'John Doe', type: 'Permanent', startDate: '2023-01-15', endDate: '-', duration: 'Indefinite', status: 'active' },
-  { id: 2, employee: 'Jane Smith', type: 'Contract', startDate: '2024-06-01', endDate: '2025-05-31', duration: '12 months', status: 'active' },
-  { id: 3, employee: 'Bob Johnson', type: 'Contract', startDate: '2024-01-01', endDate: '2024-12-31', duration: '12 months', status: 'expiring_soon' },
-  { id: 4, employee: 'Alice Williams', type: 'Internship', startDate: '2024-09-01', endDate: '2024-11-30', duration: '3 months', status: 'expired' },
 ];
 
 // ----------------------------------------------------------------------
@@ -62,7 +61,38 @@ export default function ContractsListPage() {
   } = useTable();
 
   const { themeStretch } = useSettingsContext();
-  const [tableData] = useState(MOCK_CONTRACTS);
+  const { enqueueSnackbar } = useSnackbar();
+  
+  const [tableData, setTableData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
+
+  useEffect(() => {
+    fetchContracts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, rowsPerPage]);
+
+  const fetchContracts = async () => {
+    setLoading(true);
+    try {
+      const response = await contractService.getAll({
+        page: page + 1,
+        limit: rowsPerPage,
+      });
+
+      if (response.success && response.data) {
+        setTableData(response.data.contracts || []);
+        setTotalCount(response.data.totalCount || 0);
+      } else {
+        setTableData([]);
+      }
+    } catch (error) {
+      console.error('Error fetching contracts:', error);
+      enqueueSnackbar('Error loading contracts', { variant: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -106,57 +136,65 @@ export default function ContractsListPage() {
                   onSort={onSort}
                 />
                 <TableBody>
-                  {tableData
-                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                    .map((row) => (
-                      <TableRow key={row.id} hover>
-                        <TableCell>
-                          <Typography variant="subtitle2">{row.employee}</Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Chip label={row.type} size="small" variant="outlined" />
-                        </TableCell>
-                        <TableCell>{row.startDate}</TableCell>
-                        <TableCell>
-                          <Typography 
-                            variant="body2"
-                            color={row.status === 'expiring_soon' ? 'warning.main' : 'text.primary'}
-                          >
-                            {row.endDate}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="center">{row.duration}</TableCell>
-                        <TableCell align="center">
-                          <Chip
-                            label={row.status}
-                            size="small"
-                            color={getStatusColor(row.status)}
-                            sx={{ textTransform: 'capitalize' }}
-                          />
-                        </TableCell>
-                        <TableCell align="right">
-                          <IconButton size="small">
-                            <Iconify icon="eva:eye-fill" />
-                          </IconButton>
-                          <IconButton size="small">
-                            <Iconify icon="eva:download-fill" />
-                          </IconButton>
-                          {row.status === 'expiring_soon' && (
-                            <IconButton size="small" color="warning">
-                              <Iconify icon="eva:refresh-fill" />
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={TABLE_HEAD.length} align="center" sx={{ py: 5 }}>
+                        <CircularProgress />
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    <>
+                      {tableData.map((row) => (
+                        <TableRow key={row.id} hover>
+                          <TableCell>
+                            <Stack>
+                              <Typography variant="subtitle2">{row.employeeName}</Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {row.employeeCode}
+                              </Typography>
+                            </Stack>
+                          </TableCell>
+                          <TableCell>
+                            <Chip label={row.type} size="small" variant="outlined" />
+                          </TableCell>
+                          <TableCell>{fDate(row.startDate)}</TableCell>
+                          <TableCell>
+                            <Typography variant="body2">
+                              {row.endDate ? fDate(row.endDate) : '-'}
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="center">{row.duration}</TableCell>
+                          <TableCell align="center">
+                            <Chip
+                              label={row.status}
+                              size="small"
+                              color={getStatusColor(row.status)}
+                              sx={{ textTransform: 'capitalize' }}
+                            />
+                          </TableCell>
+                          <TableCell align="right">
+                            <IconButton size="small" onClick={() => console.log('View', row.id)}>
+                              <Iconify icon="eva:eye-fill" />
                             </IconButton>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  {tableData.length === 0 && <TableNoData isNotFound={true} />}
+                            <IconButton size="small" onClick={() => console.log('Edit', row.id)}>
+                              <Iconify icon="eva:edit-fill" />
+                            </IconButton>
+                            <IconButton size="small" onClick={() => console.log('Download', row.id)}>
+                              <Iconify icon="eva:download-fill" />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {tableData.length === 0 && <TableNoData isNotFound={true} />}
+                    </>
+                  )}
                 </TableBody>
               </Table>
             </TableContainer>
           </Scrollbar>
 
           <TablePaginationCustom
-            count={tableData.length}
+            count={totalCount}
             page={page}
             rowsPerPage={rowsPerPage}
             onPageChange={onChangePage}

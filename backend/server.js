@@ -117,6 +117,9 @@ app.use('/api/general-settings', require('./routes/generalSettings.routes'));
 app.use('/api/organization', require('./routes/organization.routes'));
 app.use('/api/upload', require('./routes/upload.routes'));
 app.use('/api/dashboard', require('./routes/dashboard.routes'));
+app.use('/api/contracts', require('./routes/contract.routes'));
+app.use('/api/expenses', require('./routes/expense.routes'));
+app.use('/api/income', require('./routes/income.routes'));
 
 // Route aliases for alternate paths (frontend compatibility)
 app.use('/api/leave-types', (req, res, next) => {

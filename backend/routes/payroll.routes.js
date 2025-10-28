@@ -3,10 +3,11 @@ const router = express.Router();
 const payrollController = require('../controllers/payroll.controller');
 const { authenticateToken } = require('../middleware/auth.middleware');
 
-// All routes require authentication (bypassed in development mode)
+// All routes require authentication
 router.use(authenticateToken);
 
-// Special routes (specific actions)
+// Special routes (specific actions - MUST be before generic routes!)
+router.get('/salaries', payrollController.getSalaries);
 router.get('/runs', payrollController.getRuns);
 router.post('/runs', payrollController.createRun);
 router.post('/runs/:id/process', payrollController.processPayroll);
