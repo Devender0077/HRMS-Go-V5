@@ -213,7 +213,7 @@ exports.getSalaries = async (req, res) => {
     const db = require('../config/database');
     
     // Get all employees with their salary structures
-    const [employees] = await db.query(\`
+    const [employees] = await db.query(`
       SELECT 
         e.id,
         e.employee_id,
@@ -239,12 +239,12 @@ exports.getSalaries = async (req, res) => {
       LEFT JOIN salary_components sc ON ess.component_id = sc.id
       GROUP BY e.id, e.employee_id, e.first_name, e.last_name, d.name
       ORDER BY e.employee_id
-    \`);
+    `);
     
     const formattedSalaries = employees.map(emp => ({
       id: emp.id,
       employeeId: emp.employee_id,
-      employeeName: \`\${emp.first_name} \${emp.last_name}\`,
+      employeeName: `${emp.first_name} ${emp.last_name}`,
       designation: emp.designation || 'N/A',
       basicSalary: parseFloat(emp.basic_salary || 0),
       grossSalary: parseFloat(emp.gross_salary || 0),
