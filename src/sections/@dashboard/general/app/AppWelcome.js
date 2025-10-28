@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 // @mui
 import { styled } from '@mui/material/styles';
-import { Typography, Stack } from '@mui/material';
+import { Typography, Stack, Box } from '@mui/material';
 // utils
 import { bgGradient } from '../../../../utils/cssStyles';
 
@@ -63,12 +63,19 @@ export default function AppWelcome({ title, description, action, img, ...other }
         alignItems={{ xs: 'center', md: 'flex-start' }}
         sx={{
           pl: 5,
-          py: { xs: 5, md: 0 },
+          // Reduce vertical padding to avoid large bottom space
+          py: { xs: 2, md: 0 },
           pr: { xs: 5, md: 0 },
           textAlign: { xs: 'center', md: 'left' },
+          // Limit content width on larger screens so it doesn't overlap the illustration
+          maxWidth: { md: 'calc(100% - 400px)' },
         }}
       >
-        <Typography paragraph variant="h4" sx={{ whiteSpace: 'pre-line' }}>
+        <Typography
+          paragraph
+          variant="h4"
+          sx={{ whiteSpace: 'pre-line', overflowWrap: 'anywhere', wordBreak: 'break-word' }}
+        >
           {title}
         </Typography>
 
@@ -76,7 +83,11 @@ export default function AppWelcome({ title, description, action, img, ...other }
           variant="body2"
           sx={{
             opacity: 0.8,
-            mb: { xs: 3, xl: 5 },
+            // reduce bottom margin on small screens
+            mb: { xs: 1.5, xl: 5 },
+            // Ensure long text wraps and stays inside the card
+            overflowWrap: 'anywhere',
+            wordBreak: 'break-word',
           }}
         >
           {description}
@@ -85,7 +96,11 @@ export default function AppWelcome({ title, description, action, img, ...other }
         {action && action}
       </Stack>
 
-      {img && img}
+      {img && (
+        <Box sx={{ flexShrink: 0, display: { xs: 'none', md: 'block' }, pl: { md: 3 }, pr: { md: 5 } }}>
+          {img}
+        </Box>
+      )}
 
       <StyledBg />
     </StyledRoot>

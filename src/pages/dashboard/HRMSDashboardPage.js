@@ -3,10 +3,14 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 // @mui
 import { useTheme } from '@mui/material/styles';
-import { 
-  Container, Grid, Stack, Button, CircularProgress, Box, Typography,
-  Card, CardHeader, CardContent, List, ListItem, ListItemText, Chip, Divider, alpha 
+import {
+  Container, Grid, Button, CircularProgress, Box, Typography,
+  Card, CardHeader, CardContent, List, ListItem, ListItemText, Chip, Divider, alpha,
 } from '@mui/material';
+// date pickers
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { CalendarPicker } from '@mui/x-date-pickers/CalendarPicker';
 // auth
 import { useAuthContext } from '../../auth/useAuthContext';
 // routes
@@ -39,6 +43,7 @@ export default function HRMSDashboardPage() {
 
   // All hooks must be called before any conditional returns
   const [loading, setLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [stats, setStats] = useState({
     totalEmployees: 0,
     presentToday: 0,
@@ -52,28 +57,24 @@ export default function HRMSDashboardPage() {
 
   // Route to role-based dashboard (check BEFORE fetching data)
   const userType = user?.userType;
-  
+
   const fetchAllDashboardData = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch all dashboard data in parallel
       const [statsResponse, activitiesResponse, eventsResponse] = await Promise.all([
         dashboardService.getStats().catch(() => ({ data: null })),
         dashboardService.getRecentActivities(10).catch(() => ({ data: [] })),
         fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/calendar/events?limit=5`)
-          .then(res => res.json())
+          .then((res) => res.json())
           .catch(() => []),
       ]);
-      
-      console.log('Dashboard stats:', statsResponse);
-      console.log('Activities:', activitiesResponse);
-      console.log('Calendar events:', eventsResponse);
-      
+
       if (statsResponse && statsResponse.data) {
         const { employees, attendance, leaves, recruitment } = statsResponse.data;
         setDashboardData(statsResponse.data);
-        
+
         setStats({
           totalEmployees: employees?.total || 0,
           presentToday: employees?.presentToday || attendance?.presentToday || 0,
@@ -82,17 +83,18 @@ export default function HRMSDashboardPage() {
           newApplications: recruitment?.pendingApplications || 0,
         });
       }
-      
+
       if (activitiesResponse && activitiesResponse.data) {
         setActivities(activitiesResponse.data);
       }
-      
+
       if (Array.isArray(eventsResponse)) {
         setCalendarEvents(eventsResponse);
-      } else if (eventsResponse.data) {
+      } else if (eventsResponse?.data) {
         setCalendarEvents(eventsResponse.data);
       }
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
@@ -105,16 +107,16 @@ export default function HRMSDashboardPage() {
       fetchAllDashboardData();
     }
   }, [userType]);
-  
+
   // Render role-specific dashboard for employees and managers
   if (userType === 'employee') {
     return <EmployeeDashboard />;
   }
-  
+
   if (userType === 'manager') {
     return <ManagerDashboard />;
   }
-  
+
   // HR, HR Manager, and Super Admin see the full dashboard below
 
   return (
@@ -125,7 +127,7 @@ export default function HRMSDashboardPage() {
 
       <Container maxWidth={themeStretch ? false : 'xl'}>
         <Grid container spacing={3}>
-          {/* Welcome Card - Same beautiful design */}
+          {/* Welcome Card */}
           <Grid item xs={12} md={8}>
             <AppWelcome
               title={`Welcome back! \n ${user?.displayName || 'User'}`}
@@ -140,7 +142,7 @@ export default function HRMSDashboardPage() {
                 />
               }
               action={
-                <Button 
+                <Button
                   variant="contained"
                   onClick={() => navigate(PATH_DASHBOARD.hr.employees.list)}
                 >
@@ -150,28 +152,71 @@ export default function HRMSDashboardPage() {
             />
           </Grid>
 
-          {/* Quick Widgets */}
+          {/* Calendar beside Welcome Card */}
           <Grid item xs={12} md={4}>
-            <Stack spacing={3}>
-              <AppWidget
-                title="Active Employees"
-                total={stats.totalEmployees}
-                icon="eva:people-fill"
-                chart={{
-                  series: stats.totalEmployees > 0 ? 75 : 0,
+            <Card>
+              <CardHeader title=" Calendar" sx={{ mb: 1 }} />
+              <Divider />
+              <CardContent
+                sx={{
+                  p: 0,
+                  pt: 1, // small padding-top to give space between divider and calendar header
+                  '&:last-child': { p: 0 }, // kill default bottom padding
+                  // Slightly relax calendar internals spacing so header text isn't cramped
+                  '.MuiPickersCalendarHeader-root': { mb: 1, pb: 0 },
+                  '.MuiDayCalendar-header': { mb: 0 },
+                  '.MuiDayCalendar-weekContainer': { mb: 0 },
+                  '.MuiDayCalendar-week': { mb: 0 },
+                  '.MuiCalendarPicker-root': { mt: 0.5 },
                 }}
-              />
+              >
+                <LocalizationProvider dateAdapter={AdapterDateFns}>
+                  <CalendarPicker
+                    date={selectedDate}
+                    onChange={(newDate) => setSelectedDate(newDate)}
+                    sx={{
+                      p: 0,
+                      m: 0,
+                      '& .MuiTypography-root': { fontSize: 13 },
+                    }}
+                  />
+                </LocalizationProvider>
+              </CardContent>
+            </Card>
+          </Grid>
 
-              <AppWidget
-                title="Pending Approvals"
-                total={stats.pendingApprovals}
-                icon="eva:checkmark-circle-fill"
-                color="warning"
-                chart={{
-                  series: stats.pendingApprovals > 0 ? Math.min((stats.pendingApprovals / 20) * 100, 100) : 0,
-                }}
-              />
-            </Stack>
+          {/* Key widgets */}
+          <Grid item xs={12}>
+            <Grid container spacing={3}>
+              <Grid item xs={12} sm={6} md={4}>
+                <AppWidget
+                  title="Active Employees"
+                  total={stats.totalEmployees}
+                  icon="eva:people-fill"
+                  chart={{ series: stats.totalEmployees > 0 ? 75 : 0 }}
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={4}>
+                <AppWidget
+                  title="Pending Approvals"
+                  total={stats.pendingApprovals}
+                  icon="eva:checkmark-circle-fill"
+                  color="warning"
+                  chart={{ series: stats.pendingApprovals > 0 ? Math.min((stats.pendingApprovals / 20) * 100, 100) : 0 }}
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={4}>
+                <AppWidget
+                  title="New Applications"
+                  total={stats.newApplications}
+                  icon="eva:file-text-fill"
+                  color="info"
+                  chart={{ series: stats.newApplications > 0 ? Math.min((stats.newApplications / 40) * 100, 100) : 0 }}
+                />
+              </Grid>
+            </Grid>
           </Grid>
 
           {/* HRMS Statistics */}
@@ -222,8 +267,9 @@ export default function HRMSDashboardPage() {
           {/* Calendar Events */}
           <Grid item xs={12} md={6}>
             <Card>
-              <CardHeader 
-                title="📅 Upcoming Events" 
+              <CardHeader
+                title="📅 Upcoming Events"
+                sx={{ mb: 1 }}
                 action={
                   <Button size="small" onClick={() => navigate(PATH_DASHBOARD.calendar)}>
                     View All
@@ -231,19 +277,19 @@ export default function HRMSDashboardPage() {
                 }
               />
               <Divider />
-              <CardContent>
+              <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                 {calendarEvents.length > 0 ? (
-                  <List sx={{ py: 0 }}>
+                  <List disablePadding>
                     {calendarEvents.slice(0, 5).map((event, index) => (
                       <Box key={event.id || index}>
-                        <ListItem sx={{ px: 0, py: 1.5 }}>
+                        <ListItem sx={{ px: 0, py: 1.25 }}>
                           <Box sx={{ mr: 2, minWidth: 40 }}>
                             <Box
                               sx={{
                                 width: 40,
                                 height: 40,
                                 borderRadius: 1,
-                                bgcolor: (theme) => alpha(theme.palette.info.main, 0.16),
+                                bgcolor: (t) => alpha(t.palette.info.main, 0.16),
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -276,42 +322,44 @@ export default function HRMSDashboardPage() {
           {/* Recent Activities */}
           <Grid item xs={12} md={6}>
             <Card>
-              <CardHeader title="⚡ Recent Activities" />
+              <CardHeader title="⚡ Recent Activities" sx={{ mb: 1 }} />
               <Divider />
-              <CardContent>
+              <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                 {activities.length > 0 ? (
-                  <List sx={{ py: 0 }}>
+                  <List disablePadding>
                     {activities.slice(0, 8).map((activity, index) => (
                       <Box key={activity.id || index}>
-                        <ListItem sx={{ px: 0, py: 1.5 }}>
+                        <ListItem sx={{ px: 0, py: 1.25 }}>
                           <Box sx={{ mr: 2, minWidth: 40 }}>
                             <Box
                               sx={{
                                 width: 40,
                                 height: 40,
                                 borderRadius: 1,
-                                bgcolor: (theme) => alpha(
-                                  activity.type === 'leave' ? theme.palette.warning.main :
-                                  activity.type === 'attendance' ? theme.palette.success.main :
-                                  theme.palette.primary.main, 
-                                  0.16
-                                ),
+                                bgcolor: (t) =>
+                                  alpha(
+                                    activity.type === 'leave' ? t.palette.warning.main
+                                      : activity.type === 'attendance' ? t.palette.success.main
+                                      : t.palette.primary.main,
+                                    0.16
+                                  ),
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                               }}
                             >
-                              <Iconify 
+                              <Iconify
                                 icon={
-                                  activity.type === 'leave' ? 'eva:calendar-outline' :
-                                  activity.type === 'attendance' ? 'eva:clock-outline' :
-                                  'eva:person-add-outline'
+                                  activity.type === 'leave' ? 'eva:calendar-outline'
+                                    : activity.type === 'attendance' ? 'eva:clock-outline'
+                                    : 'eva:person-add-outline'
                                 }
                                 width={24}
-                                sx={{ 
-                                  color: activity.type === 'leave' ? 'warning.main' :
-                                  activity.type === 'attendance' ? 'success.main' :
-                                  'primary.main'
+                                sx={{
+                                  color:
+                                    activity.type === 'leave' ? 'warning.main'
+                                      : activity.type === 'attendance' ? 'success.main'
+                                      : 'primary.main',
                                 }}
                               />
                             </Box>
@@ -335,33 +383,8 @@ export default function HRMSDashboardPage() {
               </CardContent>
             </Card>
           </Grid>
-
-          {/* Quick Stats Widgets */}
-          <Grid item xs={12} md={6} lg={4}>
-            <Stack spacing={3}>
-              <AppWidget
-                title="Pending Approvals"
-                total={stats.pendingApprovals}
-                icon="eva:checkmark-circle-fill"
-                chart={{
-                  series: stats.pendingApprovals > 0 ? Math.min((stats.pendingApprovals / 25) * 100, 100) : 0,
-                }}
-              />
-
-              <AppWidget
-                title="New Applications"
-                total={stats.newApplications}
-                icon="eva:file-text-fill"
-                color="info"
-                chart={{
-                  series: stats.newApplications > 0 ? Math.min((stats.newApplications / 40) * 100, 100) : 0,
-                }}
-              />
-            </Stack>
-          </Grid>
         </Grid>
       </Container>
     </>
   );
 }
-
