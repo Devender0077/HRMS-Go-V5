@@ -6,6 +6,7 @@ import { useTheme } from '@mui/material/styles';
 import {
   Container, Grid, Button, CircularProgress, Box, Typography,
   Card, CardHeader, CardContent, List, ListItem, ListItemText, Chip, Divider, alpha, Stack,
+  Avatar, AvatarGroup, LinearProgress, IconButton,
 } from '@mui/material';
 // date pickers
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -301,111 +302,176 @@ export default function HRMSDashboardPage() {
             </>
           )}
 
-          {/* Today's Attendance - New Widget */}
+          {/* 1. Upcoming Birthdays Widget */}
           <Grid item xs={12} md={6} lg={4}>
             <Card>
               <CardHeader 
-                title="Today's Attendance" 
+                title="Upcoming Birthdays" 
                 avatar={
                   <Box sx={{ 
                     width: 40, 
                     height: 40, 
                     borderRadius: 1.5,
-                    bgcolor: alpha(theme.palette.success.main, 0.08),
+                    bgcolor: alpha(theme.palette.error.main, 0.08),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center'
                   }}>
-                    <Iconify icon="eva:checkmark-circle-2-outline" width={24} sx={{ color: 'success.main' }} />
+                    <Iconify icon="eva:gift-outline" width={24} sx={{ color: 'error.main' }} />
+                  </Box>
+                }
+                sx={{ mb: 1 }} 
+              />
+              <Divider />
+              <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                {upcomingBirthdays.length > 0 ? (
+                  <List disablePadding>
+                    {upcomingBirthdays.map((birthday, index) => (
+                      <Box key={birthday.id}>
+                        <ListItem
+                          sx={{
+                            px: 0,
+                            py: 1.5,
+                          }}
+                        >
+                          <Avatar
+                            alt={birthday.name}
+                            src={birthday.avatar}
+                            sx={{ width: 40, height: 40, mr: 2 }}
+                          >
+                            {birthday.name.charAt(0)}
+                          </Avatar>
+                          <ListItemText
+                            primary={birthday.name}
+                            secondary={birthday.date}
+                            primaryTypographyProps={{ variant: 'subtitle2' }}
+                            secondaryTypographyProps={{ variant: 'caption' }}
+                          />
+                          <IconButton size="small" color="error">
+                            <Iconify icon="eva:gift-fill" width={20} />
+                          </IconButton>
+                        </ListItem>
+                        {index < upcomingBirthdays.length - 1 && <Divider component="li" />}
+                      </Box>
+                    ))}
+                  </List>
+                ) : (
+                  <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 3 }}>
+                    No upcoming birthdays this week
+                  </Typography>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* 2. Leave Approvals (Managers/HR Only) */}
+          {isManagerOrHR && (
+            <Grid item xs={12} md={6} lg={4}>
+              <Card>
+                <CardHeader 
+                  title="Pending Leave Approvals" 
+                  avatar={
+                    <Box sx={{ 
+                      width: 40, 
+                      height: 40, 
+                      borderRadius: 1.5,
+                      bgcolor: alpha(theme.palette.warning.main, 0.08),
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <Iconify icon="eva:clock-outline" width={24} sx={{ color: 'warning.main' }} />
+                    </Box>
+                  }
+                  action={
+                    <Chip label={pendingLeaves.length} size="small" color="warning" />
+                  }
+                  sx={{ mb: 1 }} 
+                />
+                <Divider />
+                <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                  {pendingLeaves.length > 0 ? (
+                    <Stack spacing={2}>
+                      {pendingLeaves.map((leave) => (
+                        <Box
+                          key={leave.id}
+                          sx={{
+                            p: 2,
+                            borderRadius: 1.5,
+                            bgcolor: 'background.neutral',
+                          }}
+                        >
+                          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                            <Typography variant="subtitle2">{leave.employeeName}</Typography>
+                            <Chip label={`${leave.days}d`} size="small" />
+                          </Stack>
+                          <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
+                            {leave.leaveType} • From {leave.startDate}
+                          </Typography>
+                          <Stack direction="row" spacing={1}>
+                            <Button size="small" variant="contained" color="success" fullWidth>
+                              Approve
+                            </Button>
+                            <Button size="small" variant="outlined" color="error" fullWidth>
+                              Reject
+                            </Button>
+                          </Stack>
+                        </Box>
+                      ))}
+                    </Stack>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 3 }}>
+                      No pending leave requests
+                    </Typography>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
+          )}
+
+          {/* 3. Performance Overview */}
+          <Grid item xs={12} md={6} lg={4}>
+            <Card>
+              <CardHeader 
+                title="Performance This Month" 
+                avatar={
+                  <Box sx={{ 
+                    width: 40, 
+                    height: 40, 
+                    borderRadius: 1.5,
+                    bgcolor: alpha(theme.palette.primary.main, 0.08),
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <Iconify icon="eva:trending-up-outline" width={24} sx={{ color: 'primary.main' }} />
                   </Box>
                 }
                 sx={{ mb: 1 }} 
               />
               <Divider />
               <CardContent>
-                <Stack spacing={2}>
+                <Stack spacing={2.5}>
                   <Box>
                     <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Present
-                      </Typography>
-                      <Typography variant="subtitle2" color="success.main">
-                        {stats.presentToday} / {stats.totalEmployees}
-                      </Typography>
+                      <Typography variant="body2">Goals Completed</Typography>
+                      <Typography variant="subtitle2" color="primary.main">75%</Typography>
                     </Stack>
-                    <Box
-                      sx={{
-                        height: 8,
-                        borderRadius: 1,
-                        bgcolor: 'background.neutral',
-                        overflow: 'hidden',
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          height: '100%',
-                          width: `${stats.totalEmployees ? (stats.presentToday / stats.totalEmployees) * 100 : 0}%`,
-                          bgcolor: 'success.main',
-                          transition: 'width 0.3s',
-                        }}
-                      />
-                    </Box>
+                    <LinearProgress variant="determinate" value={75} sx={{ height: 6, borderRadius: 3 }} />
                   </Box>
-
                   <Box>
                     <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        On Leave
-                      </Typography>
-                      <Typography variant="subtitle2" color="warning.main">
-                        {stats.onLeave}
-                      </Typography>
+                      <Typography variant="body2">Tasks Completed</Typography>
+                      <Typography variant="subtitle2" color="success.main">85%</Typography>
                     </Stack>
-                    <Box
-                      sx={{
-                        height: 8,
-                        borderRadius: 1,
-                        bgcolor: 'background.neutral',
-                        overflow: 'hidden',
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          height: '100%',
-                          width: `${stats.totalEmployees ? (stats.onLeave / stats.totalEmployees) * 100 : 0}%`,
-                          bgcolor: 'warning.main',
-                          transition: 'width 0.3s',
-                        }}
-                      />
-                    </Box>
+                    <LinearProgress variant="determinate" value={85} color="success" sx={{ height: 6, borderRadius: 3 }} />
                   </Box>
-
                   <Box>
                     <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Absent
-                      </Typography>
-                      <Typography variant="subtitle2" color="error.main">
-                        {stats.totalEmployees - stats.presentToday - stats.onLeave}
-                      </Typography>
+                      <Typography variant="body2">Training Progress</Typography>
+                      <Typography variant="subtitle2" color="info.main">60%</Typography>
                     </Stack>
-                    <Box
-                      sx={{
-                        height: 8,
-                        borderRadius: 1,
-                        bgcolor: 'background.neutral',
-                        overflow: 'hidden',
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          height: '100%',
-                          width: `${stats.totalEmployees ? ((stats.totalEmployees - stats.presentToday - stats.onLeave) / stats.totalEmployees) * 100 : 0}%`,
-                          bgcolor: 'error.main',
-                          transition: 'width 0.3s',
-                        }}
-                      />
-                    </Box>
+                    <LinearProgress variant="determinate" value={60} color="info" sx={{ height: 6, borderRadius: 3 }} />
                   </Box>
                 </Stack>
               </CardContent>
