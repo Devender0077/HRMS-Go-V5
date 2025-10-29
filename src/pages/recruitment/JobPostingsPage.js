@@ -1,5 +1,6 @@
 import { Helmet } from 'react-helmet-async';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Link as RouterLink } from 'react-router-dom';
 // @mui
 import {
@@ -20,7 +21,6 @@ import {
   TextField,
   InputAdornment,
   Box,
-  Avatar,
 } from '@mui/material';
 // components
 import Iconify from '../../components/iconify';
@@ -111,6 +111,8 @@ const MOCK_JOB_POSTINGS = [
 export default function JobPostingsPage() {
   const { themeStretch } = useSettingsContext();
   const { enqueueSnackbar } = useSnackbar();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const [jobPostings, setJobPostings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -121,12 +123,39 @@ export default function JobPostingsPage() {
   const [selectedJob, setSelectedJob] = useState(null);
 
   // Fetch job postings
-  const fetchJobPostings = async () => {
+  const fetchJobPostings = useCallback(async () => {
     try {
       setLoading(true);
       const response = await recruitmentService.getJobPostings();
-      if (response.success) {
-        setJobPostings(response.data);
+
+      // Accept multiple shapes: { success, data }, { data: [...] }, or array
+      let payload = null;
+      if (response == null) payload = null;
+      else if (Array.isArray(response)) payload = response;
+      else if (response.success && response.data) payload = response.data;
+      else if (response.data && Array.isArray(response.data)) payload = response.data;
+      else if (response.jobs && Array.isArray(response.jobs)) payload = response.jobs;
+      else if (response.payload && Array.isArray(response.payload)) payload = response.payload;
+      else payload = null;
+
+      if (payload && Array.isArray(payload)) {
+        // Normalize each job object to expected table fields
+        const normalized = payload.map((j, idx) => ({
+          id: j.id || j._id || j.jobId || j.job_id || `${j.title || 'job'}-${idx}`,
+          title: j.title || j.job_title || j.name || 'Untitled',
+          department: j.department || j.departmentName || j.dept || 'General',
+          location: j.location || j.locationName || j.city || 'Remote',
+          employment_type: j.employment_type || j.type || j.job_type || 'full_time',
+          positions: Number(j.positions ?? j.openings ?? 1),
+          applications: Number(j.applications ?? j.app_count ?? 0),
+          status: j.status || j.state || 'open',
+          posted_date: j.posted_date || j.createdAt || j.postedAt || new Date().toISOString(),
+          closing_date: j.closing_date || j.closingAt || j.closesAt || null,
+          salary_range: j.salary_range || j.salary || j.compensation || '',
+          experience_required: j.experience_required || j.experience || '',
+        }));
+
+        setJobPostings(normalized);
       } else {
         // Use mock data as fallback
         setJobPostings(MOCK_JOB_POSTINGS);
@@ -139,12 +168,22 @@ export default function JobPostingsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [enqueueSnackbar]);
 
   // Load data on component mount
   useEffect(() => {
     fetchJobPostings();
-  }, []);
+  }, [fetchJobPostings]);
+
+  // If navigated here after creating a job, refresh the list
+  useEffect(() => {
+    if (location.state && location.state.refresh) {
+      // refetch list
+      fetchJobPostings();
+      // clear the navigation state so refresh doesn't repeat
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, fetchJobPostings, navigate, location.pathname]);
 
   const handleOpenPopover = (event, job) => {
     setOpenPopover(event.currentTarget);
@@ -245,7 +284,7 @@ export default function JobPostingsPage() {
     job.location.toLowerCase().includes(filterName.toLowerCase())
   );
 
-  const isNotFound = !filteredJobPostings.length && !!filterName;
+  // const isNotFound intentionally omitted; TableNoData prop uses direct check
 
   return (
     <>
@@ -264,7 +303,7 @@ export default function JobPostingsPage() {
           action={
             <Button
               component={RouterLink}
-              to={PATH_DASHBOARD.recruitment.jobs + '/new'}
+              to={PATH_DASHBOARD.recruitment.jobs.postings.new}
               variant="contained"
               startIcon={<Iconify icon="eva:plus-fill" />}
             >

@@ -153,6 +153,7 @@ import {
   PayslipsPage,
   PayrollReportsPage,
   JobPostingsPage,
+  JobPostingNewPage,
   ApplicationsPage,
   CandidatePipelinePage,
   InterviewsPage,
@@ -366,6 +367,7 @@ export default function Router() {
           children: [
             { element: <Navigate to="/dashboard/recruitment/jobs" replace />, index: true },
             { path: 'jobs', element: <JobPostingsPage /> },
+            { path: 'jobs/postings/new', element: <JobPostingNewPage /> },
             { path: 'applications', element: <ApplicationsPage /> },
             { path: 'pipeline', element: <CandidatePipelinePage /> },
             { path: 'interviews', element: <InterviewsPage /> },

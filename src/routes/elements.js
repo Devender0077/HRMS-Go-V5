@@ -282,6 +282,7 @@ export const PayrollProcessingPage = Loadable(lazy(() => import('../pages/payrol
 export const PayslipsPage = Loadable(lazy(() => import('../pages/payroll/PayslipsPage')));
 export const PayrollReportsPage = Loadable(lazy(() => import('../pages/payroll/PayrollReportsPage')));
 export const JobPostingsPage = Loadable(lazy(() => import('../pages/recruitment/JobPostingsPage')));
+export const JobPostingNewPage = Loadable(lazy(() => import('../pages/recruitment/JobPostingNewPage')));
 export const ApplicationsPage = Loadable(lazy(() => import('../pages/recruitment/ApplicationsPage')));
 export const CandidatePipelinePage = Loadable(lazy(() => import('../pages/recruitment/CandidatePipelinePage')));
 export const InterviewsPage = Loadable(lazy(() => import('../pages/recruitment/InterviewsPage')));

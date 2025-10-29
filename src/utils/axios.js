@@ -4,10 +4,12 @@ import { API_URL } from '../config-global';
 
 // ----------------------------------------------------------------------
 
-const axiosInstance = axios.create({ baseURL: API_URL });
+// Configure the default axios instance so other modules that import
+// this file as `axios` get a configured axios with create() available.
+axios.defaults.baseURL = API_URL;
 
 // Request interceptor - Add JWT token to all requests
-axiosInstance.interceptors.request.use(
+axios.interceptors.request.use(
   (config) => {
     const accessToken = window.localStorage.getItem('accessToken');
     if (accessToken) {
@@ -19,9 +21,9 @@ axiosInstance.interceptors.request.use(
 );
 
 // Response interceptor
-axiosInstance.interceptors.response.use(
+axios.interceptors.response.use(
   (response) => response,
   (error) => Promise.reject((error.response && error.response.data) || 'Something went wrong')
 );
 
-export default axiosInstance;
+export default axios;

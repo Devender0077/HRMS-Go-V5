@@ -1,25 +1,8 @@
-import axios from '../utils/axios';
-import { API_URL } from '../config-global';
+import apiClient from '../utils/axios';
 
-// API Client
-const apiClient = axios.create({
-  baseURL: `${API_URL}/recruitment`,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Request interceptor - add token to requests
-apiClient.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
+// Use shared axios instance (apiClient) which already sets baseURL and token interceptor.
+// We will prefix recruitment endpoints with '/recruitment'.
+const BASE_PATH = '/recruitment';
 
 // Recruitment Service
 class RecruitmentService {
@@ -29,7 +12,7 @@ class RecruitmentService {
    */
   async getJobPostings() {
     try {
-      const response = await apiClient.get('/job-postings');
+  const response = await apiClient.get(`${BASE_PATH}/jobs`);
       return {
         success: true,
         data: response.data,
@@ -51,7 +34,7 @@ class RecruitmentService {
    */
   async getJobPosting(id) {
     try {
-      const response = await apiClient.get(`/job-postings/${id}`);
+  const response = await apiClient.get(`${BASE_PATH}/jobs/${id}`);
       return {
         success: true,
         data: response.data,
@@ -73,7 +56,7 @@ class RecruitmentService {
    */
   async createJobPosting(jobPosting) {
     try {
-      const response = await apiClient.post('/job-postings', jobPosting);
+  const response = await apiClient.post(`${BASE_PATH}/jobs`, jobPosting);
       return {
         success: true,
         data: response.data,
@@ -96,7 +79,7 @@ class RecruitmentService {
    */
   async updateJobPosting(id, jobPosting) {
     try {
-      const response = await apiClient.put(`/job-postings/${id}`, jobPosting);
+  const response = await apiClient.put(`${BASE_PATH}/jobs/${id}`, jobPosting);
       return {
         success: true,
         data: response.data,
@@ -118,7 +101,7 @@ class RecruitmentService {
    */
   async deleteJobPosting(id) {
     try {
-      const response = await apiClient.delete(`/job-postings/${id}`);
+  const response = await apiClient.delete(`${BASE_PATH}/jobs/${id}`);
       return {
         success: true,
         data: response.data,
@@ -139,7 +122,7 @@ class RecruitmentService {
    */
   async getJobApplications() {
     try {
-      const response = await apiClient.get('/applications');
+  const response = await apiClient.get(`${BASE_PATH}/applications`);
       return {
         success: true,
         data: response.data,
@@ -161,7 +144,7 @@ class RecruitmentService {
    */
   async getJobApplication(id) {
     try {
-      const response = await apiClient.get(`/applications/${id}`);
+  const response = await apiClient.get(`${BASE_PATH}/applications/${id}`);
       return {
         success: true,
         data: response.data,
@@ -184,7 +167,7 @@ class RecruitmentService {
    */
   async updateApplicationStatus(id, status) {
     try {
-      const response = await apiClient.put(`/applications/${id}/status`, { status });
+  const response = await apiClient.put(`${BASE_PATH}/applications/${id}/status`, { status });
       return {
         success: true,
         data: response.data,
@@ -205,7 +188,7 @@ class RecruitmentService {
    */
   async getInterviews() {
     try {
-      const response = await apiClient.get('/interviews');
+  const response = await apiClient.get(`${BASE_PATH}/interviews`);
       return {
         success: true,
         data: response.data,
@@ -227,7 +210,7 @@ class RecruitmentService {
    */
   async scheduleInterview(interview) {
     try {
-      const response = await apiClient.post('/interviews', interview);
+  const response = await apiClient.post(`${BASE_PATH}/interviews`, interview);
       return {
         success: true,
         data: response.data,
@@ -248,7 +231,7 @@ class RecruitmentService {
    */
   async getOffers() {
     try {
-      const response = await apiClient.get('/offers');
+  const response = await apiClient.get(`${BASE_PATH}/offers`);
       return {
         success: true,
         data: response.data,
@@ -270,7 +253,7 @@ class RecruitmentService {
    */
   async createOffer(offer) {
     try {
-      const response = await apiClient.post('/offers', offer);
+  const response = await apiClient.post(`${BASE_PATH}/offers`, offer);
       return {
         success: true,
         data: response.data,
@@ -291,7 +274,7 @@ class RecruitmentService {
    */
   async getCandidatePipeline() {
     try {
-      const response = await apiClient.get('/pipeline');
+  const response = await apiClient.get(`${BASE_PATH}/pipeline`);
       return {
         success: true,
         data: response.data,
@@ -312,7 +295,7 @@ class RecruitmentService {
    */
   async getRecruitmentStats() {
     try {
-      const response = await apiClient.get('/stats');
+  const response = await apiClient.get(`${BASE_PATH}/stats`);
       return {
         success: true,
         data: response.data,
