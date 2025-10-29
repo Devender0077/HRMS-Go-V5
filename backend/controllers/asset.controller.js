@@ -21,12 +21,21 @@ exports.getAll = async (req, res) => {
 
     const assets = await Asset.findAll({
       where,
+      include: [
+        {
+          model: AssetCategory,
+          as: 'category',
+          attributes: ['id', 'name'],
+        },
+      ],
       order: [['created_at', 'DESC']],
     });
 
+    console.log(`✅ Found ${assets.length} assets`);
+
     res.status(200).json({
       success: true,
-      data: { assets },
+      data: assets, // Return array directly, not wrapped in object
     });
   } catch (error) {
     console.error('Get assets error:', error);

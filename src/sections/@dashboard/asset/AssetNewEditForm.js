@@ -54,7 +54,7 @@ export default function AssetNewEditForm({ isEdit = false, currentAsset }) {
     current_value: Yup.number(),
     warranty_expiry: Yup.date(),
     location: Yup.string(),
-    status: Yup.string().required('Status is required'),
+    current_status: Yup.string().required('Status is required'),
     condition: Yup.string().required('Condition is required'),
     description: Yup.string(),
   });
@@ -72,7 +72,7 @@ export default function AssetNewEditForm({ isEdit = false, currentAsset }) {
       current_value: currentAsset?.current_value || '',
       warranty_expiry: currentAsset?.warranty_expiry || '',
       location: currentAsset?.location || '',
-      status: currentAsset?.status || 'available',
+      current_status: currentAsset?.current_status || 'available',
       condition: currentAsset?.condition || 'good',
       description: currentAsset?.description || '',
     }),
@@ -169,10 +169,10 @@ export default function AssetNewEditForm({ isEdit = false, currentAsset }) {
 
               <Grid container spacing={2}>
                 <Grid item xs={12} md={6}>
-                  <RHFSelect name="status" label="Status">
+                  <RHFSelect name="current_status" label="Status">
                     <option value="available">Available</option>
                     <option value="assigned">Assigned</option>
-                    <option value="maintenance">Maintenance</option>
+                    <option value="under_maintenance">Under Maintenance</option>
                     <option value="retired">Retired</option>
                   </RHFSelect>
                 </Grid>

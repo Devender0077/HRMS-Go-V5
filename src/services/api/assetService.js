@@ -7,7 +7,18 @@ const assetService = {
     try {
       console.log('📊 Fetching all assets...');
       const response = await apiClient.get('/assets', { params });
-      return response.data.data || response.data;
+      console.log('📦 Backend response:', response.data);
+      
+      // Handle different response formats
+      if (Array.isArray(response.data)) {
+        return response.data;
+      } else if (response.data && Array.isArray(response.data.data)) {
+        return response.data.data;
+      } else if (response.data && response.data.success && response.data.data) {
+        return response.data.data;
+      }
+      
+      return [];
     } catch (error) {
       console.error('❌ Error fetching assets:', error);
       throw error;

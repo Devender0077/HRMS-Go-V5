@@ -68,12 +68,25 @@ export default function AssetsListPage() {
   const fetchAssets = async () => {
     try {
       setLoading(true);
-      const data = await assetService.getAll();
-      console.log('✅ Assets loaded:', data);
-      setAssets(data || []);
+      const response = await assetService.getAll();
+      console.log('✅ Raw API response:', response);
+      
+      // Handle different response formats
+      let assetsData = [];
+      if (Array.isArray(response)) {
+        assetsData = response;
+      } else if (response && Array.isArray(response.data)) {
+        assetsData = response.data;
+      } else if (response && response.assets && Array.isArray(response.assets)) {
+        assetsData = response.assets;
+      }
+      
+      console.log('✅ Assets loaded:', assetsData.length, 'assets');
+      setAssets(assetsData);
     } catch (error) {
       console.error('❌ Error fetching assets:', error);
       enqueueSnackbar('Failed to fetch assets', { variant: 'error' });
+      setAssets([]); // Ensure assets is always an array even on error
     } finally {
       setLoading(false);
     }
@@ -134,6 +147,7 @@ export default function AssetsListPage() {
       available: 'success',
       assigned: 'info',
       maintenance: 'warning',
+      under_maintenance: 'warning',
       retired: 'error',
     };
     return colors[status] || 'default';
@@ -149,7 +163,10 @@ export default function AssetsListPage() {
     return colors[condition] || 'default';
   };
 
-  const filteredAssets = assets.filter((asset) =>
+  // Ensure assets is always an array
+  const assetsList = Array.isArray(assets) ? assets : [];
+
+  const filteredAssets = assetsList.filter((asset) =>
     (asset.asset_name?.toLowerCase() || '').includes(filterName.toLowerCase()) ||
     (asset.asset_code?.toLowerCase() || '').includes(filterName.toLowerCase())
   );
@@ -210,14 +227,14 @@ export default function AssetsListPage() {
                       <TableRow key={asset.id} hover>
                         <TableCell>{asset.asset_code || '-'}</TableCell>
                         <TableCell>{asset.asset_name || '-'}</TableCell>
-                        <TableCell>{asset.category_name || '-'}</TableCell>
+                        <TableCell>{asset.category?.name || asset.category_name || '-'}</TableCell>
                         <TableCell>
-                          {asset.brand} {asset.model ? `- ${asset.model}` : ''}
+                          {asset.brand || '-'} {asset.model ? `- ${asset.model}` : ''}
                         </TableCell>
                         <TableCell>
                           <Chip
-                            label={asset.status || 'available'}
-                            color={getStatusColor(asset.status)}
+                            label={asset.current_status || asset.status || 'available'}
+                            color={getStatusColor(asset.current_status || asset.status)}
                             size="small"
                           />
                         </TableCell>

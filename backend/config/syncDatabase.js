@@ -114,6 +114,13 @@ const setupAssociations = () => {
     LeaveRequest,
     Payroll,
     LeaveType,
+    Asset,
+    AssetCategory,
+    AssetAssignment,
+    AssetMaintenance,
+    Contract,
+    Expense,
+    Income,
   } = models;
 
   // Employee associations
@@ -177,6 +184,27 @@ const setupAssociations = () => {
   if (Payroll && Employee) {
     Payroll.belongsTo(Employee, { foreignKey: 'employeeId', as: 'Employee' });
     Employee.hasMany(Payroll, { foreignKey: 'employeeId' });
+  }
+
+  // Asset associations
+  if (Asset && AssetCategory) {
+    Asset.belongsTo(AssetCategory, { foreignKey: 'category_id', as: 'category' });
+    AssetCategory.hasMany(Asset, { foreignKey: 'category_id', as: 'assets' });
+  }
+
+  if (AssetAssignment && Asset) {
+    AssetAssignment.belongsTo(Asset, { foreignKey: 'asset_id', as: 'asset' });
+    Asset.hasMany(AssetAssignment, { foreignKey: 'asset_id', as: 'assignments' });
+  }
+
+  if (AssetAssignment && Employee) {
+    AssetAssignment.belongsTo(Employee, { foreignKey: 'employee_id', as: 'employee' });
+    Employee.hasMany(AssetAssignment, { foreignKey: 'employee_id', as: 'assetAssignments' });
+  }
+
+  if (AssetMaintenance && Asset) {
+    AssetMaintenance.belongsTo(Asset, { foreignKey: 'asset_id', as: 'asset' });
+    Asset.hasMany(AssetMaintenance, { foreignKey: 'asset_id', as: 'maintenanceRecords' });
   }
 
   console.log('✅ Model associations configured');
