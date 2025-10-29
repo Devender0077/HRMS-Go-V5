@@ -61,22 +61,26 @@ exports.create = async (req, res) => {
   try {
     const { name, code, description, icon, status } = req.body;
 
-    // Check if code already exists
-    const existing = await AssetCategory.findOne({ where: { code } });
+    console.log('➕ Creating asset category:', req.body);
+
+    // Check if name already exists (code is optional)
+    const existing = await AssetCategory.findOne({ where: { name } });
     if (existing) {
       return res.status(400).json({
         success: false,
-        message: 'Category code already exists',
+        message: 'Category name already exists',
       });
     }
 
     const category = await AssetCategory.create({
       name,
-      code,
-      description,
-      icon: icon || 'eva:cube-outline',
+      code: code || null,
+      description: description || null,
+      icon: icon || null,
       status: status || 'active',
     });
+
+    console.log('✅ Category created:', category.id);
 
     res.status(201).json({
       success: true,

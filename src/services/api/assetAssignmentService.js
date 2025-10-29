@@ -71,10 +71,11 @@ const assetAssignmentService = {
   // Return asset
   returnAsset: async (id) => {
     try {
-      const response = await apiClient.post(`/asset-assignments/${id}/return`);
+      console.log(`🔄 Returning asset assignment ${id}`);
+      const response = await apiClient.put(`/asset-assignments/${id}/return`);
       return response.data;
     } catch (error) {
-      console.error(`Error returning asset ${id}:`, error);
+      console.error(`❌ Error returning asset ${id}:`, error);
       throw error;
     }
   },

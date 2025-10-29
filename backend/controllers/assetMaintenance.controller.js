@@ -260,3 +260,42 @@ exports.getUpcoming = async (req, res) => {
   }
 };
 
+// Complete maintenance
+exports.complete = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    console.log(`✅ Completing maintenance record: ${id}`);
+    
+    const maintenance = await AssetMaintenance.findByPk(id);
+    
+    if (!maintenance) {
+      return res.status(404).json({
+        success: false,
+        message: 'Maintenance record not found',
+      });
+    }
+    
+    // Update status to completed and set end date
+    await maintenance.update({
+      status: 'completed',
+      end_date: new Date(),
+    });
+    
+    console.log(`✅ Maintenance record ${id} marked as completed`);
+    
+    res.status(200).json({
+      success: true,
+      message: 'Maintenance completed successfully',
+      data: maintenance,
+    });
+  } catch (error) {
+    console.error('Complete maintenance error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error completing maintenance',
+      error: error.message,
+    });
+  }
+};
+

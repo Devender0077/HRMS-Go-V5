@@ -10,6 +10,7 @@ router.get('/:id', verifyToken, assetMaintenanceController.getById);
 router.post('/', verifyToken, assetMaintenanceController.create);
 router.put('/:id', verifyToken, assetMaintenanceController.update);
 router.delete('/:id', verifyToken, assetMaintenanceController.delete);
+router.post('/:id/complete', verifyToken, assetMaintenanceController.complete);
 
 module.exports = router;
 
