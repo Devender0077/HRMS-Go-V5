@@ -261,9 +261,16 @@ export default function HRMSDashboardPage() {
                         });
                         
                         const hasEvents = dayEvents.length > 0;
+                        const primaryEvent = dayEvents[0];
+                        const badgeColor = hasEvents ? getEventColor(primaryEvent?.event_type || primaryEvent?.eventType) : '';
                         
                         return (
-                          <Box sx={{ position: 'relative' }}>
+                          <Box 
+                            sx={{ position: 'relative' }}
+                            onClick={(e) => hasEvents && handleDayClick(day, e)}
+                            role={hasEvents ? "button" : undefined}
+                            tabIndex={hasEvents ? 0 : undefined}
+                          >
                             <Box {...dayProps} />
                             {hasEvents && (
                               <Box
@@ -275,7 +282,8 @@ export default function HRMSDashboardPage() {
                                   width: 6,
                                   height: 6,
                                   borderRadius: '50%',
-                                  bgcolor: 'primary.main',
+                                  bgcolor: badgeColor,
+                                  cursor: 'pointer',
                                 }}
                               />
                             )}
@@ -744,6 +752,208 @@ export default function HRMSDashboardPage() {
           </Grid>
         </Grid>
       </Container>
+
+      {/* Event Popover (A) */}
+      <Popover
+        open={Boolean(popoverAnchor)}
+        anchorEl={popoverAnchor}
+        onClose={handlePopoverClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Box sx={{ p: 2, minWidth: 300, maxWidth: 400 }}>
+          <Typography variant="h6" sx={{ mb: 2 }}>
+            {fDate(selectedDate)} - {selectedDayEvents.length} Event{selectedDayEvents.length > 1 ? 's' : ''}
+          </Typography>
+          <List disablePadding>
+            {selectedDayEvents.map((event, index) => (
+              <Box key={event.id || index}>
+                <ListItem
+                  sx={{ px: 0, py: 1, cursor: 'pointer' }}
+                  onClick={() => handleEventClick(event)}
+                >
+                  <Box
+                    sx={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      bgcolor: getEventColor(event.event_type || event.eventType),
+                      mr: 1.5,
+                    }}
+                  />
+                  <ListItemText
+                    primary={event.title || event.eventTitle}
+                    secondary={event.start_time || event.startTime || 'All Day'}
+                    primaryTypographyProps={{ variant: 'subtitle2' }}
+                    secondaryTypographyProps={{ variant: 'caption' }}
+                  />
+                  <Chip
+                    label={event.event_type || event.eventType || 'Event'}
+                    size="small"
+                    sx={{ bgcolor: alpha(getEventColor(event.event_type || event.eventType), 0.1) }}
+                  />
+                </ListItem>
+                {index < selectedDayEvents.length - 1 && <Divider />}
+              </Box>
+            ))}
+          </List>
+          <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+            <Button
+              fullWidth
+              variant="outlined"
+              size="small"
+              onClick={handleOpenDrawer}
+              startIcon={<Iconify icon="eva:clock-outline" />}
+            >
+              Timeline
+            </Button>
+            <Button
+              fullWidth
+              variant="contained"
+              size="small"
+              onClick={() => navigate(PATH_DASHBOARD.calendar)}
+              startIcon={<Iconify icon="eva:plus-outline" />}
+            >
+              Add Event
+            </Button>
+          </Stack>
+        </Box>
+      </Popover>
+
+      {/* Event Modal (B) */}
+      <Dialog
+        open={eventModalOpen}
+        onClose={handleModalClose}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <Box
+              sx={{
+                width: 12,
+                height: 12,
+                borderRadius: '50%',
+                bgcolor: getEventColor(selectedEvent?.event_type || selectedEvent?.eventType),
+              }}
+            />
+            <Typography variant="h6">{selectedEvent?.title || selectedEvent?.eventTitle}</Typography>
+          </Stack>
+        </DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <Box>
+              <Typography variant="caption" color="text.secondary">Date & Time</Typography>
+              <Typography variant="body2">
+                {selectedEvent && fDateTime(selectedEvent.start || selectedEvent.startDate)}
+                {selectedEvent?.end && ` - ${fDateTime(selectedEvent.end || selectedEvent.endDate)}`}
+              </Typography>
+            </Box>
+            <Box>
+              <Typography variant="caption" color="text.secondary">Type</Typography>
+              <Chip
+                label={selectedEvent?.event_type || selectedEvent?.eventType || 'Event'}
+                size="small"
+                sx={{
+                  mt: 0.5,
+                  bgcolor: alpha(getEventColor(selectedEvent?.event_type || selectedEvent?.eventType), 0.1),
+                }}
+              />
+            </Box>
+            {selectedEvent?.description && (
+              <Box>
+                <Typography variant="caption" color="text.secondary">Description</Typography>
+                <Typography variant="body2">{selectedEvent.description}</Typography>
+              </Box>
+            )}
+            {selectedEvent?.location && (
+              <Box>
+                <Typography variant="caption" color="text.secondary">Location</Typography>
+                <Typography variant="body2">{selectedEvent.location}</Typography>
+              </Box>
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleModalClose}>Close</Button>
+          <Button variant="outlined" onClick={() => navigate(PATH_DASHBOARD.calendar)}>
+            Edit Event
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Side Drawer Timeline (C) */}
+      <Drawer
+        anchor="right"
+        open={drawerOpen}
+        onClose={handleDrawerClose}
+        PaperProps={{ sx: { width: { xs: '100%', sm: 400 } } }}
+      >
+        <Box sx={{ p: 3 }}>
+          <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 3 }}>
+            <Typography variant="h6">
+              {fDate(selectedDate)} - Timeline
+            </Typography>
+            <IconButton onClick={handleDrawerClose}>
+              <Iconify icon="eva:close-outline" />
+            </IconButton>
+          </Stack>
+
+          <Box sx={{ mb: 3 }}>
+            <Button
+              fullWidth
+              variant="outlined"
+              startIcon={<Iconify icon="eva:plus-outline" />}
+              onClick={() => navigate(PATH_DASHBOARD.calendar)}
+            >
+              Add New Event
+            </Button>
+          </Box>
+
+          <Stack spacing={2}>
+            {selectedDayEvents.length > 0 ? (
+              selectedDayEvents.map((event, index) => (
+                <Card key={event.id || index} sx={{ p: 2 }}>
+                  <Stack direction="row" spacing={2}>
+                    <Box
+                      sx={{
+                        width: 4,
+                        bgcolor: getEventColor(event.event_type || event.eventType),
+                        borderRadius: 2,
+                      }}
+                    />
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="subtitle2">{event.title || event.eventTitle}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {event.start_time || event.startTime || 'All Day'}
+                      </Typography>
+                      <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                        <Chip
+                          label={event.event_type || event.eventType || 'Event'}
+                          size="small"
+                          sx={{
+                            bgcolor: alpha(getEventColor(event.event_type || event.eventType), 0.1),
+                            fontSize: '0.7rem',
+                          }}
+                        />
+                      </Stack>
+                    </Box>
+                    <IconButton size="small" onClick={() => handleEventClick(event)}>
+                      <Iconify icon="eva:more-vertical-outline" />
+                    </IconButton>
+                  </Stack>
+                </Card>
+              ))
+            ) : (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Typography variant="body2" color="text.secondary">
+                  No events scheduled for this day
+                </Typography>
+              </Box>
+            )}
+          </Stack>
+        </Box>
+      </Drawer>
     </>
   );
 }
