@@ -125,7 +125,7 @@ export default function HRMSDashboardPage() {
         <title> Dashboard | HRMS Go V5</title>
       </Helmet>
 
-      <Container maxWidth={themeStretch ? false : 'xl'}>
+      <Container maxWidth={themeStretch ? false : 'xl'} disableGutters={themeStretch}>
         <Grid container spacing={3}>
           {/* Welcome Card */}
           <Grid item xs={12} md={8}>
@@ -135,9 +135,11 @@ export default function HRMSDashboardPage() {
               img={
                 <SeoIllustration
                   sx={{
-                    p: 3,
-                    width: 360,
-                    margin: { xs: 'auto', md: 'inherit' },
+                    p: 2,
+                    width: 320,
+                    maxWidth: '100%',
+                    height: 'auto',
+                    margin: { xs: 'auto', md: 0 },
                   }}
                 />
               }
