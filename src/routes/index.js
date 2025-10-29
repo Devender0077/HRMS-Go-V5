@@ -413,7 +413,17 @@ export default function Router() {
           ],
         },
         { path: 'contracts', element: <ContractsListPage /> },
-        { path: 'assets', element: <AssetsListPage /> },
+        {
+          path: 'assets',
+          children: [
+            { element: <Navigate to="/dashboard/assets/list" replace />, index: true },
+            { path: 'list', element: <AssetsListPage /> },
+            { path: 'new', element: <AssetNewPage /> },
+            { path: 'categories', element: <AssetCategoriesPage /> },
+            { path: 'assignments', element: <AssetAssignmentsPage /> },
+            { path: 'maintenance', element: <AssetMaintenancePage /> },
+          ],
+        },
         { path: 'announcements', element: <AnnouncementsListPage /> },
         { path: 'messenger', element: <MessengerPage /> },
         { path: 'reports', element: <ReportsDashboardPage /> },
