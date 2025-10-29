@@ -4,13 +4,21 @@ const { Op } = require('sequelize');
 // Get all holidays with filters
 exports.getAll = async (req, res) => {
   try {
-    const { page = 1, limit = 10, type, region, year, status = 'active' } = req.query;
+    const { page = 1, limit = 10, type, region, year, status } = req.query;
     const offset = (page - 1) * limit;
 
     const where = {};
     
     if (type) where.type = type;
-    if (region) where.region = region;
+    
+    // Region filtering for JSON arrays - use LIKE to search within JSON
+    if (region && region !== 'all') {
+      where.region = {
+        [Op.like]: `%"${region}"%` // Search for region within JSON array
+      };
+    }
+    
+    // Only filter by status if explicitly provided
     if (status) where.status = status;
     
     // Filter by year if provided
@@ -27,6 +35,8 @@ exports.getAll = async (req, res) => {
       order: [['date', 'ASC']],
     });
 
+    console.log(`📅 [Holidays] Fetched ${rows.length} holidays (page ${page}, total: ${count})`);
+
     res.json({
       success: true,
       holidays: rows,
@@ -38,7 +48,7 @@ exports.getAll = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Error fetching holidays:', error);
+    console.error('❌ [Holidays] Error fetching holidays:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch holidays',
@@ -79,6 +89,9 @@ exports.create = async (req, res) => {
   try {
     const holidayData = req.body;
     
+    console.log('📅 [Holidays] Creating holiday with data:', holidayData);
+    console.log('📅 [Holidays] Region type:', typeof holidayData.region, 'Value:', holidayData.region);
+    
     // Check for duplicate holiday on same date
     const existing = await Holiday.findOne({
       where: {
@@ -95,6 +108,8 @@ exports.create = async (req, res) => {
     }
 
     const holiday = await Holiday.create(holidayData);
+    
+    console.log('✅ [Holidays] Holiday created successfully:', holiday.id);
 
     res.status(201).json({
       success: true,
@@ -102,7 +117,7 @@ exports.create = async (req, res) => {
       holiday,
     });
   } catch (error) {
-    console.error('Error creating holiday:', error);
+    console.error('❌ [Holidays] Error creating holiday:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to create holiday',
@@ -117,6 +132,10 @@ exports.update = async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
 
+    console.log('📅 [Holidays] Updating holiday ID:', id);
+    console.log('📅 [Holidays] Update data:', updateData);
+    console.log('📅 [Holidays] Region type:', typeof updateData.region, 'Value:', updateData.region);
+
     const holiday = await Holiday.findByPk(id);
 
     if (!holiday) {
@@ -127,6 +146,8 @@ exports.update = async (req, res) => {
     }
 
     await holiday.update(updateData);
+    
+    console.log('✅ [Holidays] Holiday updated successfully:', id);
 
     res.json({
       success: true,
@@ -134,7 +155,7 @@ exports.update = async (req, res) => {
       holiday,
     });
   } catch (error) {
-    console.error('Error updating holiday:', error);
+    console.error('❌ [Holidays] Error updating holiday:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to update holiday',
@@ -186,8 +207,10 @@ exports.getUpcoming = async (req, res) => {
       status: 'active',
     };
 
-    if (region) {
-      where.region = { [Op.in]: [region, 'both'] };
+    if (region && region !== 'all') {
+      where.region = {
+        [Op.like]: `%"${region}"%` // Search for region within JSON array
+      };
     }
 
     const holidays = await Holiday.findAll({
