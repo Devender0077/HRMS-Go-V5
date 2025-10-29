@@ -167,8 +167,6 @@ const setupAssociations = () => {
   }
 
   // Contract associations
-  const { Contract, Expense, Income } = models;
-  
   if (Contract && Employee) {
     Contract.belongsTo(Employee, { foreignKey: 'employeeId', as: 'employee' });
     Employee.hasMany(Contract, { foreignKey: 'employeeId' });
