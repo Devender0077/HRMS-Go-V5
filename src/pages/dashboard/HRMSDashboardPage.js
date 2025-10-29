@@ -156,60 +156,69 @@ export default function HRMSDashboardPage() {
 
           {/* Calendar beside Welcome Card */}
           <Grid item xs={12} md={4}>
-            <Card sx={{ height: '100%', textAlign: 'center' }}>
+            <Card sx={{ height: '100%' }}>
               <CardHeader title="Calendar" sx={{ pb: 1 }} />
               <Divider />
-              <LocalizationProvider dateAdapter={AdapterDateFns}>
-                <StaticDatePicker
-                  orientation="portrait"
-                  value={selectedDate}
-                  onChange={(newDate) => setSelectedDate(newDate)}
-                  displayStaticWrapperAs="desktop"
-                  sx={{
-                    '& .MuiCalendarPicker-root': {
+              <Box sx={{ px: 1.5, py: 2 }}>
+                <LocalizationProvider dateAdapter={AdapterDateFns}>
+                  <StaticDatePicker
+                    orientation="portrait"
+                    value={selectedDate}
+                    onChange={(newDate) => setSelectedDate(newDate)}
+                    displayStaticWrapperAs="desktop"
+                    sx={{
                       width: '100%',
-                      maxHeight: 'none',
-                    },
-                    '& .MuiPickersCalendarHeader-root': {
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      px: 2,
-                      mt: 1.5,
-                      mb: 1,
-                    },
-                    '& .MuiPickersCalendarHeader-label': {
-                      fontSize: '0.875rem',
-                      fontWeight: 600,
-                    },
-                    '& .MuiDayCalendar-header': {
-                      justifyContent: 'space-around',
-                    },
-                    '& .MuiDayCalendar-weekContainer': {
-                      justifyContent: 'space-around',
-                    },
-                    '& .MuiPickersDay-root': {
-                      fontSize: '0.875rem',
-                      fontWeight: 400,
-                      '&:hover': {
-                        backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                      '& .MuiCalendarPicker-root': {
+                        width: '100%',
+                        maxWidth: '100%',
+                        margin: 0,
                       },
-                    },
-                    '& .MuiPickersDay-today': {
-                      borderColor: theme.palette.primary.main,
-                      fontWeight: 600,
-                    },
-                    '& .Mui-selected': {
-                      backgroundColor: `${theme.palette.primary.main} !important`,
-                      color: theme.palette.primary.contrastText,
-                      fontWeight: 600,
-                      '&:hover': {
-                        backgroundColor: theme.palette.primary.dark,
+                      '& .MuiPickersCalendarHeader-root': {
+                        paddingLeft: 1,
+                        paddingRight: 1,
+                        marginTop: 0,
+                        marginBottom: 1,
                       },
-                    },
-                  }}
-                />
-              </LocalizationProvider>
+                      '& .MuiPickersCalendarHeader-label': {
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                      },
+                      '& .MuiDayCalendar-header': {
+                        justifyContent: 'space-between',
+                        paddingLeft: 0.5,
+                        paddingRight: 0.5,
+                      },
+                      '& .MuiDayCalendar-weekContainer': {
+                        justifyContent: 'space-between',
+                        margin: 0,
+                      },
+                      '& .MuiDayCalendar-slideTransition': {
+                        minHeight: 220,
+                      },
+                      '& .MuiPickersDay-root': {
+                        fontSize: '0.875rem',
+                        fontWeight: 400,
+                        margin: 0,
+                        '&:hover': {
+                          backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                        },
+                      },
+                      '& .MuiPickersDay-today': {
+                        borderColor: theme.palette.primary.main,
+                        fontWeight: 600,
+                      },
+                      '& .Mui-selected': {
+                        backgroundColor: `${theme.palette.primary.main} !important`,
+                        color: theme.palette.primary.contrastText,
+                        fontWeight: 600,
+                        '&:hover': {
+                          backgroundColor: theme.palette.primary.dark,
+                        },
+                      },
+                    }}
+                  />
+                </LocalizationProvider>
+              </Box>
             </Card>
           </Grid>
 
