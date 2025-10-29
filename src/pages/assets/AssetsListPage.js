@@ -11,12 +11,13 @@ import {
   TableBody,
   TableCell,
   Container,
-  Typography,
   TableContainer,
   TablePagination,
   IconButton,
   MenuItem,
   Chip,
+  TextField,
+  InputAdornment,
 } from '@mui/material';
 // components
 import Iconify from '../../components/iconify';
@@ -24,12 +25,12 @@ import Scrollbar from '../../components/scrollbar';
 import CustomBreadcrumbs from '../../components/custom-breadcrumbs';
 import { useSettingsContext } from '../../components/settings';
 import { TableHeadCustom, TableNoData } from '../../components/table';
-// sections
-// import { UserListHead, UserListToolbar } from '../../sections/@dashboard/user/list';
-// mock
+import { useSnackbar } from '../../components/snackbar';
 import MenuPopover from '../../components/menu-popover';
+import ConfirmDialog from '../../components/confirm-dialog';
 import { PATH_DASHBOARD } from '../../routes/paths';
-import { TextField, InputAdornment } from '@mui/material';
+// services
+import assetService from '../../services/api/assetService';
 
 // ----------------------------------------------------------------------
 
@@ -44,78 +45,39 @@ const TABLE_HEAD = [
   { id: 'actions', label: 'Actions', alignRight: true },
 ];
 
-const MOCK_ASSETS = [
-  {
-    id: 1,
-    asset_code: 'LAP-001',
-    asset_name: 'MacBook Pro 16"',
-    category: 'Laptops',
-    brand: 'Apple',
-    model: 'MacBook Pro 16" M2',
-    current_status: 'assigned',
-    condition: 'excellent',
-    location: 'HQ Office - 3rd Floor',
-  },
-  {
-    id: 2,
-    asset_code: 'LAP-002',
-    asset_name: 'Dell XPS 15',
-    category: 'Laptops',
-    brand: 'Dell',
-    model: 'XPS 15 9530',
-    current_status: 'assigned',
-    condition: 'good',
-    location: 'HQ Office - 2nd Floor',
-  },
-  {
-    id: 3,
-    asset_code: 'LAP-003',
-    asset_name: 'Lenovo ThinkPad X1',
-    category: 'Laptops',
-    brand: 'Lenovo',
-    model: 'ThinkPad X1 Carbon Gen 11',
-    current_status: 'available',
-    condition: 'excellent',
-    location: 'IT Storage Room',
-  },
-  {
-    id: 4,
-    asset_code: 'DKT-001',
-    asset_name: 'iMac 24"',
-    category: 'Desktops',
-    brand: 'Apple',
-    model: 'iMac 24" M1',
-    current_status: 'assigned',
-    condition: 'excellent',
-    location: 'Design Studio',
-  },
-  {
-    id: 5,
-    asset_code: 'MOB-001',
-    asset_name: 'iPhone 14 Pro',
-    category: 'Mobile Devices',
-    brand: 'Apple',
-    model: 'iPhone 14 Pro',
-    current_status: 'assigned',
-    condition: 'excellent',
-    location: 'HQ Office',
-  },
-];
-
 // ----------------------------------------------------------------------
 
 export default function AssetsListPage() {
   const { themeStretch } = useSettingsContext();
   const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
 
-  const [assets, setAssets] = useState(MOCK_ASSETS);
+  const [assets, setAssets] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
-  const [order, setOrder] = useState('asc');
-  const [orderBy, setOrderBy] = useState('asset_code');
-  const [filterName, setFilterName] = useState('');
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [filterName, setFilterName] = useState('');
   const [openPopover, setOpenPopover] = useState(null);
   const [selectedAsset, setSelectedAsset] = useState(null);
+  const [openConfirm, setOpenConfirm] = useState(false);
+
+  useEffect(() => {
+    fetchAssets();
+  }, []);
+
+  const fetchAssets = async () => {
+    try {
+      setLoading(true);
+      const data = await assetService.getAll();
+      console.log('✅ Assets loaded:', data);
+      setAssets(data || []);
+    } catch (error) {
+      console.error('❌ Error fetching assets:', error);
+      enqueueSnackbar('Failed to fetch assets', { variant: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleOpenPopover = (event, asset) => {
     setOpenPopover(event.currentTarget);
@@ -124,7 +86,6 @@ export default function AssetsListPage() {
 
   const handleClosePopover = () => {
     setOpenPopover(null);
-    setSelectedAsset(null);
   };
 
   const handleFilterName = (event) => {
@@ -140,39 +101,57 @@ export default function AssetsListPage() {
     setPage(0);
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'available':
-        return 'success';
-      case 'assigned':
-        return 'info';
-      case 'under_maintenance':
-        return 'warning';
-      case 'retired':
-        return 'error';
-      default:
-        return 'default';
+  const handleView = (id) => {
+    navigate(PATH_DASHBOARD.assets.view(id));
+    handleClosePopover();
+  };
+
+  const handleEdit = (id) => {
+    navigate(PATH_DASHBOARD.assets.edit(id));
+    handleClosePopover();
+  };
+
+  const handleDeleteClick = (asset) => {
+    setSelectedAsset(asset);
+    setOpenConfirm(true);
+    handleClosePopover();
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      await assetService.delete(selectedAsset.id);
+      enqueueSnackbar('Asset deleted successfully!', { variant: 'success' });
+      fetchAssets();
+      setOpenConfirm(false);
+    } catch (error) {
+      console.error('Error deleting asset:', error);
+      enqueueSnackbar('Failed to delete asset', { variant: 'error' });
     }
+  };
+
+  const getStatusColor = (status) => {
+    const colors = {
+      available: 'success',
+      assigned: 'info',
+      maintenance: 'warning',
+      retired: 'error',
+    };
+    return colors[status] || 'default';
   };
 
   const getConditionColor = (condition) => {
-    switch (condition) {
-      case 'excellent':
-        return 'success';
-      case 'good':
-        return 'info';
-      case 'fair':
-        return 'warning';
-      case 'poor':
-        return 'error';
-      default:
-        return 'default';
-    }
+    const colors = {
+      excellent: 'success',
+      good: 'info',
+      fair: 'warning',
+      poor: 'error',
+    };
+    return colors[condition] || 'default';
   };
 
   const filteredAssets = assets.filter((asset) =>
-    asset.asset_name.toLowerCase().includes(filterName.toLowerCase()) ||
-    asset.asset_code.toLowerCase().includes(filterName.toLowerCase())
+    (asset.asset_name?.toLowerCase() || '').includes(filterName.toLowerCase()) ||
+    (asset.asset_code?.toLowerCase() || '').includes(filterName.toLowerCase())
   );
 
   const isNotFound = !filteredAssets.length && !!filterName;
@@ -223,60 +202,43 @@ export default function AssetsListPage() {
           <Scrollbar>
             <TableContainer sx={{ minWidth: 800 }}>
               <Table>
-                <TableHeadCustom
-                  order={order}
-                  orderBy={orderBy}
-                  headLabel={TABLE_HEAD}
-                  rowCount={filteredAssets.length}
-                />
-
+                <TableHeadCustom headLabel={TABLE_HEAD} />
                 <TableBody>
                   {filteredAssets
                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                    .map((row) => (
-                      <TableRow hover key={row.id}>
-                        <TableCell>{row.asset_code}</TableCell>
+                    .map((asset) => (
+                      <TableRow key={asset.id} hover>
+                        <TableCell>{asset.asset_code || '-'}</TableCell>
+                        <TableCell>{asset.asset_name || '-'}</TableCell>
+                        <TableCell>{asset.category_name || '-'}</TableCell>
                         <TableCell>
-                          <Typography variant="subtitle2">{row.asset_name}</Typography>
-                        </TableCell>
-                        <TableCell>{row.category}</TableCell>
-                        <TableCell>
-                          {row.brand}
-                          {row.model && (
-                            <Typography variant="caption" display="block" color="text.secondary">
-                              {row.model}
-                            </Typography>
-                          )}
+                          {asset.brand} {asset.model ? `- ${asset.model}` : ''}
                         </TableCell>
                         <TableCell>
                           <Chip
-                            label={row.current_status.replace('_', ' ')}
-                            color={getStatusColor(row.current_status)}
+                            label={asset.status || 'available'}
+                            color={getStatusColor(asset.status)}
                             size="small"
                           />
                         </TableCell>
                         <TableCell>
                           <Chip
-                            label={row.condition}
-                            color={getConditionColor(row.condition)}
+                            label={asset.condition || 'good'}
+                            color={getConditionColor(asset.condition)}
                             size="small"
-                            variant="outlined"
                           />
                         </TableCell>
-                        <TableCell>{row.location}</TableCell>
+                        <TableCell>{asset.location || '-'}</TableCell>
                         <TableCell align="right">
-                          <IconButton onClick={(e) => handleOpenPopover(e, row)}>
+                          <IconButton onClick={(e) => handleOpenPopover(e, asset)}>
                             <Iconify icon="eva:more-vertical-fill" />
                           </IconButton>
                         </TableCell>
                       </TableRow>
                     ))}
 
-                  {isNotFound && (
-                    <TableNoData
-                      isNotFound={isNotFound}
-                      message={`No results found for "${filterName}"`}
-                    />
+                  {!loading && filteredAssets.length === 0 && (
+                    <TableNoData isNotFound={isNotFound || filteredAssets.length === 0} />
                   )}
                 </TableBody>
               </Table>
@@ -295,47 +257,32 @@ export default function AssetsListPage() {
         </Card>
       </Container>
 
-      <MenuPopover
-        open={openPopover}
-        onClose={handleClosePopover}
-        arrow="right-top"
-        sx={{ width: 160 }}
-      >
-        <MenuItem
-          onClick={() => {
-            navigate(PATH_DASHBOARD.assets.view(selectedAsset?.id));
-            handleClosePopover();
-          }}
-        >
+      <MenuPopover open={openPopover} onClose={handleClosePopover} arrow="right-top" sx={{ width: 160 }}>
+        <MenuItem onClick={() => handleView(selectedAsset?.id)}>
           <Iconify icon="eva:eye-fill" />
           View
         </MenuItem>
-
-        <MenuItem
-          onClick={() => {
-            navigate(PATH_DASHBOARD.assets.edit(selectedAsset?.id));
-            handleClosePopover();
-          }}
-        >
+        <MenuItem onClick={() => handleEdit(selectedAsset?.id)}>
           <Iconify icon="eva:edit-fill" />
           Edit
         </MenuItem>
-
-        <MenuItem
-          onClick={() => {
-            // Handle assign
-            handleClosePopover();
-          }}
-        >
-          <Iconify icon="eva:person-add-fill" />
-          Assign
-        </MenuItem>
-
-        <MenuItem sx={{ color: 'error.main' }}>
+        <MenuItem onClick={() => handleDeleteClick(selectedAsset)} sx={{ color: 'error.main' }}>
           <Iconify icon="eva:trash-2-outline" />
           Delete
         </MenuItem>
       </MenuPopover>
+
+      <ConfirmDialog
+        open={openConfirm}
+        onClose={() => setOpenConfirm(false)}
+        title="Delete Asset"
+        content={`Are you sure you want to delete "${selectedAsset?.asset_name}"?`}
+        action={
+          <Button variant="contained" color="error" onClick={handleConfirmDelete}>
+            Delete
+          </Button>
+        }
+      />
     </>
   );
 }

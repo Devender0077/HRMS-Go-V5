@@ -1,58 +1,62 @@
-import axios from '../../utils/axios';
+import { apiClient } from './authService';
 
 // Asset endpoints
-export const assetService = {
+const assetService = {
   // Get all assets
-  getAssets: async (params = {}) => {
+  getAll: async (params = {}) => {
     try {
-      const response = await axios.get('/api/assets', { params });
-      return response.data;
+      console.log('📊 Fetching all assets...');
+      const response = await apiClient.get('/assets', { params });
+      return response.data.data || response.data;
     } catch (error) {
-      console.error('Error fetching assets:', error);
+      console.error('❌ Error fetching assets:', error);
       throw error;
     }
   },
 
   // Get asset by ID
-  getAssetById: async (id) => {
+  getById: async (id) => {
     try {
-      const response = await axios.get(`/api/assets/${id}`);
-      return response.data;
+      const response = await apiClient.get(`/assets/${id}`);
+      return response.data.data || response.data;
     } catch (error) {
-      console.error('Error fetching asset:', error);
+      console.error(`❌ Error fetching asset ${id}:`, error);
       throw error;
     }
   },
 
   // Create asset
-  createAsset: async (data) => {
+  create: async (data) => {
     try {
-      const response = await axios.post('/api/assets', data);
+      console.log('➕ Creating asset:', data);
+      const response = await apiClient.post('/assets', data);
       return response.data;
     } catch (error) {
-      console.error('Error creating asset:', error);
+      console.error('❌ Error creating asset:', error);
       throw error;
     }
   },
 
   // Update asset
-  updateAsset: async (id, data) => {
+  update: async (id, data) => {
     try {
-      const response = await axios.put(`/api/assets/${id}`, data);
+      console.log(`✏️ Updating asset ${id}:`, data);
+      const response = await apiClient.put(`/assets/${id}`, data);
       return response.data;
     } catch (error) {
-      console.error('Error updating asset:', error);
+      console.error(`❌ Error updating asset ${id}:`, error);
       throw error;
     }
   },
 
   // Delete asset
-  deleteAsset: async (id) => {
+  delete: async (id) => {
     try {
-      const response = await axios.delete(`/api/assets/${id}`);
+      console.log(`🗑️ Deleting asset ${id}`);
+      const response = await apiClient.delete(`/assets/${id}`);
       return response.data;
     } catch (error) {
-      console.error('Error deleting asset:', error);
+      console.error(`❌ Error deleting asset ${id}:`, error);
       throw error;
     }
   },
@@ -60,14 +64,16 @@ export const assetService = {
   // Get asset statistics
   getStatistics: async () => {
     try {
-      const response = await axios.get('/api/assets/statistics');
-      return response.data;
+      const response = await apiClient.get('/assets/statistics');
+      return response.data.data || response.data;
     } catch (error) {
-      console.error('Error fetching statistics:', error);
+      console.error('❌ Error fetching statistics:', error);
       throw error;
     }
   },
 };
+
+export default assetService;
 
 // Asset Category endpoints
 export const assetCategoryService = {
@@ -263,12 +269,5 @@ export const assetMaintenanceService = {
       throw error;
     }
   },
-};
-
-export default {
-  assetService,
-  assetCategoryService,
-  assetAssignmentService,
-  assetMaintenanceService,
 };
 
