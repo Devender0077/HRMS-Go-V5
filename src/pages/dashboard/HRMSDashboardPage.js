@@ -426,11 +426,11 @@ export default function HRMSDashboardPage() {
             </>
           )}
 
-          {/* 1. Upcoming Birthdays Widget */}
+          {/* 1. Upcoming Birthdays Widget - All Roles */}
           <Grid item xs={12} md={6} lg={4}>
             <Card>
               <CardHeader 
-                title="Upcoming Birthdays" 
+                title={isEmployee ? "Team Birthdays" : "Upcoming Birthdays"} 
                 avatar={
                   <Box sx={{ 
                     width: 40, 
@@ -553,11 +553,11 @@ export default function HRMSDashboardPage() {
             </Grid>
           )}
 
-          {/* 3. Performance Overview */}
+          {/* 3. Performance Overview - All Roles */}
           <Grid item xs={12} md={6} lg={4}>
             <Card>
               <CardHeader 
-                title="Performance This Month" 
+                title={isEmployee ? "My Performance" : isManager ? "Team Performance" : "Performance Overview"} 
                 avatar={
                   <Box sx={{ 
                     width: 40, 
