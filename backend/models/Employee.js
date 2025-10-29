@@ -197,6 +197,73 @@ const Employee = sequelize.define('Employee', {
     allowNull: true,
     field: 'emergency_contact_relation',
   },
+  // Region-specific fields
+  region: {
+    type: DataTypes.ENUM('india', 'usa', 'other'),
+    allowNull: true,
+    defaultValue: 'india',
+  },
+  // USA-specific fields
+  ssn: {
+    type: DataTypes.STRING(20),
+    allowNull: true,
+    comment: 'Social Security Number (USA)',
+  },
+  driverLicenseNumber: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+    field: 'driver_license_number',
+    comment: 'Driver License Number (USA)',
+  },
+  driverLicenseState: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+    field: 'driver_license_state',
+    comment: 'Driver License State (USA)',
+  },
+  driverLicenseExpiry: {
+    type: DataTypes.DATEONLY,
+    allowNull: true,
+    field: 'driver_license_expiry',
+    comment: 'Driver License Expiry Date (USA)',
+  },
+  w4FormStatus: {
+    type: DataTypes.ENUM('pending', 'submitted', 'approved'),
+    allowNull: true,
+    field: 'w4_form_status',
+    comment: 'W-4 Tax Form Status (USA)',
+  },
+  // India-specific fields
+  panNumber: {
+    type: DataTypes.STRING(20),
+    allowNull: true,
+    field: 'pan_number',
+    comment: 'PAN Number (India)',
+  },
+  aadhaarNumber: {
+    type: DataTypes.STRING(20),
+    allowNull: true,
+    field: 'aadhaar_number',
+    comment: 'Aadhaar Number (India)',
+  },
+  pfNumber: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+    field: 'pf_number',
+    comment: 'Provident Fund Number (India)',
+  },
+  esiNumber: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+    field: 'esi_number',
+    comment: 'ESI Number (India)',
+  },
+  uanNumber: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+    field: 'uan_number',
+    comment: 'Universal Account Number (India)',
+  },
 }, {
   tableName: 'employees',
   timestamps: true,
@@ -207,6 +274,10 @@ const Employee = sequelize.define('Employee', {
     { fields: ['department_id'] },
     { fields: ['branch_id'] },
     { fields: ['email'] },
+    { fields: ['region'] },
+    { fields: ['ssn'] },
+    { fields: ['pan_number'] },
+    { fields: ['aadhaar_number'] },
   ],
 });
 
