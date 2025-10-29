@@ -32,7 +32,8 @@ const TABLE_HEAD = [
   { id: 'asset', label: 'Asset', alignRight: false },
   { id: 'employee', label: 'Assigned To', alignRight: false },
   { id: 'assigned_date', label: 'Assigned Date', alignRight: false },
-  { id: 'return_date', label: 'Return Date', alignRight: false },
+  { id: 'expected_return_date', label: 'Expected Return', alignRight: false },
+  { id: 'actual_return_date', label: 'Actual Return', alignRight: false },
   { id: 'status', label: 'Status', alignRight: false },
   { id: 'actions', label: 'Actions', alignRight: true },
 ];
@@ -76,7 +77,7 @@ export default function AssetAssignmentsPage() {
 
   const getStatusColor = (status) => {
     const colors = {
-      assigned: 'info',
+      active: 'info',
       returned: 'success',
       lost: 'error',
       damaged: 'warning',
@@ -127,16 +128,17 @@ export default function AssetAssignmentsPage() {
                           assignment.employee_name || '-'}
                       </TableCell>
                       <TableCell>{assignment.assigned_date ? new Date(assignment.assigned_date).toLocaleDateString() : '-'}</TableCell>
-                      <TableCell>{assignment.return_date ? new Date(assignment.return_date).toLocaleDateString() : '-'}</TableCell>
+                      <TableCell>{assignment.expected_return_date ? new Date(assignment.expected_return_date).toLocaleDateString() : '-'}</TableCell>
+                      <TableCell>{assignment.actual_return_date ? new Date(assignment.actual_return_date).toLocaleDateString() : '-'}</TableCell>
                       <TableCell>
                         <Chip
-                          label={assignment.status || 'assigned'}
+                          label={assignment.status || 'active'}
                           color={getStatusColor(assignment.status)}
                           size="small"
                         />
                       </TableCell>
                       <TableCell align="right">
-                        {assignment.status === 'assigned' && (
+                        {assignment.status === 'active' && (
                           <IconButton
                             onClick={() => handleReturn(assignment.id)}
                             color="primary"

@@ -30,9 +30,10 @@ import assetMaintenanceService from '../../services/api/assetMaintenanceService'
 
 const TABLE_HEAD = [
   { id: 'asset', label: 'Asset', alignRight: false },
+  { id: 'title', label: 'Title', alignRight: false },
   { id: 'maintenance_type', label: 'Type', alignRight: false },
-  { id: 'scheduled_date', label: 'Scheduled Date', alignRight: false },
-  { id: 'completed_date', label: 'Completed Date', alignRight: false },
+  { id: 'start_date', label: 'Start Date', alignRight: false },
+  { id: 'end_date', label: 'End Date', alignRight: false },
   { id: 'cost', label: 'Cost', alignRight: false },
   { id: 'status', label: 'Status', alignRight: false },
   { id: 'actions', label: 'Actions', alignRight: true },
@@ -78,7 +79,7 @@ export default function AssetMaintenancePage() {
   const getStatusColor = (status) => {
     const colors = {
       scheduled: 'warning',
-      'in-progress': 'info',
+      in_progress: 'info',
       completed: 'success',
       cancelled: 'error',
     };
@@ -122,12 +123,19 @@ export default function AssetMaintenancePage() {
                       <TableCell>
                         {maintenance.asset?.asset_name || maintenance.asset?.asset_code || maintenance.asset_name || '-'}
                       </TableCell>
-                      <TableCell>{maintenance.maintenance_type || '-'}</TableCell>
+                      <TableCell>{maintenance.title || '-'}</TableCell>
                       <TableCell>
-                        {maintenance.scheduled_date ? new Date(maintenance.scheduled_date).toLocaleDateString() : '-'}
+                        <Chip
+                          label={maintenance.maintenance_type || 'scheduled'}
+                          size="small"
+                          variant="outlined"
+                        />
                       </TableCell>
                       <TableCell>
-                        {maintenance.completed_date ? new Date(maintenance.completed_date).toLocaleDateString() : '-'}
+                        {maintenance.start_date ? new Date(maintenance.start_date).toLocaleDateString() : '-'}
+                      </TableCell>
+                      <TableCell>
+                        {maintenance.end_date ? new Date(maintenance.end_date).toLocaleDateString() : '-'}
                       </TableCell>
                       <TableCell>${maintenance.cost || 0}</TableCell>
                       <TableCell>

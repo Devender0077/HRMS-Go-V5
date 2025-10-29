@@ -58,24 +58,24 @@ async function seedAssetData() {
     console.log('👥 Inserting Asset Assignments...');
     await db.query(`
       INSERT IGNORE INTO asset_assignments (
-        asset_id, employee_id, assigned_date, return_date, status, notes, created_at, updated_at
+        asset_id, employee_id, assigned_date, expected_return_date, status, assignment_notes, created_at, updated_at
       ) VALUES
-      (1, 1, '2023-02-01', NULL, 'assigned', 'Assigned to Lead Developer', NOW(), NOW()),
-      (2, 2, '2023-03-01', NULL, 'assigned', 'Assigned to Senior Developer', NOW(), NOW()),
-      (5, 3, '2023-06-01', NULL, 'assigned', 'Assigned to Marketing Manager', NOW(), NOW()),
-      (6, 4, '2023-02-15', NULL, 'assigned', 'Assigned to UI/UX Designer', NOW(), NOW()),
-      (7, 5, '2023-03-10', NULL, 'assigned', 'Assigned to Accountant', NOW(), NOW()),
-      (8, 6, '2023-04-01', NULL, 'assigned', 'Assigned to DevOps Engineer', NOW(), NOW()),
-      (9, 7, '2023-01-20', NULL, 'assigned', 'Assigned to Sales Manager', NOW(), NOW()),
-      (10, 8, '2023-02-20', NULL, 'assigned', 'Assigned to Marketing Director', NOW(), NOW()),
-      (11, 1, '2023-03-25', NULL, 'assigned', 'Secondary device for presentations', NOW(), NOW()),
-      (12, 2, '2023-02-05', NULL, 'assigned', 'External monitor for workstation', NOW(), NOW()),
-      (13, 4, '2023-03-05', NULL, 'assigned', 'Ultrawide monitor for design work', NOW(), NOW()),
-      (16, NULL, '2023-03-01', NULL, 'assigned', 'Assigned to Admin Department', NOW(), NOW()),
-      (17, NULL, '2023-02-01', NULL, 'assigned', 'Main office router', NOW(), NOW()),
-      (18, NULL, '2023-02-20', NULL, 'assigned', 'Network switch in server room', NOW(), NOW()),
-      (19, 1, '2023-02-10', NULL, 'assigned', 'Executive office chair', NOW(), NOW()),
-      (20, 2, '2023-03-15', NULL, 'assigned', 'Standing desk for developer', NOW(), NOW())
+      (1, 1, '2023-02-01', NULL, 'active', 'Assigned to Lead Developer', NOW(), NOW()),
+      (2, 2, '2023-03-01', NULL, 'active', 'Assigned to Senior Developer', NOW(), NOW()),
+      (5, 3, '2023-06-01', NULL, 'active', 'Assigned to Marketing Manager', NOW(), NOW()),
+      (6, 4, '2023-02-15', NULL, 'active', 'Assigned to UI/UX Designer', NOW(), NOW()),
+      (7, 5, '2023-03-10', NULL, 'active', 'Assigned to Accountant', NOW(), NOW()),
+      (8, 6, '2023-04-01', NULL, 'active', 'Assigned to DevOps Engineer', NOW(), NOW()),
+      (9, 7, '2023-01-20', NULL, 'active', 'Assigned to Sales Manager', NOW(), NOW()),
+      (10, 8, '2023-02-20', NULL, 'active', 'Assigned to Marketing Director', NOW(), NOW()),
+      (11, 1, '2023-03-25', NULL, 'active', 'Secondary device for presentations', NOW(), NOW()),
+      (12, 2, '2023-02-05', NULL, 'active', 'External monitor for workstation', NOW(), NOW()),
+      (13, 4, '2023-03-05', NULL, 'active', 'Ultrawide monitor for design work', NOW(), NOW()),
+      (16, 1, '2023-03-01', NULL, 'active', 'Assigned to Admin Department', NOW(), NOW()),
+      (17, 1, '2023-02-01', NULL, 'active', 'Main office router', NOW(), NOW()),
+      (18, 1, '2023-02-20', NULL, 'active', 'Network switch in server room', NOW(), NOW()),
+      (19, 1, '2023-02-10', NULL, 'active', 'Executive office chair', NOW(), NOW()),
+      (20, 2, '2023-03-15', NULL, 'active', 'Standing desk for developer', NOW(), NOW())
     `);
 
     const [assignments] = await db.query('SELECT COUNT(*) as count FROM asset_assignments');
@@ -85,18 +85,18 @@ async function seedAssetData() {
     console.log('🔧 Inserting Asset Maintenance Records...');
     await db.query(`
       INSERT IGNORE INTO asset_maintenance (
-        asset_id, maintenance_type, scheduled_date, completed_date, cost, 
-        technician, status, description, notes, created_at, updated_at
+        asset_id, maintenance_type, title, description, service_provider, 
+        start_date, end_date, cost, status, notes, created_at, updated_at
       ) VALUES
-      (1, 'Preventive', '2024-01-15', '2024-01-16', 0.00, 'IT Support Team', 'completed', 'Annual hardware checkup', 'All systems working fine', NOW(), NOW()),
-      (2, 'Repair', '2023-12-10', '2023-12-12', 150.00, 'Tech Solutions Inc', 'completed', 'Battery replacement', 'New battery installed, 100% health', NOW(), NOW()),
-      (4, 'Repair', '2024-02-01', NULL, 250.00, 'IT Support Team', 'scheduled', 'Keyboard replacement needed', 'Keys are sticking, needs new keyboard', NOW(), NOW()),
-      (6, 'Preventive', '2024-01-20', '2024-01-20', 0.00, 'IT Support Team', 'completed', 'Software updates and cleaning', 'Updated macOS and applications', NOW(), NOW()),
-      (7, 'Preventive', '2024-02-15', NULL, 0.00, 'IT Support Team', 'scheduled', 'Quarterly system checkup', 'Scheduled maintenance', NOW(), NOW()),
-      (15, 'Repair', '2023-11-20', '2023-11-22', 180.00, 'Print Tech Services', 'completed', 'Toner cartridge replacement', 'Installed new HP toner cartridge', NOW(), NOW()),
-      (16, 'Preventive', '2024-03-01', NULL, 50.00, 'IT Support Team', 'scheduled', 'Cleaning and paper jam prevention', 'Monthly maintenance', NOW(), NOW()),
-      (17, 'Upgrade', '2024-01-10', '2024-01-11', 0.00, 'Network Admin', 'completed', 'Firmware upgrade', 'Updated to latest firmware version', NOW(), NOW()),
-      (18, 'Preventive', '2024-02-28', NULL, 0.00, 'Network Admin', 'scheduled', 'Quarterly network equipment check', 'Check all ports and connections', NOW(), NOW())
+      (1, 'inspection', 'Annual Hardware Checkup', 'Complete system inspection and diagnostics', 'IT Support Team', '2024-01-15', '2024-01-16', 0.00, 'completed', 'All systems working fine', NOW(), NOW()),
+      (2, 'repair', 'Battery Replacement', 'Replace old battery with new one', 'Tech Solutions Inc', '2023-12-10', '2023-12-12', 150.00, 'completed', 'New battery installed, 100% health', NOW(), NOW()),
+      (4, 'repair', 'Keyboard Replacement', 'Replace faulty keyboard', 'IT Support Team', '2024-02-01', NULL, 250.00, 'scheduled', 'Keys are sticking, needs new keyboard', NOW(), NOW()),
+      (6, 'inspection', 'Software Updates', 'Update OS and applications', 'IT Support Team', '2024-01-20', '2024-01-20', 0.00, 'completed', 'Updated macOS and applications', NOW(), NOW()),
+      (7, 'inspection', 'Quarterly System Checkup', 'Regular system health check', 'IT Support Team', '2024-02-15', NULL, 0.00, 'scheduled', 'Scheduled quarterly maintenance', NOW(), NOW()),
+      (15, 'repair', 'Toner Cartridge Replacement', 'Replace empty toner cartridge', 'Print Tech Services', '2023-11-20', '2023-11-22', 180.00, 'completed', 'Installed new HP toner cartridge', NOW(), NOW()),
+      (16, 'scheduled', 'Printer Maintenance', 'Cleaning and paper jam prevention', 'IT Support Team', '2024-03-01', NULL, 50.00, 'scheduled', 'Monthly printer maintenance', NOW(), NOW()),
+      (17, 'upgrade', 'Firmware Upgrade', 'Update router firmware to latest version', 'Network Admin', '2024-01-10', '2024-01-11', 0.00, 'completed', 'Updated to latest firmware version', NOW(), NOW()),
+      (18, 'inspection', 'Network Equipment Check', 'Quarterly network inspection', 'Network Admin', '2024-02-28', NULL, 0.00, 'scheduled', 'Check all ports and connections', NOW(), NOW())
     `);
 
     const [maintenance] = await db.query('SELECT COUNT(*) as count FROM asset_maintenance');

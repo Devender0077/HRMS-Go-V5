@@ -21,7 +21,7 @@ exports.getAll = async (req, res) => {
           attributes: ['id', 'asset_code', 'asset_name'],
         },
       ],
-      order: [['scheduled_date', 'DESC']],
+      order: [['start_date', 'DESC']],
     });
 
     console.log(`✅ Found ${maintenance.length} maintenance records`);
