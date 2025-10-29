@@ -27,6 +27,8 @@ EmployeeTableRow.propTypes = {
   onViewRow: PropTypes.func,
   onSelectRow: PropTypes.func,
   onDeleteRow: PropTypes.func,
+  onGrantAccess: PropTypes.func,
+  onRevokeAccess: PropTypes.func,
 };
 
 export default function EmployeeTableRow({
@@ -36,8 +38,13 @@ export default function EmployeeTableRow({
   onViewRow,
   onSelectRow,
   onDeleteRow,
+  onGrantAccess,
+  onRevokeAccess,
 }) {
-  const { name, avatar, employeeId, email, phone, department, designation, status } = row;
+  const { name, avatar, employeeId, email, phone, department, designation, status, user_id, userId } = row;
+  
+  // Check if employee has system access
+  const hasSystemAccess = user_id || userId;
 
   const [openConfirm, setOpenConfirm] = useState(false);
 
@@ -88,6 +95,16 @@ export default function EmployeeTableRow({
 
         <TableCell align="left">{phone}</TableCell>
 
+        <TableCell align="center">
+          <Label
+            variant="soft"
+            color={hasSystemAccess ? 'success' : 'default'}
+            sx={{ textTransform: 'capitalize' }}
+          >
+            {hasSystemAccess ? 'Active' : 'No Access'}
+          </Label>
+        </TableCell>
+
         <TableCell align="left">
           <Label
             variant="soft"
@@ -109,7 +126,7 @@ export default function EmployeeTableRow({
         open={openPopover}
         onClose={handleClosePopover}
         arrow="right-top"
-        sx={{ width: 140 }}
+        sx={{ width: 200 }}
       >
         <MenuItem
           onClick={() => {
@@ -130,6 +147,32 @@ export default function EmployeeTableRow({
           <Iconify icon="eva:edit-fill" />
           Edit
         </MenuItem>
+
+        {!hasSystemAccess && (
+          <MenuItem
+            onClick={() => {
+              onGrantAccess();
+              handleClosePopover();
+            }}
+            sx={{ color: 'success.main' }}
+          >
+            <Iconify icon="eva:unlock-fill" />
+            Grant System Access
+          </MenuItem>
+        )}
+
+        {hasSystemAccess && (
+          <MenuItem
+            onClick={() => {
+              onRevokeAccess();
+              handleClosePopover();
+            }}
+            sx={{ color: 'warning.main' }}
+          >
+            <Iconify icon="eva:lock-fill" />
+            Revoke System Access
+          </MenuItem>
+        )}
 
         <MenuItem
           onClick={() => {

@@ -1,5 +1,8 @@
 const Employee = require('../models/Employee');
+const User = require('../models/User');
 const { Op } = require('sequelize');
+const { generateRandomPassword } = require('../utils/passwordGenerator');
+const { sendWelcomeEmail } = require('../utils/emailService');
 
 // Get all employees
 exports.getAll = async (req, res) => {
@@ -329,19 +332,113 @@ exports.create = async (req, res) => {
       paymentMethod: paymentMethod || 'Bank Transfer',
     });
 
-    // TODO: Create user account if temporaryPassword is provided
-    // TODO: Send welcome email with credentials
+    console.log(`✅ Employee created: ${employee.employeeId} - ${employee.getFullName()}`);
+
+    // Create user account for system access
+    let userAccount = null;
+    let generatedPassword = null;
+
+    // Auto-create user account (temporaryPassword can be provided or will be generated)
+    try {
+      // Generate password if not provided
+      const password = temporaryPassword || generateRandomPassword(12);
+      generatedPassword = password;
+
+      console.log(`🔐 Creating user account for: ${email}`);
+
+      // Determine user role based on designation
+      const db = require('../config/database');
+      let userType = 'employee'; // Default role
+      let roleId = 5; // Default employee role ID
+
+      if (designation) {
+        // Fetch designation name to determine role
+        const [[designationData]] = await db.query(
+          'SELECT name FROM designations WHERE id = ?',
+          [designation]
+        );
+
+        if (designationData) {
+          const designationName = designationData.name.toLowerCase();
+          
+          // Role mapping logic
+          if (designationName.includes('hr') && designationName.includes('manager')) {
+            userType = 'hr_manager';
+            roleId = 2;
+          } else if (designationName.includes('hr')) {
+            userType = 'hr';
+            roleId = 3;
+          } else if (designationName.includes('manager')) {
+            userType = 'manager';
+            roleId = 4;
+          } else if (designationName.includes('admin')) {
+            userType = 'admin';
+            roleId = 6;
+          } else if (designationName.includes('accountant')) {
+            userType = 'accountant';
+            roleId = 7;
+          }
+
+          console.log(`📋 Role determined: ${userType} (based on designation: ${designationData.name})`);
+        }
+      }
+
+      // Create user account
+      userAccount = await User.create({
+        name: `${firstName} ${lastName}`,
+        email,
+        password, // Will be hashed by User model's beforeCreate hook
+        user_type: userType,
+        role_id: roleId,
+        status: 'active',
+      });
+
+      console.log(`✅ User account created: ID ${userAccount.id} (${userType})`);
+
+      // Link employee to user account
+      await employee.update({ user_id: userAccount.id });
+      console.log(`🔗 Linked employee.user_id = ${userAccount.id}`);
+
+      // Send welcome email with credentials
+      try {
+        await sendWelcomeEmail({
+          to: email,
+          name: `${firstName} ${lastName}`,
+          email,
+          password: generatedPassword,
+          loginUrl: process.env.FRONTEND_URL || 'http://localhost:3000/auth/login',
+        });
+        console.log(`📧 Welcome email sent to: ${email}`);
+      } catch (emailError) {
+        console.error('❌ Failed to send welcome email:', emailError.message);
+        // Don't fail the entire operation if email fails
+      }
+
+    } catch (userError) {
+      console.error('❌ Error creating user account:', userError);
+      // Don't fail employee creation if user creation fails
+      // HR can manually create user account later
+    }
 
     res.status(201).json({
       success: true,
-      message: 'Employee created successfully',
+      message: userAccount 
+        ? 'Employee and user account created successfully' 
+        : 'Employee created successfully (user account creation failed - can be created manually)',
       employee: {
         id: employee.id,
         employeeId: employee.employeeId,
         name: employee.getFullName(),
         email: employee.email,
         status: employee.status,
+        hasSystemAccess: !!userAccount,
+        userId: userAccount?.id || null,
       },
+      credentials: userAccount ? {
+        email,
+        password: generatedPassword,
+        message: 'Credentials sent to employee email',
+      } : null,
     });
   } catch (error) {
     console.error('Create employee error:', error);
@@ -519,6 +616,205 @@ exports.getStatistics = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch statistics',
+      error: error.message,
+    });
+  }
+};
+
+// Grant system access to existing employee
+exports.grantSystemAccess = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { temporaryPassword } = req.body;
+
+    // Find employee
+    const employee = await Employee.findByPk(id);
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        message: 'Employee not found',
+      });
+    }
+
+    // Check if employee already has system access
+    if (employee.user_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Employee already has system access',
+        userId: employee.user_id,
+      });
+    }
+
+    // Check if user with this email already exists
+    const existingUser = await User.findOne({ where: { email: employee.email } });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'User account with this email already exists',
+      });
+    }
+
+    // Generate password
+    const password = temporaryPassword || generateRandomPassword(12);
+    console.log(`🔐 Granting system access to: ${employee.email}`);
+
+    // Determine user role based on designation
+    const db = require('../config/database');
+    let userType = 'employee';
+    let roleId = 5;
+
+    if (employee.designationId) {
+      const [[designationData]] = await db.query(
+        'SELECT name FROM designations WHERE id = ?',
+        [employee.designationId]
+      );
+
+      if (designationData) {
+        const designationName = designationData.name.toLowerCase();
+        
+        if (designationName.includes('hr') && designationName.includes('manager')) {
+          userType = 'hr_manager';
+          roleId = 2;
+        } else if (designationName.includes('hr')) {
+          userType = 'hr';
+          roleId = 3;
+        } else if (designationName.includes('manager')) {
+          userType = 'manager';
+          roleId = 4;
+        } else if (designationName.includes('admin')) {
+          userType = 'admin';
+          roleId = 6;
+        } else if (designationName.includes('accountant')) {
+          userType = 'accountant';
+          roleId = 7;
+        }
+
+        console.log(`📋 Role determined: ${userType} (based on designation: ${designationData.name})`);
+      }
+    }
+
+    // Create user account
+    const userAccount = await User.create({
+      name: employee.getFullName(),
+      email: employee.email,
+      password,
+      user_type: userType,
+      role_id: roleId,
+      status: 'active',
+    });
+
+    console.log(`✅ User account created: ID ${userAccount.id} (${userType})`);
+
+    // Link employee to user
+    await employee.update({ user_id: userAccount.id });
+    console.log(`🔗 Linked employee.user_id = ${userAccount.id}`);
+
+    // Send welcome email
+    try {
+      await sendWelcomeEmail({
+        to: employee.email,
+        name: employee.getFullName(),
+        email: employee.email,
+        password,
+        loginUrl: process.env.FRONTEND_URL || 'http://localhost:3000/auth/login',
+      });
+      console.log(`📧 Welcome email sent to: ${employee.email}`);
+    } catch (emailError) {
+      console.error('❌ Failed to send welcome email:', emailError.message);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'System access granted successfully',
+      employee: {
+        id: employee.id,
+        employeeId: employee.employeeId,
+        name: employee.getFullName(),
+        email: employee.email,
+        hasSystemAccess: true,
+        userId: userAccount.id,
+      },
+      credentials: {
+        email: employee.email,
+        password,
+        message: 'Credentials sent to employee email',
+      },
+    });
+  } catch (error) {
+    console.error('Grant system access error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to grant system access',
+      error: error.message,
+    });
+  }
+};
+
+// Revoke system access from employee
+exports.revokeSystemAccess = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Find employee
+    const employee = await Employee.findByPk(id);
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        message: 'Employee not found',
+      });
+    }
+
+    // Check if employee has system access
+    if (!employee.user_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Employee does not have system access',
+      });
+    }
+
+    const userId = employee.user_id;
+    console.log(`⛔ Revoking system access for: ${employee.email} (User ID: ${userId})`);
+
+    // Find and deactivate user account
+    const userAccount = await User.findByPk(userId);
+    if (userAccount) {
+      await userAccount.update({ status: 'inactive' });
+      console.log(`✅ User account deactivated: ID ${userId}`);
+
+      // Send notification email
+      try {
+        const { sendAccessRevokedEmail } = require('../utils/emailService');
+        await sendAccessRevokedEmail({
+          to: employee.email,
+          name: employee.getFullName(),
+        });
+        console.log(`📧 Access revoked notification sent to: ${employee.email}`);
+      } catch (emailError) {
+        console.error('❌ Failed to send notification email:', emailError.message);
+      }
+    }
+
+    // Unlink employee from user
+    await employee.update({ user_id: null });
+    console.log(`🔗 Unlinked employee.user_id`);
+
+    res.status(200).json({
+      success: true,
+      message: 'System access revoked successfully',
+      employee: {
+        id: employee.id,
+        employeeId: employee.employeeId,
+        name: employee.getFullName(),
+        email: employee.email,
+        hasSystemAccess: false,
+        userId: null,
+      },
+    });
+  } catch (error) {
+    console.error('Revoke system access error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to revoke system access',
       error: error.message,
     });
   }

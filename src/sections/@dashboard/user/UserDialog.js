@@ -79,23 +79,43 @@ export default function UserDialog({ open, onClose, user, onSuccess }) {
 
   const fetchDepartments = async () => {
     try {
+      console.log('📁 [UserDialog] Fetching departments');
       const response = await departmentService.getAllDepartments();
-      if (response.success) {
-        setDepartments(response.data);
+      console.log('📁 [UserDialog] Departments response:', response);
+      
+      if (response && response.success && response.data) {
+        const deptArray = Array.isArray(response.data) ? response.data : 
+                         Array.isArray(response.data.departments) ? response.data.departments : [];
+        console.log('✅ [UserDialog] Setting departments:', deptArray.length);
+        setDepartments(deptArray);
+      } else {
+        console.log('⚠️ [UserDialog] No departments data, setting empty array');
+        setDepartments([]);
       }
     } catch (error) {
-      console.error('Error fetching departments:', error);
+      console.error('❌ [UserDialog] Error fetching departments:', error);
+      setDepartments([]);
     }
   };
 
   const fetchRoles = async () => {
     try {
+      console.log('👤 [UserDialog] Fetching roles');
       const response = await roleService.getAllRoles();
-      if (response.success) {
-        setRoles(response.data);
+      console.log('👤 [UserDialog] Roles response:', response);
+      
+      if (response && response.success && response.data) {
+        const rolesArray = Array.isArray(response.data) ? response.data : 
+                          Array.isArray(response.data.roles) ? response.data.roles : [];
+        console.log('✅ [UserDialog] Setting roles:', rolesArray.length);
+        setRoles(rolesArray);
+      } else {
+        console.log('⚠️ [UserDialog] No roles data, setting empty array');
+        setRoles([]);
       }
     } catch (error) {
-      console.error('Error fetching roles:', error);
+      console.error('❌ [UserDialog] Error fetching roles:', error);
+      setRoles([]);
     }
   };
 
@@ -203,11 +223,15 @@ export default function UserDialog({ open, onClose, user, onSuccess }) {
             onChange={handleChange}
           >
             <MenuItem value="">None</MenuItem>
-            {departments.map((dept) => (
-              <MenuItem key={dept.id} value={dept.id}>
-                {dept.name}
-              </MenuItem>
-            ))}
+            {Array.isArray(departments) && departments.length > 0 ? (
+              departments.map((dept) => (
+                <MenuItem key={dept.id} value={dept.id}>
+                  {dept.name}
+                </MenuItem>
+              ))
+            ) : (
+              <MenuItem disabled>No departments available</MenuItem>
+            )}
           </TextField>
 
           <TextField
@@ -219,11 +243,15 @@ export default function UserDialog({ open, onClose, user, onSuccess }) {
             onChange={handleChange}
           >
             <MenuItem value="">None</MenuItem>
-            {roles.map((role) => (
-              <MenuItem key={role.id} value={role.id}>
-                {role.name}
-              </MenuItem>
-            ))}
+            {Array.isArray(roles) && roles.length > 0 ? (
+              roles.map((role) => (
+                <MenuItem key={role.id} value={role.id}>
+                  {role.name}
+                </MenuItem>
+              ))
+            ) : (
+              <MenuItem disabled>No roles available</MenuItem>
+            )}
           </TextField>
 
           <TextField

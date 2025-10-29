@@ -121,6 +121,7 @@ app.use('/api/contracts', require('./routes/contract.routes'));
 app.use('/api/expenses', require('./routes/expense.routes'));
 app.use('/api/income', require('./routes/income.routes'));
 app.use('/api/holidays', require('./routes/holiday.routes'));
+app.use('/api/reports', require('./routes/reports.routes'));
 
 // Route aliases for alternate paths (frontend compatibility)
 app.use('/api/leave-types', (req, res, next) => {

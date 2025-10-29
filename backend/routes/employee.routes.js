@@ -8,11 +8,15 @@ router.use(authenticateToken);
 
 // Routes
 router.get('/', employeeController.getAll);
+router.get('/stats/summary', employeeController.getStatistics); // Move before /:id to avoid conflicts
 router.get('/:id', employeeController.getById);
 router.post('/', employeeController.create);
 router.put('/:id', employeeController.update);
 router.delete('/:id', employeeController.delete);
-router.get('/stats/summary', employeeController.getStatistics);
+
+// System access management
+router.post('/:id/grant-access', employeeController.grantSystemAccess);
+router.post('/:id/revoke-access', employeeController.revokeSystemAccess);
 
 module.exports = router;
 

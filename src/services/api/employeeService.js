@@ -145,6 +145,59 @@ class EmployeeService {
       };
     }
   }
+
+  /**
+   * Grant system access to employee
+   * @param {number} id - Employee ID
+   * @param {string} temporaryPassword - Optional temporary password
+   * @returns {Promise} Response with credentials
+   */
+  async grantSystemAccess(id, temporaryPassword = null) {
+    try {
+      console.log(`🔐 [Employee Service] Granting system access to employee ID: ${id}`);
+      const response = await apiClient.post(`/employees/${id}/grant-access`, {
+        temporaryPassword,
+      });
+      console.log('✅ [Employee Service] System access granted:', response.data);
+      return {
+        success: true,
+        data: response.data,
+        message: 'System access granted successfully',
+      };
+    } catch (error) {
+      console.error('❌ [Employee Service] Grant access error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to grant system access',
+        error,
+      };
+    }
+  }
+
+  /**
+   * Revoke system access from employee
+   * @param {number} id - Employee ID
+   * @returns {Promise} Revoke response
+   */
+  async revokeSystemAccess(id) {
+    try {
+      console.log(`⛔ [Employee Service] Revoking system access for employee ID: ${id}`);
+      const response = await apiClient.post(`/employees/${id}/revoke-access`);
+      console.log('✅ [Employee Service] System access revoked:', response.data);
+      return {
+        success: true,
+        data: response.data,
+        message: 'System access revoked successfully',
+      };
+    } catch (error) {
+      console.error('❌ [Employee Service] Revoke access error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to revoke system access',
+        error,
+      };
+    }
+  }
 }
 
 export default new EmployeeService();

@@ -15,7 +15,7 @@ import {
 // routes
 import { PATH_DASHBOARD } from '../../routes/paths';
 // services
-import employeeService from '../../services/employeeService';
+import employeeService from '../../services/api/employeeService';
 // components
 import Iconify from '../../components/iconify';
 import Scrollbar from '../../components/scrollbar';
@@ -45,6 +45,7 @@ const TABLE_HEAD = [
   { id: 'designation', label: 'Designation', align: 'left' },
   { id: 'email', label: 'Email', align: 'left' },
   { id: 'phone', label: 'Phone', align: 'left' },
+  { id: 'systemAccess', label: 'System Access', align: 'center' },
   { id: 'status', label: 'Status', align: 'left' },
   { id: '', label: 'Actions', align: 'right' },
 ];
@@ -238,6 +239,73 @@ export default function EmployeeListPage() {
     navigate(PATH_DASHBOARD.hr.employees.view(id));
   };
 
+  const handleGrantAccess = async (id) => {
+    try {
+      console.log('🔐 Granting system access to employee:', id);
+      const response = await employeeService.grantSystemAccess(id);
+      
+      if (response.success) {
+        // Show generated password to HR
+        const password = response.data?.credentials?.password || response.data?.password;
+        enqueueSnackbar(
+          password 
+            ? `System access granted! Password: ${password} (sent to employee email)`
+            : 'System access granted successfully',
+          { variant: 'success' }
+        );
+        
+        // Refresh employee list
+        const employeesResponse = await employeeService.getAllEmployees({
+          search: filterName,
+          department: filterDepartment !== 'all' ? filterDepartment : '',
+          status: filterStatus !== 'all' ? filterStatus : '',
+        });
+
+        if (employeesResponse.success && employeesResponse.data) {
+          const employees = Array.isArray(employeesResponse.data) 
+            ? employeesResponse.data 
+            : employeesResponse.data.employees || [];
+          setTableData(employees);
+        }
+      } else {
+        enqueueSnackbar(response.message || 'Failed to grant system access', { variant: 'error' });
+      }
+    } catch (error) {
+      console.error('Grant access error:', error);
+      enqueueSnackbar('An error occurred while granting system access', { variant: 'error' });
+    }
+  };
+
+  const handleRevokeAccess = async (id) => {
+    try {
+      console.log('⛔ Revoking system access for employee:', id);
+      const response = await employeeService.revokeSystemAccess(id);
+      
+      if (response.success) {
+        enqueueSnackbar('System access revoked successfully', { variant: 'success' });
+        
+        // Refresh employee list
+        const employeesResponse = await employeeService.getAllEmployees({
+          search: filterName,
+          department: filterDepartment !== 'all' ? filterDepartment : '',
+          status: filterStatus !== 'all' ? filterStatus : '',
+        });
+
+        if (employeesResponse.success && employeesResponse.data) {
+          const employees = Array.isArray(employeesResponse.data) 
+            ? employeesResponse.data 
+            : employeesResponse.data.employees || [];
+          setTableData(employees);
+        }
+      } else {
+        enqueueSnackbar(response.message || 'Failed to revoke system access', { variant: 'error' });
+      }
+    } catch (error) {
+      console.error('Revoke access error:', error);
+      enqueueSnackbar('An error occurred while revoking system access', { variant: 'error' });
+    }
+  };
+
   const handleResetFilter = () => {
     setFilterName('');
     setFilterDepartment('all');
@@ -328,6 +396,8 @@ export default function EmployeeListPage() {
                         selected={selected.includes(row.id)}
                         onSelectRow={() => onSelectRow(row.id)}
                         onDeleteRow={() => handleDeleteRow(row.id)}
+                        onGrantAccess={() => handleGrantAccess(row.id)}
+                        onRevokeAccess={() => handleRevokeAccess(row.id)}
                         onEditRow={() => handleEditRow(row.id)}
                         onViewRow={() => handleViewRow(row.id)}
                       />
