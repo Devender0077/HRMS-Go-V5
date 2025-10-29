@@ -19,22 +19,24 @@ exports.getDailyAttendanceReport = async (req, res) => {
     const { date = new Date().toISOString().split('T')[0] } = req.query;
     
     console.log(`📊 Generating Daily Attendance Report for: ${date}`);
+    console.log(`📅 Query date: ${date}`);
     
+    // Simplified query with better error handling
     const [attendanceData] = await db.query(`
       SELECT 
         e.id,
         e.employee_id,
-        CONCAT(e.first_name, ' ', e.last_name) as employee_name,
-        d.name as department,
-        des.name as designation,
-        a.clock_in,
-        a.clock_out,
+        CONCAT(COALESCE(e.first_name, ''), ' ', COALESCE(e.last_name, '')) as employee_name,
+        COALESCE(d.name, 'No Department') as department,
+        COALESCE(des.name, 'No Designation') as designation,
+        COALESCE(a.clock_in, NULL) as clock_in,
+        COALESCE(a.clock_out, NULL) as clock_out,
         COALESCE(a.status, 'absent') as status,
-        COALESCE(a.total_hours, 0) as total_hours
+        COALESCE(a.total_hours, 0.00) as total_hours
       FROM employees e
-      LEFT JOIN attendance a ON e.id = a.employee_id AND DATE(a.date) = ?
       LEFT JOIN departments d ON e.department_id = d.id
       LEFT JOIN designations des ON e.designation_id = des.id
+      LEFT JOIN attendance a ON e.id = a.employee_id AND a.date = ?
       WHERE e.status = 'active'
       ORDER BY e.employee_id
     `, [date]);
@@ -61,12 +63,15 @@ exports.getDailyAttendanceReport = async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Daily attendance report error:', error);
-    console.error('❌ Error details:', error.message);
-    console.error('❌ SQL:', error.sql);
+    console.error('❌ Error message:', error.message);
+    console.error('❌ SQL State:', error.sqlState);
+    console.error('❌ SQL Message:', error.sqlMessage);
+    console.error('❌ Full SQL:', error.sql);
     res.status(500).json({
       success: false,
       message: 'Failed to generate daily attendance report',
       error: error.message,
+      sqlError: error.sqlMessage,
     });
   }
 };

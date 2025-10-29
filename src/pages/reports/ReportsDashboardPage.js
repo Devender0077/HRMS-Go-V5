@@ -21,6 +21,13 @@ import {
   CircularProgress,
   Alert,
   LinearProgress,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  TableContainer,
+  Paper,
 } from '@mui/material';
 // components
 import Iconify from '../../components/iconify';
@@ -30,6 +37,10 @@ import { useSnackbar } from '../../components/snackbar';
 import { PATH_DASHBOARD } from '../../routes/paths';
 // services
 import reportsService from '../../services/api/reportsService';
+// utils
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 // ----------------------------------------------------------------------
 
@@ -363,20 +374,135 @@ export default function ReportsDashboardPage() {
     }
   };
 
-  const handleDownloadReport = () => {
-    if (!reportData) return;
+  const handleDownloadReport = (format = 'pdf') => {
+    if (!reportData || !reportData.data || reportData.data.length === 0) {
+      enqueueSnackbar('No data to download', { variant: 'warning' });
+      return;
+    }
     
-    // Convert report data to JSON and download
-    const dataStr = JSON.stringify(reportData, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${selectedReport.id}_${new Date().toISOString().split('T')[0]}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
+    const fileName = `${selectedReport.name}_${new Date().toISOString().split('T')[0]}`;
     
-    enqueueSnackbar('Report downloaded successfully!', { variant: 'success' });
+    if (format === 'pdf') {
+      handleDownloadPDF();
+    } else if (format === 'excel') {
+      handleDownloadExcel();
+    } else if (format === 'json') {
+      handleDownloadJSON();
+    }
+  };
+
+  const handleDownloadPDF = () => {
+    try {
+      const doc = new jsPDF('l', 'mm', 'a4'); // Landscape
+      const fileName = `${selectedReport.name}_${new Date().toISOString().split('T')[0]}.pdf`;
+      
+      // Add title
+      doc.setFontSize(16);
+      doc.text(selectedReport.name, 14, 15);
+      
+      // Add metadata
+      doc.setFontSize(10);
+      doc.text(`Generated: ${new Date(reportData.generated_at).toLocaleString()}`, 14, 22);
+      doc.text(`Category: ${selectedReport.category}`, 14, 27);
+      
+      // Add summary if exists
+      let startY = 35;
+      if (reportData.summary) {
+        doc.setFontSize(12);
+        doc.text('Summary:', 14, startY);
+        startY += 7;
+        
+        const summaryData = Object.entries(reportData.summary).map(([key, value]) => [
+          key.replace(/_/g, ' ').toUpperCase(),
+          typeof value === 'number' ? value.toLocaleString() : value
+        ]);
+        
+        doc.autoTable({
+          startY,
+          head: [['Metric', 'Value']],
+          body: summaryData,
+          theme: 'grid',
+          headStyles: { fillColor: [0, 123, 255] },
+        });
+        
+        startY = doc.lastAutoTable.finalY + 10;
+      }
+      
+      // Add data table
+      if (reportData.data && reportData.data.length > 0) {
+        const columns = Object.keys(reportData.data[0]);
+        const headers = columns.map(col => col.replace(/_/g, ' ').toUpperCase());
+        const rows = reportData.data.map(row => columns.map(col => row[col] || ''));
+        
+        doc.setFontSize(12);
+        doc.text(`Data (${reportData.data.length} records):`, 14, startY);
+        
+        doc.autoTable({
+          startY: startY + 5,
+          head: [headers],
+          body: rows,
+          theme: 'striped',
+          headStyles: { fillColor: [0, 123, 255] },
+          styles: { fontSize: 8 },
+        });
+      }
+      
+      doc.save(fileName);
+      enqueueSnackbar('PDF downloaded successfully!', { variant: 'success' });
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      enqueueSnackbar('Failed to generate PDF', { variant: 'error' });
+    }
+  };
+
+  const handleDownloadExcel = () => {
+    try {
+      const fileName = `${selectedReport.name}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      
+      // Create workbook
+      const wb = XLSX.utils.book_new();
+      
+      // Add summary sheet if exists
+      if (reportData.summary) {
+        const summaryData = Object.entries(reportData.summary).map(([key, value]) => ({
+          Metric: key.replace(/_/g, ' ').toUpperCase(),
+          Value: value,
+        }));
+        const summaryWs = XLSX.utils.json_to_sheet(summaryData);
+        XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary');
+      }
+      
+      // Add data sheet
+      if (reportData.data && reportData.data.length > 0) {
+        const dataWs = XLSX.utils.json_to_sheet(reportData.data);
+        XLSX.utils.book_append_sheet(wb, dataWs, 'Data');
+      }
+      
+      // Save file
+      XLSX.writeFile(wb, fileName);
+      enqueueSnackbar('Excel downloaded successfully!', { variant: 'success' });
+    } catch (error) {
+      console.error('Excel generation error:', error);
+      enqueueSnackbar('Failed to generate Excel', { variant: 'error' });
+    }
+  };
+
+  const handleDownloadJSON = () => {
+    try {
+      const fileName = `${selectedReport.name}_${new Date().toISOString().split('T')[0]}.json`;
+      const dataStr = JSON.stringify(reportData, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      link.click();
+      URL.revokeObjectURL(url);
+      enqueueSnackbar('JSON downloaded successfully!', { variant: 'success' });
+    } catch (error) {
+      console.error('JSON download error:', error);
+      enqueueSnackbar('Failed to download JSON', { variant: 'error' });
+    }
   };
 
   const handleDownloadRecentReport = (report) => {
@@ -548,18 +674,43 @@ export default function ReportsDashboardPage() {
           </Typography>
           
           {reportData.data && reportData.data.length > 0 ? (
-            <Box sx={{ maxHeight: 400, overflow: 'auto' }}>
-              <pre style={{ fontSize: '12px', whiteSpace: 'pre-wrap' }}>
-                {JSON.stringify(reportData.data.slice(0, 10), null, 2)}
-              </pre>
-              {reportData.data.length > 10 && (
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                  Showing first 10 of {reportData.data.length} records. Download full report for complete data.
+            <>
+              <TableContainer component={Paper} sx={{ maxHeight: 400, mt: 2 }}>
+                <Table stickyHeader size="small">
+                  <TableHead>
+                    <TableRow>
+                      {Object.keys(reportData.data[0]).map((key) => (
+                        <TableCell key={key} sx={{ fontWeight: 'bold', bgcolor: 'primary.lighter' }}>
+                          {key.replace(/_/g, ' ').toUpperCase()}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {reportData.data.slice(0, 20).map((row, index) => (
+                      <TableRow key={index} hover>
+                        {Object.values(row).map((value, cellIndex) => (
+                          <TableCell key={cellIndex}>
+                            {value !== null && value !== undefined 
+                              ? (typeof value === 'number' ? value.toLocaleString() : String(value))
+                              : '-'}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+              {reportData.data.length > 20 && (
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block', textAlign: 'center' }}>
+                  Showing first 20 of {reportData.data.length} records. Download PDF/Excel for complete data.
                 </Typography>
               )}
-            </Box>
+            </>
           ) : (
-            <Typography color="text.secondary">No data available</Typography>
+            <Typography color="text.secondary" sx={{ textAlign: 'center', py: 3 }}>
+              No data available for this report
+            </Typography>
           )}
         </Card>
       </Box>
@@ -704,7 +855,7 @@ export default function ReportsDashboardPage() {
                     No recent reports available
                   </Typography>
                 ) : (
-                  <Stack spacing={2}>
+                <Stack spacing={2}>
                     {recentReports.map((report) => (
                     <Box
                       key={report.id}
@@ -775,8 +926,8 @@ export default function ReportsDashboardPage() {
                         </Stack>
                       </Stack>
                     </Box>
-                    ))}
-                  </Stack>
+                  ))}
+                </Stack>
                 )}
               </Box>
             </Card>
@@ -831,13 +982,31 @@ export default function ReportsDashboardPage() {
           </Button>
           
           {viewMode && reportData && (
-            <Button
-              variant="contained"
-              startIcon={<Iconify icon="eva:download-outline" />}
-              onClick={handleDownloadReport}
-            >
-              Download JSON
-            </Button>
+            <>
+              <Button
+                variant="outlined"
+                color="error"
+                startIcon={<Iconify icon="vscode-icons:file-type-pdf2" />}
+                onClick={() => handleDownloadReport('pdf')}
+              >
+                Download PDF
+              </Button>
+              <Button
+                variant="outlined"
+                color="success"
+                startIcon={<Iconify icon="vscode-icons:file-type-excel" />}
+                onClick={() => handleDownloadReport('excel')}
+              >
+                Download Excel
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<Iconify icon="vscode-icons:file-type-json" />}
+                onClick={() => handleDownloadReport('json')}
+              >
+                Download JSON
+              </Button>
+            </>
           )}
           
           {!viewMode && (
