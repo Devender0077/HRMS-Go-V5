@@ -306,6 +306,7 @@ export const AssetsListPage = Loadable(lazy(() => import('../pages/assets/Assets
 export const AssetNewPage = Loadable(lazy(() => import('../pages/assets/AssetNewPage')));
 export const AssetCategoriesPage = Loadable(lazy(() => import('../pages/assets/AssetCategoriesPage')));
 export const AssetAssignmentsPage = Loadable(lazy(() => import('../pages/assets/AssetAssignmentsPage')));
+export const AssetAssignmentNewPage = Loadable(lazy(() => import('../pages/assets/AssetAssignmentNewPage')));
 export const AssetMaintenancePage = Loadable(lazy(() => import('../pages/assets/AssetMaintenancePage')));
 export const AnnouncementsListPage = Loadable(lazy(() => import('../pages/announcements/AnnouncementsListPage')));
 export const MessengerPage = Loadable(lazy(() => import('../pages/messenger/MessengerPage')));
