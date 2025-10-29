@@ -127,8 +127,65 @@ export default function HRMSDashboardPage() {
 
       <Container maxWidth={themeStretch ? false : 'xl'} disableGutters={themeStretch}>
         <Grid container spacing={3}>
+          {/* Quick Actions Bar - New Feature */}
+          <Grid item xs={12}>
+            <Card sx={{ mb: 0 }}>
+              <Box sx={{ p: 2 }}>
+                <Typography variant="h6" sx={{ mb: 2 }}>
+                  Quick Actions
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={6} sm={3}>
+                    <Button
+                      fullWidth
+                      variant="contained"
+                      startIcon={<Iconify icon="eva:clock-outline" />}
+                      onClick={() => navigate(PATH_DASHBOARD.attendance.clock)}
+                      sx={{ py: 1.5 }}
+                    >
+                      Clock In/Out
+                    </Button>
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      startIcon={<Iconify icon="eva:calendar-outline" />}
+                      onClick={() => navigate(PATH_DASHBOARD.leaves.apply)}
+                      sx={{ py: 1.5 }}
+                    >
+                      Apply Leave
+                    </Button>
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      startIcon={<Iconify icon="eva:list-outline" />}
+                      onClick={() => navigate(PATH_DASHBOARD.attendance.records)}
+                      sx={{ py: 1.5 }}
+                    >
+                      My Attendance
+                    </Button>
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      startIcon={<Iconify icon="eva:file-text-outline" />}
+                      onClick={() => navigate(PATH_DASHBOARD.hr.employees.list)}
+                      sx={{ py: 1.5 }}
+                    >
+                      View Team
+                    </Button>
+                  </Grid>
+                </Grid>
+              </Box>
+            </Card>
+          </Grid>
+
           {/* Welcome Card */}
-          <Grid item xs={12} md={8}>
+          <Grid item xs={12} lg={8}>
             <AppWelcome
               title={`Welcome back! \n ${user?.displayName || 'User'}`}
               description="Manage your human resources efficiently with our comprehensive HRMS platform. Track employees, attendance, leaves, and more."
@@ -155,7 +212,7 @@ export default function HRMSDashboardPage() {
           </Grid>
 
           {/* Calendar beside Welcome Card */}
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} lg={4}>
             <Card sx={{ height: '100%' }}>
               <CardHeader title="Calendar" sx={{ pb: 1 }} />
               <Divider />
@@ -301,8 +358,103 @@ export default function HRMSDashboardPage() {
             </>
           )}
 
+          {/* Today's Attendance - New Widget */}
+          <Grid item xs={12} md={6} lg={4}>
+            <Card>
+              <CardHeader title="📊 Today's Attendance" sx={{ mb: 1 }} />
+              <Divider />
+              <CardContent>
+                <Stack spacing={2}>
+                  <Box>
+                    <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Present
+                      </Typography>
+                      <Typography variant="subtitle2" color="success.main">
+                        {stats.presentToday} / {stats.totalEmployees}
+                      </Typography>
+                    </Stack>
+                    <Box
+                      sx={{
+                        height: 8,
+                        borderRadius: 1,
+                        bgcolor: 'background.neutral',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          height: '100%',
+                          width: `${stats.totalEmployees ? (stats.presentToday / stats.totalEmployees) * 100 : 0}%`,
+                          bgcolor: 'success.main',
+                          transition: 'width 0.3s',
+                        }}
+                      />
+                    </Box>
+                  </Box>
+
+                  <Box>
+                    <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        On Leave
+                      </Typography>
+                      <Typography variant="subtitle2" color="warning.main">
+                        {stats.onLeave}
+                      </Typography>
+                    </Stack>
+                    <Box
+                      sx={{
+                        height: 8,
+                        borderRadius: 1,
+                        bgcolor: 'background.neutral',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          height: '100%',
+                          width: `${stats.totalEmployees ? (stats.onLeave / stats.totalEmployees) * 100 : 0}%`,
+                          bgcolor: 'warning.main',
+                          transition: 'width 0.3s',
+                        }}
+                      />
+                    </Box>
+                  </Box>
+
+                  <Box>
+                    <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Absent
+                      </Typography>
+                      <Typography variant="subtitle2" color="error.main">
+                        {stats.totalEmployees - stats.presentToday - stats.onLeave}
+                      </Typography>
+                    </Stack>
+                    <Box
+                      sx={{
+                        height: 8,
+                        borderRadius: 1,
+                        bgcolor: 'background.neutral',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          height: '100%',
+                          width: `${stats.totalEmployees ? ((stats.totalEmployees - stats.presentToday - stats.onLeave) / stats.totalEmployees) * 100 : 0}%`,
+                          bgcolor: 'error.main',
+                          transition: 'width 0.3s',
+                        }}
+                      />
+                    </Box>
+                  </Box>
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
+
           {/* Calendar Events */}
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={6} lg={4}>
             <Card>
               <CardHeader
                 title="📅 Upcoming Events"
@@ -357,7 +509,7 @@ export default function HRMSDashboardPage() {
           </Grid>
 
           {/* Recent Activities */}
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={6} lg={4}>
             <Card>
               <CardHeader title="⚡ Recent Activities" sx={{ mb: 1 }} />
               <Divider />
