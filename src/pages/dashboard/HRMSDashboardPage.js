@@ -165,7 +165,6 @@ export default function HRMSDashboardPage() {
                   value={selectedDate}
                   onChange={(newDate) => setSelectedDate(newDate)}
                   displayStaticWrapperAs="desktop"
-                  renderInput={(params) => <TextField {...params} />}
                   sx={{
                     '& .MuiCalendarPicker-root': {
                       width: '100%',
