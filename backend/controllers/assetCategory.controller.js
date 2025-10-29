@@ -1,4 +1,6 @@
 const AssetCategory = require('../models/AssetCategory');
+const Asset = require('../models/Asset');
+const { Sequelize } = require('sequelize');
 
 // Get all asset categories
 exports.getAll = async (req, res) => {
@@ -11,13 +13,34 @@ exports.getAll = async (req, res) => {
     const categories = await AssetCategory.findAll({
       where,
       order: [['name', 'ASC']],
+      attributes: {
+        include: [
+          [
+            Sequelize.literal(`(
+              SELECT COUNT(*)
+              FROM assets AS a
+              WHERE a.category_id = AssetCategory.id
+            )`),
+            'asset_count'
+          ]
+        ]
+      }
     });
 
-    console.log(`✅ Found ${categories.length} asset categories`);
+    // Convert to plain objects to include the virtual field
+    const categoriesWithCount = categories.map(cat => {
+      const plain = cat.get({ plain: true });
+      return {
+        ...plain,
+        asset_count: parseInt(plain.asset_count) || 0
+      };
+    });
+
+    console.log(`✅ Found ${categoriesWithCount.length} asset categories with counts`);
 
     res.status(200).json({
       success: true,
-      data: categories, // Return array directly
+      data: categoriesWithCount,
     });
   } catch (error) {
     console.error('Get asset categories error:', error);
