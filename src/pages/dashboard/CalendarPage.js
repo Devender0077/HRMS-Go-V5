@@ -458,13 +458,13 @@ export default function CalendarPage() {
                         dispatch(onOpenModal());
                       }}
                     >
-                      <Stack direction="row" spacing={2} alignItems="center">
-                        {/* Date Block */}
+                      <Stack direction="row" spacing={2.5} alignItems="center">
+                        {/* Date Block with Creator Badge */}
                         <Box
                           sx={{
-                            minWidth: 60,
-                            height: 80,
-                            borderRadius: 1,
+                            minWidth: 70,
+                            minHeight: 90,
+                            borderRadius: 1.5,
                             bgcolor: event.color || '#1890FF',
                             display: 'flex',
                             flexDirection: 'column',
@@ -472,31 +472,30 @@ export default function CalendarPage() {
                             justifyContent: 'flex-start',
                             color: 'white',
                             position: 'relative',
-                            py: 1.2,
+                            py: 1.5,
+                            px: 1,
+                            overflow: 'hidden', // Prevent badge from extending outside
                           }}
                         >
-                          <Typography variant="h6" fontWeight="bold" sx={{ mb: 0.2 }}>
+                          <Typography variant="h5" fontWeight="bold" sx={{ mb: 0.3, lineHeight: 1 }}>
                             {new Date(event.start).getDate()}
                           </Typography>
-                          <Typography variant="caption" sx={{ mb: (event.creatorName || event.createdBy) ? 1.2 : 0 }}>
+                          <Typography variant="caption" sx={{ fontSize: '0.7rem', mb: 'auto' }}>
                             {new Date(event.start).toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}
                           </Typography>
                           {(event.creatorName || event.createdBy) && (
                             <Avatar
                               sx={{
-                                position: 'absolute',
-                                bottom: 6,
-                                left: '50%',
-                                transform: 'translateX(-50%)',
-                                width: 28,
-                                height: 28,
+                                mt: 1.5,
+                                width: 32,
+                                height: 32,
                                 fontSize: '0.75rem',
                                 fontWeight: 600,
                                 bgcolor: 'rgba(255, 255, 255, 0.95)',
                                 color: event.color || '#1890FF',
-                                border: 2,
-                                borderColor: 'white',
-                                boxShadow: 2,
+                                border: '2px solid',
+                                borderColor: 'rgba(255, 255, 255, 0.3)',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
                               }}
                             >
                               {(event.creatorName || event.createdBy || 'U').charAt(0).toUpperCase()}
