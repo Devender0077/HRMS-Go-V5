@@ -649,17 +649,49 @@ export default function ReportsDashboardPage() {
         </Alert>
         
         {reportData.summary && (
-          <Card sx={{ mb: 2, p: 2 }}>
-            <Typography variant="h6" gutterBottom>Summary</Typography>
-            <Grid container spacing={2}>
+          <Card sx={{ mb: 2, p: 3 }}>
+            <Typography variant="h6" gutterBottom sx={{ mb: 3 }}>Summary</Typography>
+            <Grid container spacing={3}>
               {Object.entries(reportData.summary).map(([key, value]) => (
-                <Grid item xs={6} md={4} key={key}>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">
-                      {key.replace(/_/g, ' ').toUpperCase()}
+                <Grid item xs={12} sm={6} md={4} key={key}>
+                  <Box 
+                    sx={{ 
+                      p: 2, 
+                      bgcolor: 'background.neutral',
+                      borderRadius: 1,
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Typography 
+                      variant="caption" 
+                      color="text.secondary"
+                      sx={{ 
+                        mb: 0.5,
+                        fontWeight: 600,
+                        textTransform: 'uppercase',
+                        fontSize: '0.7rem',
+                      }}
+                    >
+                      {key.replace(/_/g, ' ')}
                     </Typography>
-                    <Typography variant="h6">
-                      {typeof value === 'number' ? value.toLocaleString() : value}
+                    <Typography 
+                      variant="h5"
+                      sx={{
+                        fontWeight: 700,
+                        color: 'text.primary',
+                        wordBreak: 'break-word',
+                        overflowWrap: 'break-word',
+                      }}
+                    >
+                      {typeof value === 'number' 
+                        ? value.toLocaleString('en-US', {
+                            minimumFractionDigits: value % 1 !== 0 ? 2 : 0,
+                            maximumFractionDigits: 2,
+                          })
+                        : value}
                     </Typography>
                   </Box>
                 </Grid>
