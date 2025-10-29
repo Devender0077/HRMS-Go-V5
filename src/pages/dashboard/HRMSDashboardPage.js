@@ -383,17 +383,17 @@ export default function HRMSDashboardPage() {
             <>
               {/* Total Employees - Only HR/Admin */}
               {(isHRManager || isAdmin || isHR) && (
-                <Grid item xs={12} md={4}>
-                  <AppWidgetSummary
-                    title="Total Employees"
-                    percent={2.6}
-                    total={stats.totalEmployees}
-                    chart={{
-                      colors: [theme.palette.primary.main],
-                      series: [5, 18, 12, 51, 68, 11, 39, 37, 27, 20],
-                    }}
-                  />
-                </Grid>
+              <Grid item xs={12} md={4}>
+                <AppWidgetSummary
+                  title="Total Employees"
+                  percent={2.6}
+                  total={stats.totalEmployees}
+                  chart={{
+                    colors: [theme.palette.primary.main],
+                    series: [5, 18, 12, 51, 68, 11, 39, 37, 27, 20],
+                  }}
+                />
+              </Grid>
               )}
 
               {/* Present Today / My Attendance - All roles */}
@@ -573,29 +573,57 @@ export default function HRMSDashboardPage() {
               />
               <Divider />
               <CardContent>
-                <Stack spacing={2.5}>
-                  <Box>
-                    <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
-                      <Typography variant="body2">Goals Completed</Typography>
-                      <Typography variant="subtitle2" color="primary.main">75%</Typography>
-                    </Stack>
-                    <LinearProgress variant="determinate" value={75} sx={{ height: 6, borderRadius: 3 }} />
-                  </Box>
-                  <Box>
-                    <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
-                      <Typography variant="body2">Tasks Completed</Typography>
-                      <Typography variant="subtitle2" color="success.main">85%</Typography>
-                    </Stack>
-                    <LinearProgress variant="determinate" value={85} color="success" sx={{ height: 6, borderRadius: 3 }} />
-                  </Box>
-                  <Box>
-                    <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
-                      <Typography variant="body2">Training Progress</Typography>
-                      <Typography variant="subtitle2" color="info.main">60%</Typography>
-                    </Stack>
-                    <LinearProgress variant="determinate" value={60} color="info" sx={{ height: 6, borderRadius: 3 }} />
-                  </Box>
-                </Stack>
+                {isEmployee ? (
+                  // Employee view - Show personal metrics with actual values
+                  <Stack spacing={2.5}>
+                    <Box>
+                      <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
+                        <Typography variant="body2" color="text.secondary">Attendance Rate</Typography>
+                        <Typography variant="subtitle2" color="success.main">95%</Typography>
+                      </Stack>
+                      <LinearProgress variant="determinate" value={95} color="success" sx={{ height: 6, borderRadius: 3 }} />
+                    </Box>
+                    <Box>
+                      <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
+                        <Typography variant="body2" color="text.secondary">Tasks Completed</Typography>
+                        <Typography variant="subtitle2" color="primary.main">12 / 15</Typography>
+                      </Stack>
+                      <LinearProgress variant="determinate" value={80} sx={{ height: 6, borderRadius: 3 }} />
+                    </Box>
+                    <Box>
+                      <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
+                        <Typography variant="body2" color="text.secondary">Training Completed</Typography>
+                        <Typography variant="subtitle2" color="info.main">3 / 4</Typography>
+                      </Stack>
+                      <LinearProgress variant="determinate" value={75} color="info" sx={{ height: 6, borderRadius: 3 }} />
+                    </Box>
+                  </Stack>
+                ) : (
+                  // Manager/HR view - Show team/org metrics
+                  <Stack spacing={2.5}>
+                    <Box>
+                      <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
+                        <Typography variant="body2">Goals Completed</Typography>
+                        <Typography variant="subtitle2" color="primary.main">75%</Typography>
+                      </Stack>
+                      <LinearProgress variant="determinate" value={75} sx={{ height: 6, borderRadius: 3 }} />
+                    </Box>
+                    <Box>
+                      <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
+                        <Typography variant="body2">Tasks Completed</Typography>
+                        <Typography variant="subtitle2" color="success.main">85%</Typography>
+                      </Stack>
+                      <LinearProgress variant="determinate" value={85} color="success" sx={{ height: 6, borderRadius: 3 }} />
+                    </Box>
+                    <Box>
+                      <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
+                        <Typography variant="body2">Training Progress</Typography>
+                        <Typography variant="subtitle2" color="info.main">60%</Typography>
+                      </Stack>
+                      <LinearProgress variant="determinate" value={60} color="info" sx={{ height: 6, borderRadius: 3 }} />
+                    </Box>
+                  </Stack>
+                )}
               </CardContent>
             </Card>
           </Grid>
