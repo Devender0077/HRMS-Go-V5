@@ -350,64 +350,70 @@ export default function HRMSDashboardPage() {
             </Card>
           </Grid>
 
-          {/* Key widgets */}
-          <Grid item xs={12}>
-            <Grid container spacing={3}>
-              <Grid item xs={12} sm={6} md={4}>
-                <AppWidget
-                  title="Active Employees"
-                  total={stats.totalEmployees}
-                  icon="eva:people-fill"
-                  chart={{ series: stats.totalEmployees > 0 ? 75 : 0 }}
-                />
-              </Grid>
+          {/* Key widgets - Only for HR/Admin/Manager */}
+          {(isHRManager || isAdmin || isHR || isManager) && (
+            <Grid item xs={12}>
+              <Grid container spacing={3}>
+                <Grid item xs={12} sm={6} md={4}>
+                  <AppWidget
+                    title="Active Employees"
+                    total={stats.totalEmployees}
+                    icon="eva:people-fill"
+                    chart={{ series: stats.totalEmployees > 0 ? 75 : 0 }}
+                  />
+                </Grid>
 
-              <Grid item xs={12} sm={6} md={4}>
-                <AppWidget
-                  title="Pending Approvals"
-                  total={stats.pendingApprovals}
-                  icon="eva:checkmark-circle-fill"
-                  color="warning"
-                  chart={{ series: stats.pendingApprovals > 0 ? Math.min((stats.pendingApprovals / 20) * 100, 100) : 0 }}
-                />
-              </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <AppWidget
+                    title="Pending Approvals"
+                    total={stats.pendingApprovals}
+                    icon="eva:checkmark-circle-fill"
+                    color="warning"
+                    chart={{ series: stats.pendingApprovals > 0 ? Math.min((stats.pendingApprovals / 20) * 100, 100) : 0 }}
+                  />
+                </Grid>
 
-              <Grid item xs={12} sm={6} md={4}>
-                <AppWidget
-                  title="New Applications"
-                  total={stats.newApplications}
-                  icon="eva:file-text-fill"
-                  color="info"
-                  chart={{ series: stats.newApplications > 0 ? Math.min((stats.newApplications / 40) * 100, 100) : 0 }}
-                />
+                <Grid item xs={12} sm={6} md={4}>
+                  <AppWidget
+                    title="New Applications"
+                    total={stats.newApplications}
+                    icon="eva:file-text-fill"
+                    color="info"
+                    chart={{ series: stats.newApplications > 0 ? Math.min((stats.newApplications / 40) * 100, 100) : 0 }}
+                  />
+                </Grid>
               </Grid>
             </Grid>
-          </Grid>
+          )}
 
-          {/* HRMS Statistics */}
+          {/* HRMS Statistics - Role-based visibility */}
           {loading ? (
             <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'center', py: 5 }}>
               <CircularProgress />
             </Grid>
           ) : (
             <>
-              <Grid item xs={12} md={4}>
-                <AppWidgetSummary
-                  title="Total Employees"
-                  percent={2.6}
-                  total={stats.totalEmployees}
-                  chart={{
-                    colors: [theme.palette.primary.main],
-                    series: [5, 18, 12, 51, 68, 11, 39, 37, 27, 20],
-                  }}
-                />
-              </Grid>
+              {/* Total Employees - Only HR/Admin */}
+              {(isHRManager || isAdmin || isHR) && (
+                <Grid item xs={12} md={4}>
+                  <AppWidgetSummary
+                    title="Total Employees"
+                    percent={2.6}
+                    total={stats.totalEmployees}
+                    chart={{
+                      colors: [theme.palette.primary.main],
+                      series: [5, 18, 12, 51, 68, 11, 39, 37, 27, 20],
+                    }}
+                  />
+                </Grid>
+              )}
 
+              {/* Present Today / My Attendance - All roles */}
               <Grid item xs={12} md={4}>
                 <AppWidgetSummary
-                  title="Present Today"
+                  title={isEmployee ? "My Attendance" : "Present Today"}
                   percent={stats.totalEmployees ? parseFloat(((stats.presentToday / stats.totalEmployees) * 100).toFixed(1)) : 0}
-                  total={stats.presentToday}
+                  total={isEmployee ? "Clocked In" : stats.presentToday}
                   chart={{
                     colors: [theme.palette.success.main],
                     series: [20, 41, 63, 33, 28, 35, 50, 46, 11, 26],
@@ -415,11 +421,12 @@ export default function HRMSDashboardPage() {
                 />
               </Grid>
 
+              {/* On Leave / My Leave Balance - All roles */}
               <Grid item xs={12} md={4}>
                 <AppWidgetSummary
-                  title="On Leave"
+                  title={isEmployee ? "My Leave Balance" : "On Leave"}
                   percent={stats.totalEmployees ? parseFloat(((stats.onLeave / stats.totalEmployees) * 100).toFixed(1)) : 0}
-                  total={stats.onLeave}
+                  total={isEmployee ? "12 Days" : stats.onLeave}
                   chart={{
                     colors: [theme.palette.warning.main],
                     series: [8, 9, 31, 8, 16, 37, 8, 33, 46, 31],
