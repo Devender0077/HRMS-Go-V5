@@ -27,7 +27,7 @@ async function seedAssetData() {
       INSERT IGNORE INTO assets (
         asset_code, asset_name, category_id, brand, model, serial_number, 
         purchase_date, purchase_cost, current_value, warranty_expiry, 
-        location, current_status, condition, description, created_at, updated_at
+        location, current_status, \`condition\`, description, created_at, updated_at
       ) VALUES
       -- Laptops
       ('LAP-001', 'MacBook Pro 16"', 1, 'Apple', 'MacBook Pro 16" M2', 'MBP-2023-001', '2023-01-15', 2499.00, 2200.00, '2026-01-15', 'HQ Office - 3rd Floor', 'assigned', 'excellent', 'High-performance laptop for developers', NOW(), NOW()),
