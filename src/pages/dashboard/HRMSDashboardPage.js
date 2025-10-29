@@ -127,63 +127,6 @@ export default function HRMSDashboardPage() {
 
       <Container maxWidth={themeStretch ? false : 'xl'} disableGutters={themeStretch}>
         <Grid container spacing={3}>
-          {/* Quick Actions Bar - New Feature */}
-          <Grid item xs={12}>
-            <Card sx={{ mb: 0 }}>
-              <Box sx={{ p: 2 }}>
-                <Typography variant="h6" sx={{ mb: 2 }}>
-                  Quick Actions
-                </Typography>
-                <Grid container spacing={2}>
-                  <Grid item xs={6} sm={3}>
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      startIcon={<Iconify icon="eva:clock-outline" />}
-                      onClick={() => navigate(PATH_DASHBOARD.attendance.clock)}
-                      sx={{ py: 1.5 }}
-                    >
-                      Clock In/Out
-                    </Button>
-                  </Grid>
-                  <Grid item xs={6} sm={3}>
-                    <Button
-                      fullWidth
-                      variant="outlined"
-                      startIcon={<Iconify icon="eva:calendar-outline" />}
-                      onClick={() => navigate(PATH_DASHBOARD.leaves.apply)}
-                      sx={{ py: 1.5 }}
-                    >
-                      Apply Leave
-                    </Button>
-                  </Grid>
-                  <Grid item xs={6} sm={3}>
-                    <Button
-                      fullWidth
-                      variant="outlined"
-                      startIcon={<Iconify icon="eva:list-outline" />}
-                      onClick={() => navigate(PATH_DASHBOARD.attendance.records)}
-                      sx={{ py: 1.5 }}
-                    >
-                      My Attendance
-                    </Button>
-                  </Grid>
-                  <Grid item xs={6} sm={3}>
-                    <Button
-                      fullWidth
-                      variant="outlined"
-                      startIcon={<Iconify icon="eva:file-text-outline" />}
-                      onClick={() => navigate(PATH_DASHBOARD.hr.employees.list)}
-                      sx={{ py: 1.5 }}
-                    >
-                      View Team
-                    </Button>
-                  </Grid>
-                </Grid>
-              </Box>
-            </Card>
-          </Grid>
-
           {/* Welcome Card */}
           <Grid item xs={12} lg={8}>
             <AppWelcome
@@ -361,7 +304,23 @@ export default function HRMSDashboardPage() {
           {/* Today's Attendance - New Widget */}
           <Grid item xs={12} md={6} lg={4}>
             <Card>
-              <CardHeader title="📊 Today's Attendance" sx={{ mb: 1 }} />
+              <CardHeader 
+                title="Today's Attendance" 
+                avatar={
+                  <Box sx={{ 
+                    width: 40, 
+                    height: 40, 
+                    borderRadius: 1.5,
+                    bgcolor: alpha(theme.palette.success.main, 0.08),
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <Iconify icon="eva:checkmark-circle-2-outline" width={24} sx={{ color: 'success.main' }} />
+                  </Box>
+                }
+                sx={{ mb: 1 }} 
+              />
               <Divider />
               <CardContent>
                 <Stack spacing={2}>
@@ -457,7 +416,20 @@ export default function HRMSDashboardPage() {
           <Grid item xs={12} md={6} lg={4}>
             <Card>
               <CardHeader
-                title="📅 Upcoming Events"
+                title="Upcoming Events"
+                avatar={
+                  <Box sx={{ 
+                    width: 40, 
+                    height: 40, 
+                    borderRadius: 1.5,
+                    bgcolor: alpha(theme.palette.info.main, 0.08),
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <Iconify icon="eva:calendar-outline" width={24} sx={{ color: 'info.main' }} />
+                  </Box>
+                }
                 sx={{ mb: 1 }}
                 action={
                   <Button size="small" onClick={() => navigate(PATH_DASHBOARD.calendar)}>
@@ -511,7 +483,23 @@ export default function HRMSDashboardPage() {
           {/* Recent Activities */}
           <Grid item xs={12} md={6} lg={4}>
             <Card>
-              <CardHeader title="⚡ Recent Activities" sx={{ mb: 1 }} />
+              <CardHeader 
+                title="Recent Activities" 
+                avatar={
+                  <Box sx={{ 
+                    width: 40, 
+                    height: 40, 
+                    borderRadius: 1.5,
+                    bgcolor: alpha(theme.palette.warning.main, 0.08),
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <Iconify icon="eva:activity-outline" width={24} sx={{ color: 'warning.main' }} />
+                  </Box>
+                }
+                sx={{ mb: 1 }} 
+              />
               <Divider />
               <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                 {activities.length > 0 ? (
