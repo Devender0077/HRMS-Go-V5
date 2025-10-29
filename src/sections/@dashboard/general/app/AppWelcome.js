@@ -97,7 +97,16 @@ export default function AppWelcome({ title, description, action, img, ...other }
       </Stack>
 
       {img && (
-        <Box sx={{ flexShrink: 0, display: { xs: 'none', md: 'block' }, pl: { md: 3 }, pr: { md: 5 } }}>
+        <Box 
+          sx={{ 
+            flexShrink: 0, 
+            display: { xs: 'none', md: 'flex' },
+            alignItems: 'center',
+            justifyContent: 'center',
+            pl: { md: 2 }, 
+            pr: { md: 3 }
+          }}
+        >
           {img}
         </Box>
       )}

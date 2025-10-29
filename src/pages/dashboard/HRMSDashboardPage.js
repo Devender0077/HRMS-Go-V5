@@ -156,20 +156,17 @@ export default function HRMSDashboardPage() {
 
           {/* Calendar beside Welcome Card */}
           <Grid item xs={12} md={4}>
-            <Card>
-              <CardHeader title=" Calendar" sx={{ mb: 1 }} />
+            <Card sx={{ height: '100%' }}>
+              <CardHeader title="📅 Calendar" sx={{ mb: 1 }} />
               <Divider />
               <CardContent
                 sx={{
-                  p: 0,
-                  pt: 1, // small padding-top to give space between divider and calendar header
-                  '&:last-child': { p: 0 }, // kill default bottom padding
-                  // Slightly relax calendar internals spacing so header text isn't cramped
-                  '.MuiPickersCalendarHeader-root': { mb: 1, pb: 0 },
-                  '.MuiDayCalendar-header': { mb: 0 },
-                  '.MuiDayCalendar-weekContainer': { mb: 0 },
-                  '.MuiDayCalendar-week': { mb: 0 },
-                  '.MuiCalendarPicker-root': { mt: 0.5 },
+                  p: 2,
+                  pt: 1.5,
+                  '&:last-child': { pb: 2 },
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'flex-start',
                 }}
               >
                 <LocalizationProvider dateAdapter={AdapterDateFns}>
@@ -177,9 +174,29 @@ export default function HRMSDashboardPage() {
                     date={selectedDate}
                     onChange={(newDate) => setSelectedDate(newDate)}
                     sx={{
-                      p: 0,
+                      width: '100%',
+                      maxWidth: 320,
                       m: 0,
-                      '& .MuiTypography-root': { fontSize: 13 },
+                      '& .MuiPickersCalendarHeader-root': { 
+                        px: 1,
+                        mb: 1.5,
+                        justifyContent: 'space-between'
+                      },
+                      '& .MuiPickersCalendarHeader-label': { 
+                        fontSize: 15,
+                        fontWeight: 600
+                      },
+                      '& .MuiDayCalendar-header': { 
+                        justifyContent: 'space-around',
+                        mb: 1
+                      },
+                      '& .MuiPickersDay-root': { 
+                        fontSize: 13,
+                        margin: '2px'
+                      },
+                      '& .MuiDayCalendar-weekContainer': {
+                        justifyContent: 'space-around'
+                      }
                     }}
                   />
                 </LocalizationProvider>
