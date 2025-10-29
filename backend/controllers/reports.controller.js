@@ -21,27 +21,67 @@ exports.getDailyAttendanceReport = async (req, res) => {
     console.log(`📊 Generating Daily Attendance Report for: ${date}`);
     console.log(`📅 Query date: ${date}`);
     
-    // Simplified query with better error handling
-    const [attendanceData] = await db.query(`
+    // Ultra-simple query - just employees
+    const [employeesData] = await db.query(`
       SELECT 
         e.id,
         e.employee_id,
-        CONCAT(COALESCE(e.first_name, ''), ' ', COALESCE(e.last_name, '')) as employee_name,
-        COALESCE(d.name, 'No Department') as department,
-        COALESCE(des.name, 'No Designation') as designation,
-        COALESCE(a.clock_in, NULL) as clock_in,
-        COALESCE(a.clock_out, NULL) as clock_out,
-        COALESCE(a.status, 'absent') as status,
-        COALESCE(a.total_hours, 0.00) as total_hours
+        e.first_name,
+        e.last_name,
+        e.department_id,
+        e.designation_id
       FROM employees e
-      LEFT JOIN departments d ON e.department_id = d.id
-      LEFT JOIN designations des ON e.designation_id = des.id
-      LEFT JOIN attendance a ON e.id = a.employee_id AND a.date = ?
       WHERE e.status = 'active'
       ORDER BY e.employee_id
+    `);
+
+    console.log(`✅ Fetched ${employeesData.length} active employees`);
+
+    // Then get attendance separately
+    const [attendanceRecords] = await db.query(`
+      SELECT 
+        employee_id,
+        clock_in,
+        clock_out,
+        status,
+        total_hours
+      FROM attendance
+      WHERE date = ?
     `, [date]);
 
-    console.log(`✅ Fetched ${attendanceData.length} employee records`);
+    console.log(`✅ Fetched ${attendanceRecords.length} attendance records for ${date}`);
+
+    // Get departments
+    const [departments] = await db.query(`SELECT id, name FROM departments`);
+    const deptMap = {};
+    departments.forEach(d => { deptMap[d.id] = d.name; });
+
+    // Get designations
+    const [designations] = await db.query(`SELECT id, name FROM designations`);
+    const desigMap = {};
+    designations.forEach(d => { desigMap[d.id] = d.name; });
+
+    // Create attendance map
+    const attMap = {};
+    attendanceRecords.forEach(a => {
+      attMap[a.employee_id] = a;
+    });
+
+    // Combine data
+    const attendanceData = employeesData.map(emp => {
+      const att = attMap[emp.id] || {};
+      return {
+        id: emp.id,
+        employee_id: emp.employee_id,
+        employee_name: `${emp.first_name || ''} ${emp.last_name || ''}`.trim(),
+        department: deptMap[emp.department_id] || 'No Department',
+        designation: desigMap[emp.designation_id] || 'No Designation',
+        clock_in: att.clock_in || null,
+        clock_out: att.clock_out || null,
+        status: att.status || 'absent',
+        total_hours: att.total_hours || 0,
+      };
+    });
 
     const summary = {
       total_employees: attendanceData.length,
@@ -66,7 +106,7 @@ exports.getDailyAttendanceReport = async (req, res) => {
     console.error('❌ Error message:', error.message);
     console.error('❌ SQL State:', error.sqlState);
     console.error('❌ SQL Message:', error.sqlMessage);
-    console.error('❌ Full SQL:', error.sql);
+    console.error('❌ Stack:', error.stack);
     res.status(500).json({
       success: false,
       message: 'Failed to generate daily attendance report',
@@ -270,13 +310,15 @@ exports.getPayrollSummaryReport = async (req, res) => {
 
     const summary = {
       total_employees: payrollData.length,
-      total_basic_salary: payrollData.reduce((sum, row) => sum + (row.basic_salary || 0), 0),
-      total_gross_salary: payrollData.reduce((sum, row) => sum + (row.gross_salary || 0), 0),
-      total_deductions: payrollData.reduce((sum, row) => sum + (row.total_deductions || 0), 0),
-      total_net_salary: payrollData.reduce((sum, row) => sum + (row.net_salary || 0), 0),
+      total_basic_salary: payrollData.reduce((sum, row) => sum + parseFloat(row.basic_salary || 0), 0),
+      total_gross_salary: payrollData.reduce((sum, row) => sum + parseFloat(row.gross_salary || 0), 0),
+      total_deductions: payrollData.reduce((sum, row) => sum + parseFloat(row.total_deductions || 0), 0),
+      total_net_salary: payrollData.reduce((sum, row) => sum + parseFloat(row.net_salary || 0), 0),
       paid: payrollData.filter(p => p.status === 'paid').length,
       pending: payrollData.filter(p => p.status === 'draft' || p.status === 'approved').length,
     };
+    
+    console.log('📊 Payroll Summary:', summary);
 
     res.json({
       success: true,
