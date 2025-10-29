@@ -97,8 +97,8 @@ export default function HolidaysPage() {
     defaultValues: {
       name: '',
       date: '',
-      type: 'company',
-      region: 'both',
+      type: 'public',
+      region: 'global',
       description: '',
       isRecurring: false,
       status: 'active',
@@ -155,8 +155,8 @@ export default function HolidaysPage() {
       reset({
         name: '',
         date: '',
-        type: 'company',
-        region: 'both',
+        type: 'public',
+        region: 'global',
         description: '',
         isRecurring: false,
         status: 'active',
@@ -298,18 +298,16 @@ export default function HolidaysPage() {
               </Grid>
               <Grid item xs={12} sm={6}>
                 <RHFSelect name="type" label="Type">
-                  <MenuItem value="national">National Holiday</MenuItem>
-                  <MenuItem value="regional">Regional Holiday</MenuItem>
-                  <MenuItem value="company">Company Holiday</MenuItem>
-                  <MenuItem value="religious">Religious Holiday</MenuItem>
+                  <MenuItem value="public">Public Holiday</MenuItem>
                   <MenuItem value="optional">Optional Holiday</MenuItem>
+                  <MenuItem value="company">Company Holiday</MenuItem>
                 </RHFSelect>
               </Grid>
               <Grid item xs={12} sm={6}>
                 <RHFSelect name="region" label="Region">
-                  <MenuItem value="india">India Only</MenuItem>
-                  <MenuItem value="usa">USA Only</MenuItem>
-                  <MenuItem value="both">Both Regions</MenuItem>
+                  <MenuItem value="india">India</MenuItem>
+                  <MenuItem value="usa">USA</MenuItem>
+                  <MenuItem value="global">Global</MenuItem>
                   <MenuItem value="other">Other</MenuItem>
                 </RHFSelect>
               </Grid>
@@ -345,18 +343,18 @@ function HolidayTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRow })
       <TableCell>{fDate(row.date)}</TableCell>
       <TableCell>
         <Chip
-          label={row.type}
+          label={row.type ? row.type.charAt(0).toUpperCase() + row.type.slice(1) : 'N/A'}
           size="small"
           color={
-            row.type === 'national' ? 'error' :
-            row.type === 'religious' ? 'warning' :
+            row.type === 'public' ? 'error' :
+            row.type === 'optional' ? 'warning' :
             row.type === 'company' ? 'primary' : 'default'
           }
         />
       </TableCell>
       <TableCell>
         <Chip
-          label={row.region === 'both' ? 'Global' : row.region.toUpperCase()}
+          label={row.region ? row.region.toUpperCase() : 'N/A'}
           size="small"
           variant="outlined"
           color={row.region === 'india' ? 'success' : row.region === 'usa' ? 'info' : 'default'}
