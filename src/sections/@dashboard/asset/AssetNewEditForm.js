@@ -141,8 +141,8 @@ export default function AssetNewEditForm({ isEdit = false, currentAsset }) {
               <RHFTextField name="asset_name" label="Asset Name" />
               <RHFTextField name="asset_code" label="Asset Code" />
               
-              <RHFSelect name="category_id" label="Category">
-                <option value="" />
+              <RHFSelect name="category_id" label="Category" InputLabelProps={{ shrink: true }}>
+                <option value="">-- Select Category --</option>
                 {Array.isArray(categories) && categories.map((category) => (
                   <option key={category.id} value={category.id}>
                     {category.name}
