@@ -117,9 +117,11 @@ export default function AssetMaintenancePage() {
               <Table>
                 <TableHeadCustom headLabel={TABLE_HEAD} />
                 <TableBody>
-                  {maintenances.map((maintenance) => (
+                  {(Array.isArray(maintenances) ? maintenances : []).map((maintenance) => (
                     <TableRow key={maintenance.id} hover>
-                      <TableCell>{maintenance.asset_name || maintenance.asset_code || '-'}</TableCell>
+                      <TableCell>
+                        {maintenance.asset?.asset_name || maintenance.asset?.asset_code || maintenance.asset_name || '-'}
+                      </TableCell>
                       <TableCell>{maintenance.maintenance_type || '-'}</TableCell>
                       <TableCell>
                         {maintenance.scheduled_date ? new Date(maintenance.scheduled_date).toLocaleDateString() : '-'}

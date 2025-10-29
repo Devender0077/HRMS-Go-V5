@@ -4,10 +4,22 @@ const assetCategoryService = {
   // Get all categories
   getAll: async () => {
     try {
+      console.log('📊 Fetching asset categories...');
       const response = await apiClient.get('/asset-categories');
-      return response.data.data || response.data;
+      console.log('📦 Categories backend response:', response.data);
+      
+      // Handle different response formats
+      if (Array.isArray(response.data)) {
+        return response.data;
+      } else if (response.data && Array.isArray(response.data.data)) {
+        return response.data.data;
+      } else if (response.data && response.data.success && response.data.data) {
+        return response.data.data;
+      }
+      
+      return [];
     } catch (error) {
-      console.error('Error fetching asset categories:', error);
+      console.error('❌ Error fetching asset categories:', error);
       throw error;
     }
   },

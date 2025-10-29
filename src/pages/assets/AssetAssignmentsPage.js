@@ -116,10 +116,16 @@ export default function AssetAssignmentsPage() {
               <Table>
                 <TableHeadCustom headLabel={TABLE_HEAD} />
                 <TableBody>
-                  {assignments.map((assignment) => (
+                  {(Array.isArray(assignments) ? assignments : []).map((assignment) => (
                     <TableRow key={assignment.id} hover>
-                      <TableCell>{assignment.asset_name || assignment.asset_code || '-'}</TableCell>
-                      <TableCell>{assignment.employee_name || '-'}</TableCell>
+                      <TableCell>
+                        {assignment.asset?.asset_name || assignment.asset?.asset_code || assignment.asset_name || '-'}
+                      </TableCell>
+                      <TableCell>
+                        {assignment.employee ? 
+                          `${assignment.employee.first_name} ${assignment.employee.last_name}` : 
+                          assignment.employee_name || '-'}
+                      </TableCell>
                       <TableCell>{assignment.assigned_date ? new Date(assignment.assigned_date).toLocaleDateString() : '-'}</TableCell>
                       <TableCell>{assignment.return_date ? new Date(assignment.return_date).toLocaleDateString() : '-'}</TableCell>
                       <TableCell>

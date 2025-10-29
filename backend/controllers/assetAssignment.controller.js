@@ -1,5 +1,6 @@
 const AssetAssignment = require('../models/AssetAssignment');
 const Asset = require('../models/Asset');
+const Employee = require('../models/Employee');
 const { Op } = require('sequelize');
 
 // Get all asset assignments
@@ -14,12 +15,26 @@ exports.getAll = async (req, res) => {
 
     const assignments = await AssetAssignment.findAll({
       where,
+      include: [
+        {
+          model: Asset,
+          as: 'asset',
+          attributes: ['id', 'asset_code', 'asset_name'],
+        },
+        {
+          model: Employee,
+          as: 'employee',
+          attributes: ['id', 'employee_id', 'first_name', 'last_name'],
+        },
+      ],
       order: [['assigned_date', 'DESC']],
     });
 
+    console.log(`✅ Found ${assignments.length} asset assignments`);
+
     res.status(200).json({
       success: true,
-      data: { assignments },
+      data: assignments, // Return array directly
     });
   } catch (error) {
     console.error('Get asset assignments error:', error);

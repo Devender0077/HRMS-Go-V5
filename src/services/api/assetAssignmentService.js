@@ -4,10 +4,22 @@ const assetAssignmentService = {
   // Get all assignments
   getAll: async () => {
     try {
+      console.log('📊 Fetching asset assignments...');
       const response = await apiClient.get('/asset-assignments');
-      return response.data.data || response.data;
+      console.log('📦 Assignments backend response:', response.data);
+      
+      // Handle different response formats
+      if (Array.isArray(response.data)) {
+        return response.data;
+      } else if (response.data && Array.isArray(response.data.data)) {
+        return response.data.data;
+      } else if (response.data && response.data.success && response.data.data) {
+        return response.data.data;
+      }
+      
+      return [];
     } catch (error) {
-      console.error('Error fetching asset assignments:', error);
+      console.error('❌ Error fetching asset assignments:', error);
       throw error;
     }
   },

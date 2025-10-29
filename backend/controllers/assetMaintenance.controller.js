@@ -14,12 +14,21 @@ exports.getAll = async (req, res) => {
 
     const maintenance = await AssetMaintenance.findAll({
       where,
-      order: [['start_date', 'DESC']],
+      include: [
+        {
+          model: Asset,
+          as: 'asset',
+          attributes: ['id', 'asset_code', 'asset_name'],
+        },
+      ],
+      order: [['scheduled_date', 'DESC']],
     });
+
+    console.log(`✅ Found ${maintenance.length} maintenance records`);
 
     res.status(200).json({
       success: true,
-      data: { maintenance },
+      data: maintenance, // Return array directly
     });
   } catch (error) {
     console.error('Get maintenance records error:', error);

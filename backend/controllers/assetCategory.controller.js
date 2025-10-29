@@ -13,9 +13,11 @@ exports.getAll = async (req, res) => {
       order: [['name', 'ASC']],
     });
 
+    console.log(`✅ Found ${categories.length} asset categories`);
+
     res.status(200).json({
       success: true,
-      data: { categories },
+      data: categories, // Return array directly
     });
   } catch (error) {
     console.error('Get asset categories error:', error);

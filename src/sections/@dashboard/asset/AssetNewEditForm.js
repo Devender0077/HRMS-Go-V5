@@ -35,10 +35,24 @@ export default function AssetNewEditForm({ isEdit = false, currentAsset }) {
 
   const fetchCategories = async () => {
     try {
-      const data = await assetCategoryService.getAll();
-      setCategories(data || []);
+      const response = await assetCategoryService.getAll();
+      console.log('✅ Categories response:', response);
+      
+      // Handle different response formats
+      let categoriesData = [];
+      if (Array.isArray(response)) {
+        categoriesData = response;
+      } else if (response && Array.isArray(response.data)) {
+        categoriesData = response.data;
+      } else if (response && response.categories && Array.isArray(response.categories)) {
+        categoriesData = response.categories;
+      }
+      
+      console.log('✅ Categories loaded:', categoriesData.length);
+      setCategories(categoriesData);
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      console.error('❌ Error fetching categories:', error);
+      setCategories([]); // Ensure categories is always an array
     }
   };
 
@@ -129,7 +143,7 @@ export default function AssetNewEditForm({ isEdit = false, currentAsset }) {
               
               <RHFSelect name="category_id" label="Category">
                 <option value="" />
-                {categories.map((category) => (
+                {Array.isArray(categories) && categories.map((category) => (
                   <option key={category.id} value={category.id}>
                     {category.name}
                   </option>

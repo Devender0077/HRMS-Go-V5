@@ -62,10 +62,12 @@ export default function AssetCategoriesPage() {
     try {
       setLoading(true);
       const data = await assetCategoryService.getAll();
-      setCategories(data || []);
+      console.log('✅ Categories loaded:', data);
+      setCategories(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      console.error('❌ Error fetching categories:', error);
       enqueueSnackbar('Failed to fetch categories', { variant: 'error' });
+      setCategories([]); // Ensure categories is always an array
     } finally {
       setLoading(false);
     }
@@ -151,7 +153,7 @@ export default function AssetCategoriesPage() {
               <Table>
                 <TableHeadCustom headLabel={TABLE_HEAD} />
                 <TableBody>
-                  {categories.map((category) => (
+                  {(Array.isArray(categories) ? categories : []).map((category) => (
                     <TableRow key={category.id} hover>
                       <TableCell>{category.name}</TableCell>
                       <TableCell>{category.description || '-'}</TableCell>
@@ -164,7 +166,7 @@ export default function AssetCategoriesPage() {
                     </TableRow>
                   ))}
 
-                  {!loading && categories.length === 0 && (
+                  {!loading && (Array.isArray(categories) ? categories : []).length === 0 && (
                     <TableNoData isNotFound={true} />
                   )}
                 </TableBody>
