@@ -478,34 +478,29 @@ export default function CalendarPage() {
                           <Typography variant="h6" fontWeight="bold" sx={{ mb: 0.2 }}>
                             {new Date(event.start).getDate()}
                           </Typography>
-                          <Typography variant="caption" sx={{ mb: event.createdBy ? 1.2 : 0 }}>
+                          <Typography variant="caption" sx={{ mb: (event.creatorName || event.createdBy) ? 1.2 : 0 }}>
                             {new Date(event.start).toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}
                           </Typography>
-                          {event.createdBy && (
-                            <Box
+                          {(event.creatorName || event.createdBy) && (
+                            <Avatar
                               sx={{
                                 position: 'absolute',
                                 bottom: 6,
                                 left: '50%',
                                 transform: 'translateX(-50%)',
-                                width: 'auto',
-                                minWidth: 40,
-                                height: 24,
-                                borderRadius: 6,
-                                bgcolor: event.color || '#1890FF',
-                                color: 'white',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '0.675rem',
-                                fontWeight: 500,
-                                boxShadow: 1,
-                                px: 1,
-                                letterSpacing: 0.1,
+                                width: 28,
+                                height: 28,
+                                fontSize: '0.75rem',
+                                fontWeight: 600,
+                                bgcolor: 'rgba(255, 255, 255, 0.95)',
+                                color: event.color || '#1890FF',
+                                border: 2,
+                                borderColor: 'white',
+                                boxShadow: 2,
                               }}
                             >
-                              {event.createdBy}
-                            </Box>
+                              {(event.creatorName || event.createdBy || 'U').charAt(0).toUpperCase()}
+                            </Avatar>
                           )}
                         </Box>
 
