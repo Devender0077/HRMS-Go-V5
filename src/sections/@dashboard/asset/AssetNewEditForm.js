@@ -70,7 +70,7 @@ export default function AssetNewEditForm({ isEdit = false, currentAsset }) {
     location: Yup.string(),
     current_status: Yup.string().required('Status is required'),
     condition: Yup.string().required('Condition is required'),
-    description: Yup.string(),
+    notes: Yup.string(),
   });
 
   const defaultValues = useMemo(
@@ -88,7 +88,7 @@ export default function AssetNewEditForm({ isEdit = false, currentAsset }) {
       location: currentAsset?.location || '',
       current_status: currentAsset?.current_status || 'available',
       condition: currentAsset?.condition || 'good',
-      description: currentAsset?.description || '',
+      notes: currentAsset?.notes || '',
     }),
     [currentAsset]
   );
@@ -200,7 +200,7 @@ export default function AssetNewEditForm({ isEdit = false, currentAsset }) {
                 </Grid>
               </Grid>
 
-              <RHFTextField name="description" label="Description" multiline rows={4} />
+              <RHFTextField name="notes" label="Notes" multiline rows={4} />
             </Stack>
 
             <Stack direction="row" spacing={1.5} sx={{ mt: 3 }}>
