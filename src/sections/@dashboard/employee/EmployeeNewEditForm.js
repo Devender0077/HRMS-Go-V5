@@ -515,6 +515,108 @@ export default function EmployeeNewEditForm({ isEdit = false, currentEmployee })
 
             <Divider sx={{ my: 4 }} />
 
+            {/* REGION-SPECIFIC INFORMATION */}
+            <Typography variant="h6" sx={{ mb: 1 }}>
+              Region-Specific Information
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
+              Enter region-specific identification numbers (USA or India)
+            </Typography>
+
+            <Box
+              rowGap={3}
+              columnGap={2}
+              display="grid"
+              gridTemplateColumns={{
+                xs: 'repeat(1, 1fr)',
+                sm: 'repeat(2, 1fr)',
+              }}
+              sx={{ mb: 3 }}
+            >
+              <RHFSelect name="region" label="Region" sx={{ gridColumn: 'span 2' }}>
+                <MenuItem value="india">India</MenuItem>
+                <MenuItem value="usa">USA</MenuItem>
+                <MenuItem value="other">Other</MenuItem>
+              </RHFSelect>
+
+              {/* USA-specific fields */}
+              {selectedRegion === 'usa' && (
+                <>
+                  <RHFTextField 
+                    name="ssn" 
+                    label="Social Security Number (SSN)" 
+                    placeholder="Enter SSN"
+                    sx={{ gridColumn: 'span 2' }}
+                  />
+                  <RHFTextField 
+                    name="driverLicenseNumber" 
+                    label="Driver License Number" 
+                    placeholder="Enter driver license number"
+                  />
+                  <RHFTextField 
+                    name="driverLicenseState" 
+                    label="Driver License State" 
+                    placeholder="Enter state (e.g., CA, NY)"
+                  />
+                  <RHFTextField 
+                    name="driverLicenseExpiry" 
+                    label="Driver License Expiry" 
+                    type="date" 
+                    InputLabelProps={{ shrink: true }}
+                  />
+                  <RHFSelect name="w4FormStatus" label="W-4 Tax Form Status">
+                    <MenuItem value="pending">Pending</MenuItem>
+                    <MenuItem value="submitted">Submitted</MenuItem>
+                    <MenuItem value="approved">Approved</MenuItem>
+                  </RHFSelect>
+                </>
+              )}
+
+              {/* India-specific fields */}
+              {selectedRegion === 'india' && (
+                <>
+                  <RHFTextField 
+                    name="panNumber" 
+                    label="PAN Number" 
+                    placeholder="Enter PAN (e.g., ABCDE1234F)"
+                  />
+                  <RHFTextField 
+                    name="aadhaarNumber" 
+                    label="Aadhaar Number" 
+                    placeholder="Enter Aadhaar (12 digits)"
+                  />
+                  <RHFTextField 
+                    name="pfNumber" 
+                    label="Provident Fund (PF) Number" 
+                    placeholder="Enter PF number"
+                  />
+                  <RHFTextField 
+                    name="esiNumber" 
+                    label="ESI Number" 
+                    placeholder="Enter ESI number"
+                  />
+                  <RHFTextField 
+                    name="uanNumber" 
+                    label="Universal Account Number (UAN)" 
+                    placeholder="Enter UAN"
+                    sx={{ gridColumn: 'span 2' }}
+                  />
+                </>
+              )}
+            </Box>
+
+            {selectedRegion !== 'other' && (
+              <Alert severity="info" sx={{ mb: 3 }}>
+                <Typography variant="body2">
+                  <strong>Note:</strong> {selectedRegion === 'usa' 
+                    ? 'SSN and Driver License information will be used for payroll and tax purposes.'
+                    : 'PAN, Aadhaar, PF, ESI, and UAN numbers will be used for payroll, tax, and statutory compliance.'}
+                </Typography>
+              </Alert>
+            )}
+
+            <Divider sx={{ my: 4 }} />
+
             {/* BANK INFORMATION */}
             <Typography variant="h6" sx={{ mb: 1 }}>
               Bank Information
