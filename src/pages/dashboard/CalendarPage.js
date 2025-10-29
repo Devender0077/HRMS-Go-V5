@@ -619,25 +619,56 @@ export default function CalendarPage() {
           />
         ) : (
           <Box sx={{ p: 3, position: 'relative' }}>
-            <DialogTitle sx={{ pr: 6 }}>
-              View Event
-              <IconButton
-                aria-label="Edit"
-                onClick={() => setModalMode('edit')}
-                sx={{ position: 'absolute', right: 16, top: 16 }}
-              >
-                <Iconify icon="eva:edit-2-outline" />
-              </IconButton>
-            </DialogTitle>
-            <Stack spacing={2}>
+            <IconButton
+              aria-label="Edit"
+              onClick={() => setModalMode('edit')}
+              sx={{ position: 'absolute', right: 16, top: 16 }}
+            >
+              <Iconify icon="eva:edit-2-outline" />
+            </IconButton>
+            <DialogTitle>View Event</DialogTitle>
+            <Stack spacing={2} sx={{ mt: 2 }}>
+              {/* Event Creator */}
+              {selectedEvent?.createdBy && (
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Avatar
+                    sx={{
+                      width: 40,
+                      height: 40,
+                      bgcolor: selectedEvent?.color || '#1890FF',
+                      color: 'white',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {selectedEvent.createdBy.charAt(0).toUpperCase()}
+                  </Avatar>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Created by
+                    </Typography>
+                    <Typography variant="subtitle2">
+                      {selectedEvent.createdBy}
+                    </Typography>
+                  </Box>
+                </Stack>
+              )}
+              
               <Typography variant="h6">{selectedEvent?.title}</Typography>
-              <Typography variant="body2">{selectedEvent?.description}</Typography>
+              <Typography variant="body2" color="text.secondary">{selectedEvent?.description}</Typography>
               <Typography variant="body2">
-                {selectedEvent?.allDay ? 'All Day' : `${new Date(selectedEvent?.start).toLocaleString()} - ${new Date(selectedEvent?.end).toLocaleString()}`}
+                <strong>Time:</strong> {selectedEvent?.allDay ? 'All Day' : `${new Date(selectedEvent?.start).toLocaleString()} - ${new Date(selectedEvent?.end).toLocaleString()}`}
               </Typography>
-              <Typography variant="body2">Type: {selectedEvent?.eventType}</Typography>
-              {selectedEvent?.location && <Typography variant="body2">Location: {selectedEvent.location}</Typography>}
-              <Button variant="contained" onClick={handleCloseModal}>Close</Button>
+              <Typography variant="body2">
+                <strong>Type:</strong> {selectedEvent?.eventType}
+              </Typography>
+              {selectedEvent?.location && (
+                <Typography variant="body2">
+                  <strong>Location:</strong> {selectedEvent.location}
+                </Typography>
+              )}
+              <Button variant="contained" onClick={handleCloseModal} fullWidth>
+                Close
+              </Button>
             </Stack>
           </Box>
         )}
