@@ -76,11 +76,6 @@ export default function HolidaysPage() {
     rowsPerPage,
     setPage,
     //
-    selected,
-    setSelected,
-    onSelectRow,
-    onSelectAllRows,
-    //
     onSort,
     onChangePage,
     onChangeRowsPerPage,
@@ -242,14 +237,7 @@ export default function HolidaysPage() {
                   orderBy={orderBy}
                   headLabel={TABLE_HEAD}
                   rowCount={tableData.length}
-                  numSelected={selected.length}
                   onSort={onSort}
-                  onSelectAllRows={(checked) =>
-                    onSelectAllRows(
-                      checked,
-                      tableData.map((row) => row.id)
-                    )
-                  }
                 />
 
                 <TableBody>
@@ -259,8 +247,6 @@ export default function HolidaysPage() {
                       <HolidayTableRow
                         key={row.id}
                         row={row}
-                        selected={selected.includes(row.id)}
-                        onSelectRow={() => onSelectRow(row.id)}
                         onEditRow={() => handleOpenDialog(row)}
                         onDeleteRow={() => handleDelete(row.id)}
                       />
@@ -336,9 +322,9 @@ export default function HolidaysPage() {
 
 // ----------------------------------------------------------------------
 
-function HolidayTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRow }) {
+function HolidayTableRow({ row, onEditRow, onDeleteRow }) {
   return (
-    <TableRow hover selected={selected}>
+    <TableRow hover>
       <TableCell>{row.name}</TableCell>
       <TableCell>{fDate(row.date)}</TableCell>
       <TableCell>
