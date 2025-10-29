@@ -53,6 +53,7 @@ const models = {
   Contract: require('../models/Contract'),
   Expense: require('../models/Expense'),
   Income: require('../models/Income'),
+  Holiday: require('../models/Holiday'),
   
   // Settings Models
   GeneralSetting: require('../models/GeneralSetting'),
@@ -90,7 +91,7 @@ const models = {
 
 // Log detailed model count
 console.log('\n📊 MODEL BREAKDOWN:');
-console.log('  Core Models:        28 (added Contract, Expense, Income)');
+console.log('  Core Models:        29 (added Contract, Expense, Income, Holiday)');
 console.log('  Settings Models:    21 (19 specialized + 2 workflow/reports)');
 console.log('  Additional Models:   3 (LeaveRequest, PaymentMethod, AttendanceRegularization)');
 console.log('  ─────────────────────');
