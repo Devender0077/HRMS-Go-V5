@@ -102,7 +102,7 @@ export default function AssetMaintenancePage() {
           action={
             <Button
               component={RouterLink}
-              to={PATH_DASHBOARD.assets.maintenance.new}
+              to="/dashboard/assets/maintenance/new"
               variant="contained"
               startIcon={<Iconify icon="eva:plus-fill" />}
             >

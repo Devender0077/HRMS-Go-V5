@@ -101,7 +101,7 @@ export default function AssetAssignmentsPage() {
           action={
             <Button
               component={RouterLink}
-              to={PATH_DASHBOARD.assets.assignments.new}
+              to="/dashboard/assets/assignments/new"
               variant="contained"
               startIcon={<Iconify icon="eva:plus-fill" />}
             >
