@@ -276,6 +276,7 @@ export const GeneralSettingsPage = Loadable(lazy(() => import('../pages/settings
 export const GeneralSettingsDetailPage = Loadable(lazy(() => import('../pages/settings/GeneralSettingsDetailPage')));
 export const LeaveBalanceAllocationPage = Loadable(lazy(() => import('../pages/settings/LeaveBalanceAllocationPage')));
 export const ConfigurationPage = Loadable(lazy(() => import('../pages/settings/ConfigurationPage')));
+export const HolidaysPage = Loadable(lazy(() => import('../pages/settings/HolidaysPage')));
 export const EmployeeSalaryPage = Loadable(lazy(() => import('../pages/payroll/EmployeeSalaryPage')));
 export const PayrollProcessingPage = Loadable(lazy(() => import('../pages/payroll/PayrollProcessingPage')));
 export const PayslipsPage = Loadable(lazy(() => import('../pages/payroll/PayslipsPage')));
