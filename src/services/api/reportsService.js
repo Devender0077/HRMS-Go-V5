@@ -28,6 +28,28 @@ class ReportsService {
     }
   }
 
+  /**
+   * Get recent reports
+   */
+  async getRecentReports() {
+    try {
+      console.log('📊 [Reports Service] Fetching recent reports');
+      const response = await apiClient.get('/reports/recent');
+      console.log('✅ [Reports Service] Recent reports loaded:', response.data);
+      return {
+        success: true,
+        data: response.data.data || [],
+      };
+    } catch (error) {
+      console.error('❌ [Reports Service] Error fetching recent reports:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to fetch recent reports',
+        error,
+      };
+    }
+  }
+
   // ============================================================================
   // ATTENDANCE REPORTS
   // ============================================================================

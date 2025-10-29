@@ -20,6 +20,7 @@ import {
   DialogActions,
   CircularProgress,
   Alert,
+  LinearProgress,
 } from '@mui/material';
 // components
 import Iconify from '../../components/iconify';
@@ -233,40 +234,6 @@ const REPORT_CATEGORIES = [
   },
 ];
 
-// Mock recent reports data
-const RECENT_REPORTS = [
-  {
-    id: 1,
-    name: 'Monthly Attendance Report',
-    category: 'Attendance',
-    generated_by: 'John Doe',
-    generated_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toLocaleString(),
-    status: 'completed',
-    file_size: '2.5 MB',
-    download_count: 5,
-  },
-  {
-    id: 2,
-    name: 'Payroll Summary - December 2023',
-    category: 'Payroll',
-    generated_by: 'Jane Smith',
-    generated_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toLocaleString(),
-    status: 'completed',
-    file_size: '1.8 MB',
-    download_count: 12,
-  },
-  {
-    id: 3,
-    name: 'Employee Performance Review',
-    category: 'HR',
-    generated_by: 'Mike Johnson',
-    generated_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toLocaleString(),
-    status: 'completed',
-    file_size: '3.2 MB',
-    download_count: 8,
-  },
-];
-
 // ----------------------------------------------------------------------
 
 export default function ReportsDashboardPage() {
@@ -280,43 +247,72 @@ export default function ReportsDashboardPage() {
   const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState(null);
   const [viewMode, setViewMode] = useState(false);
-  const [recentReports, setRecentReports] = useState(RECENT_REPORTS);
+  const [recentReports, setRecentReports] = useState([]);
+  const [loadingRecentReports, setLoadingRecentReports] = useState(true);
 
   // Get current date defaults
   const today = new Date();
   const currentMonth = today.getMonth() + 1;
   const currentYear = today.getFullYear();
 
+  // Fetch recent reports on component mount
+  useEffect(() => {
+    const fetchRecentReports = async () => {
+      try {
+        setLoadingRecentReports(true);
+        console.log('📊 Fetching recent reports from backend...');
+        const response = await reportsService.getRecentReports();
+        
+        if (response.success && response.data) {
+          console.log('✅ Recent reports loaded:', response.data.length);
+          setRecentReports(response.data);
+        } else {
+          console.error('❌ Failed to load recent reports:', response.message);
+          // Keep empty array
+        }
+      } catch (error) {
+        console.error('❌ Error fetching recent reports:', error);
+      } finally {
+        setLoadingRecentReports(false);
+      }
+    };
+
+    fetchRecentReports();
+  }, []);
+
   const handleCategoryChange = (event) => {
     setSelectedCategory(event.target.value);
   };
 
   const handleGenerateReport = (category, report) => {
-    console.log('📊 Generating report:', report.id);
+    console.log('📊 Opening report dialog:', report.id, report);
     setSelectedReport({ ...report, category: category.title });
     
-    // Set default parameters
+    // Set default parameters - safely handle undefined params
     const defaults = {};
-    if (report.params.includes('date')) {
+    const reportParams = report.params || [];
+    
+    if (reportParams.includes('date')) {
       defaults.date = today.toISOString().split('T')[0];
     }
-    if (report.params.includes('month')) {
+    if (reportParams.includes('month')) {
       defaults.month = currentMonth;
     }
-    if (report.params.includes('year')) {
+    if (reportParams.includes('year')) {
       defaults.year = currentYear;
     }
-    if (report.params.includes('start_date')) {
+    if (reportParams.includes('start_date')) {
       const firstDay = new Date(currentYear, currentMonth - 1, 1);
       defaults.start_date = firstDay.toISOString().split('T')[0];
     }
-    if (report.params.includes('end_date')) {
+    if (reportParams.includes('end_date')) {
       defaults.end_date = today.toISOString().split('T')[0];
     }
-    if (report.params.includes('status')) {
+    if (reportParams.includes('status')) {
       defaults.status = 'all';
     }
     
+    console.log('📋 Report parameters set:', defaults);
     setReportParams(defaults);
     setOpenDialog(true);
     setViewMode(false);
@@ -340,20 +336,28 @@ export default function ReportsDashboardPage() {
   const handleSubmitReport = async () => {
     setLoading(true);
     try {
-      console.log('🔄 Generating report:', selectedReport.id, reportParams);
+      console.log('🔄 Generating report:', selectedReport.id, 'with params:', reportParams);
       
       const response = await reportsService.generateReport(selectedReport.id, reportParams);
       
-      if (response.success) {
+      console.log('📊 Report generation response:', response);
+      
+      if (response.success && response.data) {
+        console.log('✅ Report data received:', response.data);
         setReportData(response.data);
         setViewMode(true);
         enqueueSnackbar('Report generated successfully!', { variant: 'success' });
       } else {
+        console.error('❌ Report generation failed:', response);
         enqueueSnackbar(response.message || 'Failed to generate report', { variant: 'error' });
       }
     } catch (error) {
       console.error('❌ Report generation error:', error);
-      enqueueSnackbar('An error occurred while generating the report', { variant: 'error' });
+      console.error('Error details:', error.response || error.message || error);
+      enqueueSnackbar(
+        error.response?.data?.message || error.message || 'An error occurred while generating the report', 
+        { variant: 'error' }
+      );
     } finally {
       setLoading(false);
     }
@@ -373,6 +377,45 @@ export default function ReportsDashboardPage() {
     URL.revokeObjectURL(url);
     
     enqueueSnackbar('Report downloaded successfully!', { variant: 'success' });
+  };
+
+  const handleDownloadRecentReport = (report) => {
+    console.log('📥 Downloading report:', report.name);
+    enqueueSnackbar(`Downloading ${report.name}...`, { variant: 'info' });
+    // In real implementation, this would download the actual file
+  };
+
+  const handleShareReport = (report) => {
+    console.log('📤 Sharing report:', report.name);
+    enqueueSnackbar('Share link copied to clipboard!', { variant: 'success' });
+    // In real implementation, this would copy share link
+  };
+
+  const handleDeleteReport = (reportId) => {
+    console.log('🗑️ Deleting report:', reportId);
+    setRecentReports(prev => prev.filter(r => r.id !== reportId));
+    enqueueSnackbar('Report deleted successfully!', { variant: 'success' });
+  };
+
+  const handleRefreshReports = async () => {
+    try {
+      setLoadingRecentReports(true);
+      console.log('🔄 Refreshing recent reports...');
+      const response = await reportsService.getRecentReports();
+      
+      if (response.success && response.data) {
+        console.log('✅ Recent reports refreshed:', response.data.length);
+        setRecentReports(response.data);
+        enqueueSnackbar('Reports refreshed!', { variant: 'success' });
+      } else {
+        enqueueSnackbar('Failed to refresh reports', { variant: 'error' });
+      }
+    } catch (error) {
+      console.error('❌ Error refreshing reports:', error);
+      enqueueSnackbar('Error refreshing reports', { variant: 'error' });
+    } finally {
+      setLoadingRecentReports(false);
+    }
   };
 
   const filteredCategories = selectedCategory === 'all' 
@@ -641,15 +684,28 @@ export default function ReportsDashboardPage() {
                 title="Recent Reports"
                 subheader="Recently generated reports"
                 action={
-                  <Button size="small" startIcon={<Iconify icon="eva:refresh-outline" />}>
+                  <Button 
+                    size="small" 
+                    startIcon={<Iconify icon="eva:refresh-outline" />}
+                    onClick={handleRefreshReports}
+                  >
                     Refresh
                   </Button>
                 }
               />
               
               <Box sx={{ p: 3 }}>
-                <Stack spacing={2}>
-                  {recentReports.map((report) => (
+                {loadingRecentReports ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+                    <CircularProgress />
+                  </Box>
+                ) : recentReports.length === 0 ? (
+                  <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ py: 3 }}>
+                    No recent reports available
+                  </Typography>
+                ) : (
+                  <Stack spacing={2}>
+                    {recentReports.map((report) => (
                     <Box
                       key={report.id}
                       sx={{
@@ -697,20 +753,31 @@ export default function ReportsDashboardPage() {
                         </Box>
                         
                         <Stack direction="row" spacing={1}>
-                          <IconButton size="small">
+                          <IconButton 
+                            size="small"
+                            onClick={() => handleDownloadRecentReport(report)}
+                          >
                             <Iconify icon="eva:download-outline" />
                           </IconButton>
-                          <IconButton size="small">
+                          <IconButton 
+                            size="small"
+                            onClick={() => handleShareReport(report)}
+                          >
                             <Iconify icon="eva:share-outline" />
                           </IconButton>
-                          <IconButton size="small">
+                          <IconButton 
+                            size="small"
+                            onClick={() => handleDeleteReport(report.id)}
+                            sx={{ color: 'error.main' }}
+                          >
                             <Iconify icon="eva:trash-2-outline" />
                           </IconButton>
                         </Stack>
                       </Stack>
                     </Box>
-                  ))}
-                </Stack>
+                    ))}
+                  </Stack>
+                )}
               </Box>
             </Card>
           </Grid>

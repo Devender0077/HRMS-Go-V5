@@ -54,6 +54,7 @@ const models = {
   Expense: require('../models/Expense'),
   Income: require('../models/Income'),
   Holiday: require('../models/Holiday'),
+  GeneratedReport: require('../models/GeneratedReport'),
   
   // Settings Models
   GeneralSetting: require('../models/GeneralSetting'),

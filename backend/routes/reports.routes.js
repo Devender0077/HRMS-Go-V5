@@ -9,6 +9,9 @@ router.use(authenticateToken);
 // Get available reports list
 router.get('/available', reportsController.getAvailableReports);
 
+// Get recent reports
+router.get('/recent', reportsController.getRecentReports);
+
 // Attendance Reports
 router.get('/attendance/daily', reportsController.getDailyAttendanceReport);
 router.get('/attendance/monthly', reportsController.getMonthlyAttendanceReport);
