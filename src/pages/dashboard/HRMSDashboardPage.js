@@ -13,6 +13,7 @@ import {
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { StaticDatePicker } from '@mui/x-date-pickers/StaticDatePicker';
+import { PickersDay } from '@mui/x-date-pickers/PickersDay';
 // auth
 import { useAuthContext } from '../../auth/useAuthContext';
 // routes
@@ -260,38 +261,25 @@ export default function HRMSDashboardPage() {
                       const badgeColor = hasEvents ? getEventColor(primaryEvent?.event_type || primaryEvent?.eventType) : '';
                       
                       return (
-                        <Box 
-                          sx={{ position: 'relative' }}
-                          onClick={(e) => {
-                            if (hasEvents) {
-                              e.stopPropagation();
-                              handleDayClick(day, e);
-                            }
-                          }}
+                        <Badge
+                          key={day.toString()}
+                          overlap="circular"
+                          badgeContent={hasEvents ? <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: badgeColor }} /> : undefined}
+                          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
                         >
-                          <Button
+                          <PickersDay
                             {...DayComponentProps}
+                            onClick={(e) => {
+                              if (hasEvents) {
+                                e.stopPropagation();
+                                handleDayClick(day, e);
+                              }
+                            }}
                             sx={{
-                              ...DayComponentProps.sx,
                               cursor: hasEvents ? 'pointer' : 'default',
                             }}
                           />
-                          {hasEvents && (
-                            <Box
-                              sx={{
-                                position: 'absolute',
-                                bottom: 4,
-                                left: '50%',
-                                transform: 'translateX(-50%)',
-                                width: 6,
-                                height: 6,
-                                borderRadius: '50%',
-                                bgcolor: badgeColor,
-                                pointerEvents: 'none',
-                              }}
-                            />
-                          )}
-                        </Box>
+                        </Badge>
                       );
                     }}
                     sx={{
