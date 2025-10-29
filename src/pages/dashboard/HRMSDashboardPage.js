@@ -6,7 +6,8 @@ import { useTheme } from '@mui/material/styles';
 import {
   Container, Grid, Button, CircularProgress, Box, Typography,
   Card, CardHeader, CardContent, List, ListItem, ListItemText, Chip, Divider, alpha, Stack,
-  Avatar, AvatarGroup, LinearProgress, IconButton,
+  Avatar, AvatarGroup, LinearProgress, IconButton, Popover, Dialog, DialogTitle, DialogContent,
+  DialogActions, Drawer, Badge,
 } from '@mui/material';
 // date pickers
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -58,11 +59,78 @@ export default function HRMSDashboardPage() {
   const [upcomingBirthdays, setUpcomingBirthdays] = useState([]);
   const [pendingLeaves, setPendingLeaves] = useState([]);
   
-  // Check if user is manager or HR
-  const isManagerOrHR = user?.userType === 'super_admin' || user?.userType === 'hr_manager' || user?.userType === 'hr' || user?.userType === 'manager';
+  // Calendar interaction states
+  const [popoverAnchor, setPopoverAnchor] = useState(null);
+  const [selectedDayEvents, setSelectedDayEvents] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [eventModalOpen, setEventModalOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  
+  // Role checks
+  const isEmployee = user?.userType === 'employee';
+  const isManager = user?.userType === 'manager';
+  const isHR = user?.userType === 'hr';
+  const isHRManager = user?.userType === 'hr_manager';
+  const isAdmin = user?.userType === 'super_admin';
+  const isManagerOrHR = isManager || isHR || isHRManager || isAdmin;
 
-  // Route to role-based dashboard (check BEFORE fetching data)
-  const userType = user?.userType;
+  // Helper function to get event color based on type
+  const getEventColor = (eventType) => {
+    const type = (eventType || 'meeting').toLowerCase();
+    if (type.includes('meeting') || type.includes('conference')) return theme.palette.info.main;
+    if (type.includes('birthday') || type.includes('personal')) return theme.palette.success.main;
+    if (type.includes('deadline') || type.includes('due')) return theme.palette.warning.main;
+    if (type.includes('holiday') || type.includes('important')) return theme.palette.error.main;
+    return theme.palette.primary.main;
+  };
+  
+  // Handle day click on calendar
+  const handleDayClick = (day, event) => {
+    const dayEvents = calendarEvents.filter((evt) => {
+      const eventDate = new Date(evt.start || evt.startDate);
+      return (
+        eventDate.getDate() === day.getDate() &&
+        eventDate.getMonth() === day.getMonth() &&
+        eventDate.getFullYear() === day.getFullYear()
+      );
+    });
+    
+    if (dayEvents.length > 0) {
+      setSelectedDayEvents(dayEvents);
+      setSelectedDate(day);
+      setPopoverAnchor(event.currentTarget);
+    }
+  };
+  
+  // Close popover
+  const handlePopoverClose = () => {
+    setPopoverAnchor(null);
+  };
+  
+  // Open event modal
+  const handleEventClick = (event) => {
+    setSelectedEvent(event);
+    setEventModalOpen(true);
+    handlePopoverClose();
+  };
+  
+  // Close event modal
+  const handleModalClose = () => {
+    setEventModalOpen(false);
+    setSelectedEvent(null);
+  };
+  
+  // Open drawer
+  const handleOpenDrawer = () => {
+    setDrawerOpen(true);
+    handlePopoverClose();
+  };
+  
+  // Close drawer
+  const handleDrawerClose = () => {
+    setDrawerOpen(false);
+  };
 
   const fetchAllDashboardData = async () => {
     try {
@@ -123,22 +191,11 @@ export default function HRMSDashboardPage() {
   };
 
   useEffect(() => {
-    // Only fetch data for HR/Admin roles
-    if (userType !== 'employee' && userType !== 'manager') {
-      fetchAllDashboardData();
-    }
-  }, [userType]);
+    // Fetch data for all roles now (unified dashboard)
+    fetchAllDashboardData();
+  }, []);
 
-  // Render role-specific dashboard for employees and managers
-  if (userType === 'employee') {
-    return <EmployeeDashboard />;
-  }
-
-  if (userType === 'manager') {
-    return <ManagerDashboard />;
-  }
-
-  // HR, HR Manager, and Super Admin see the full dashboard below
+  // Unified dashboard for all roles (no more separate dashboards)
 
   return (
     <>
