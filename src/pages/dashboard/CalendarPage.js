@@ -181,6 +181,20 @@ export default function CalendarPage() {
     );
   };
 
+  const handleDateClick = (arg) => {
+    // When clicking an empty date cell, open the create-event modal
+    const clickedDate = arg.date;
+    // set the selected range to the clicked date (single-day)
+    dispatch(
+      selectRange({
+        start: clickedDate,
+        end: clickedDate,
+      })
+    );
+    setModalMode('edit');
+    dispatch(onOpenModal());
+  };
+
   const handleSelectEvent = (arg) => {
     const eventId = arg.event.id;
     setModalMode('view');
@@ -584,6 +598,7 @@ export default function CalendarPage() {
               ref={calendarRef}
               initialDate={date}
               initialView={view}
+              dateClick={handleDateClick}
               dayMaxEventRows={3}
               eventDisplay="block"
               headerToolbar={false}
