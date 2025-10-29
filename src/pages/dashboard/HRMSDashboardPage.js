@@ -42,7 +42,6 @@ export default function HRMSDashboardPage() {
 
   // All hooks must be called before any conditional returns
   const [loading, setLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState(new Date());
   const [stats, setStats] = useState({
     totalEmployees: 0,
     presentToday: 0,
