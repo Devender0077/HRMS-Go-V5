@@ -10,7 +10,7 @@ import {
 // date pickers
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { CalendarPicker } from '@mui/x-date-pickers/CalendarPicker';
+import { StaticDatePicker } from '@mui/x-date-pickers/StaticDatePicker';
 // auth
 import { useAuthContext } from '../../auth/useAuthContext';
 // routes
@@ -61,7 +61,7 @@ export default function HRMSDashboardPage() {
   const fetchAllDashboardData = async () => {
     try {
       setLoading(true);
-
+      
       // Fetch all dashboard data in parallel
       const [statsResponse, activitiesResponse, eventsResponse] = await Promise.all([
         dashboardService.getStats().catch(() => ({ data: null })),
@@ -75,7 +75,7 @@ export default function HRMSDashboardPage() {
         const { employees, attendance, leaves, recruitment } = statsResponse.data;
         setDashboardData(statsResponse.data);
 
-        setStats({
+      setStats({
           totalEmployees: employees?.total || 0,
           presentToday: employees?.presentToday || attendance?.presentToday || 0,
           onLeave: employees?.onLeave || leaves?.onLeaveToday || 0,
@@ -144,7 +144,7 @@ export default function HRMSDashboardPage() {
                 />
               }
               action={
-                <Button
+                <Button 
                   variant="contained"
                   onClick={() => navigate(PATH_DASHBOARD.hr.employees.list)}
                 >
@@ -156,51 +156,61 @@ export default function HRMSDashboardPage() {
 
           {/* Calendar beside Welcome Card */}
           <Grid item xs={12} md={4}>
-            <Card sx={{ height: '100%' }}>
-              <CardHeader title="📅 Calendar" sx={{ mb: 1 }} />
+            <Card sx={{ height: '100%', textAlign: 'center' }}>
+              <CardHeader title="Calendar" sx={{ pb: 1 }} />
               <Divider />
-              <CardContent
-                sx={{
-                  p: 2,
-                  pt: 1.5,
-                  '&:last-child': { pb: 2 },
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'flex-start',
-                }}
-              >
-                <LocalizationProvider dateAdapter={AdapterDateFns}>
-                  <CalendarPicker
-                    date={selectedDate}
-                    onChange={(newDate) => setSelectedDate(newDate)}
-                    sx={{
+              <LocalizationProvider dateAdapter={AdapterDateFns}>
+                <StaticDatePicker
+                  orientation="portrait"
+                  value={selectedDate}
+                  onChange={(newDate) => setSelectedDate(newDate)}
+                  displayStaticWrapperAs="desktop"
+                  renderInput={(params) => <TextField {...params} />}
+                  sx={{
+                    '& .MuiCalendarPicker-root': {
                       width: '100%',
-                      maxWidth: 320,
-                      m: 0,
-                      '& .MuiPickersCalendarHeader-root': { 
-                        px: 1,
-                        mb: 1.5,
-                        justifyContent: 'space-between'
+                      maxHeight: 'none',
+                    },
+                    '& .MuiPickersCalendarHeader-root': {
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      px: 2,
+                      mt: 1.5,
+                      mb: 1,
+                    },
+                    '& .MuiPickersCalendarHeader-label': {
+                      fontSize: '0.875rem',
+                      fontWeight: 600,
+                    },
+                    '& .MuiDayCalendar-header': {
+                      justifyContent: 'space-around',
+                    },
+                    '& .MuiDayCalendar-weekContainer': {
+                      justifyContent: 'space-around',
+                    },
+                    '& .MuiPickersDay-root': {
+                      fontSize: '0.875rem',
+                      fontWeight: 400,
+                      '&:hover': {
+                        backgroundColor: alpha(theme.palette.primary.main, 0.08),
                       },
-                      '& .MuiPickersCalendarHeader-label': { 
-                        fontSize: 15,
-                        fontWeight: 600
+                    },
+                    '& .MuiPickersDay-today': {
+                      borderColor: theme.palette.primary.main,
+                      fontWeight: 600,
+                    },
+                    '& .Mui-selected': {
+                      backgroundColor: `${theme.palette.primary.main} !important`,
+                      color: theme.palette.primary.contrastText,
+                      fontWeight: 600,
+                      '&:hover': {
+                        backgroundColor: theme.palette.primary.dark,
                       },
-                      '& .MuiDayCalendar-header': { 
-                        justifyContent: 'space-around',
-                        mb: 1
-                      },
-                      '& .MuiPickersDay-root': { 
-                        fontSize: 13,
-                        margin: '2px'
-                      },
-                      '& .MuiDayCalendar-weekContainer': {
-                        justifyContent: 'space-around'
-                      }
-                    }}
-                  />
-                </LocalizationProvider>
-              </CardContent>
+                    },
+                  }}
+                />
+              </LocalizationProvider>
             </Card>
           </Grid>
 
