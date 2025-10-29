@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 // @mui
 import { LoadingButton } from '@mui/lab';
-import { Card, Grid, Stack, Typography } from '@mui/material';
+import { Card, Grid, Stack, Typography, MenuItem } from '@mui/material';
 // routes
 import { PATH_DASHBOARD } from '../../../routes/paths';
 // components
@@ -141,12 +141,12 @@ export default function AssetNewEditForm({ isEdit = false, currentAsset }) {
               <RHFTextField name="asset_name" label="Asset Name" />
               <RHFTextField name="asset_code" label="Asset Code" />
               
-              <RHFSelect name="category_id" label="Category" InputLabelProps={{ shrink: true }}>
-                <option value="">-- Select Category --</option>
+              <RHFSelect name="category_id" label="Category">
+                <MenuItem value="">-- Select Category --</MenuItem>
                 {Array.isArray(categories) && categories.map((category) => (
-                  <option key={category.id} value={category.id}>
+                  <MenuItem key={category.id} value={category.id}>
                     {category.name}
-                  </option>
+                  </MenuItem>
                 ))}
               </RHFSelect>
 
@@ -184,18 +184,18 @@ export default function AssetNewEditForm({ isEdit = false, currentAsset }) {
               <Grid container spacing={2}>
                 <Grid item xs={12} md={6}>
                   <RHFSelect name="current_status" label="Status">
-                    <option value="available">Available</option>
-                    <option value="assigned">Assigned</option>
-                    <option value="under_maintenance">Under Maintenance</option>
-                    <option value="retired">Retired</option>
+                    <MenuItem value="available">Available</MenuItem>
+                    <MenuItem value="assigned">Assigned</MenuItem>
+                    <MenuItem value="under_maintenance">Under Maintenance</MenuItem>
+                    <MenuItem value="retired">Retired</MenuItem>
                   </RHFSelect>
                 </Grid>
                 <Grid item xs={12} md={6}>
                   <RHFSelect name="condition" label="Condition">
-                    <option value="excellent">Excellent</option>
-                    <option value="good">Good</option>
-                    <option value="fair">Fair</option>
-                    <option value="poor">Poor</option>
+                    <MenuItem value="excellent">Excellent</MenuItem>
+                    <MenuItem value="good">Good</MenuItem>
+                    <MenuItem value="fair">Fair</MenuItem>
+                    <MenuItem value="poor">Poor</MenuItem>
                   </RHFSelect>
                 </Grid>
               </Grid>
