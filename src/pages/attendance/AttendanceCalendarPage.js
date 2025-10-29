@@ -31,6 +31,7 @@ import {
   Select,
   Alert,
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 // routes
 import { PATH_DASHBOARD } from '../../routes/paths';
 // components
@@ -62,6 +63,8 @@ const STATUS_CODES = {
 
 export default function AttendanceCalendarPage() {
   const { themeStretch } = useSettingsContext();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
   const user = useSelector(selectUser);
   const { hasPermission } = usePermissions();
   
@@ -81,7 +84,7 @@ export default function AttendanceCalendarPage() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   
   // DYNAMIC: Load week off settings from database (reloads when filters change)
-  const { weekOffDays, reload: reloadWeekOffs, loading: weekOffLoading } = useWeekOffSettings(`${filterYear}-${filterMonth}`);
+  const { weekOffDays, loading: weekOffLoading } = useWeekOffSettings(`${filterYear}-${filterMonth}`);
   
   // Debug: Log week off days whenever they change
   useEffect(() => {
@@ -140,9 +143,7 @@ export default function AttendanceCalendarPage() {
     }
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
+  
 
   // Get day of week label for headers
   const getDayOfWeek = (day) => {
@@ -190,15 +191,17 @@ export default function AttendanceCalendarPage() {
           alignItems: 'center',
           justifyContent: 'center',
           borderRadius: 1,
-          bgcolor: statusInfo.bgColor,
-          color: statusInfo.color,
+          // Use the legend colors for each status cell so table matches the legend
+          // But for the '-' (No Data) cells, use a dark grey in dark mode for better contrast
+          bgcolor: status === '-' && isDark ? theme.palette.grey[900] : statusInfo.bgColor,
+          color: status === '-' && isDark ? theme.palette.getContrastText(theme.palette.grey[900]) : statusInfo.color,
           fontWeight: 600,
           fontSize: '0.75rem',
           cursor: isEditable ? 'pointer' : 'default',
           transition: 'all 0.2s',
           ...(isEditable && {
             '&:hover': {
-            transform: 'scale(1.1)',
+              transform: 'scale(1.1)',
               boxShadow: 2,
               opacity: 0.9,
             },
@@ -609,22 +612,23 @@ export default function AttendanceCalendarPage() {
                     .map(([code, info]) => (
                       <MenuItem key={code} value={code}>
                         <Stack direction="row" spacing={1} alignItems="center">
-                          <Box
-                            sx={{
-                              width: 24,
-                              height: 24,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              borderRadius: 0.5,
-                              bgcolor: info.bgColor,
-                              color: info.color,
-                              fontWeight: 600,
-                              fontSize: '0.7rem',
-                            }}
-                          >
-                            {code}
-                          </Box>
+                                <Box
+                                  sx={{
+                                    width: 24,
+                                    height: 24,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    borderRadius: 0.5,
+                                    // Dark mode: use darkest grey background and readable text
+                                    bgcolor: isDark ? theme.palette.grey[900] : info.bgColor,
+                                    color: isDark ? theme.palette.getContrastText(theme.palette.grey[900]) : info.color,
+                                    fontWeight: 600,
+                                    fontSize: '0.7rem',
+                                  }}
+                                >
+                                  {code}
+                                </Box>
                           <Typography>{info.label}</Typography>
                         </Stack>
                       </MenuItem>
