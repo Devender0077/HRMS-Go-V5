@@ -31,9 +31,6 @@ import {
 } from '../../sections/@dashboard/general/app';
 // assets
 import { SeoIllustration } from '../../assets/illustrations';
-// Role-based dashboards
-import EmployeeDashboard from './EmployeeDashboard';
-import ManagerDashboard from './ManagerDashboard';
 
 // ----------------------------------------------------------------------
 
