@@ -42,6 +42,7 @@ export default function EmployeeNewEditForm({ isEdit = false, currentEmployee })
   const [shifts, setShifts] = useState([]); // For shift selection
   const [attendancePolicies, setAttendancePolicies] = useState([]); // For attendance policy selection
   const [paymentMethods, setPaymentMethods] = useState([]); // For payment method selection
+  const [selectedRegion, setSelectedRegion] = useState('india'); // Region selection (india/usa)
 
   // Fetch dropdown options from database
   useEffect(() => {
@@ -133,6 +134,21 @@ export default function EmployeeNewEditForm({ isEdit = false, currentEmployee })
       bloodGroup: currentEmployee?.bloodGroup || currentEmployee?.blood_group || '',
       nationality: currentEmployee?.nationality || '',
       status: currentEmployee?.status || 'Active',
+      region: currentEmployee?.region || 'india',
+      
+      // USA-specific fields
+      ssn: currentEmployee?.ssn || '',
+      driverLicenseNumber: currentEmployee?.driverLicenseNumber || currentEmployee?.driver_license_number || '',
+      driverLicenseState: currentEmployee?.driverLicenseState || currentEmployee?.driver_license_state || '',
+      driverLicenseExpiry: currentEmployee?.driverLicenseExpiry || currentEmployee?.driver_license_expiry || '',
+      w4FormStatus: currentEmployee?.w4FormStatus || currentEmployee?.w4_form_status || 'pending',
+      
+      // India-specific fields
+      panNumber: currentEmployee?.panNumber || currentEmployee?.pan_number || '',
+      aadhaarNumber: currentEmployee?.aadhaarNumber || currentEmployee?.aadhaar_number || '',
+      pfNumber: currentEmployee?.pfNumber || currentEmployee?.pf_number || '',
+      esiNumber: currentEmployee?.esiNumber || currentEmployee?.esi_number || '',
+      uanNumber: currentEmployee?.uanNumber || currentEmployee?.uan_number || '',
       
       // Employment Details
       branch: currentEmployee?.branch || currentEmployee?.branch_id || '',
@@ -180,9 +196,17 @@ export default function EmployeeNewEditForm({ isEdit = false, currentEmployee })
 
   const {
     reset,
+    watch,
     handleSubmit,
     formState: { isSubmitting },
   } = methods;
+  
+  // Watch region field to show/hide region-specific fields
+  const watchedRegion = watch('region', 'india');
+  
+  useEffect(() => {
+    setSelectedRegion(watchedRegion);
+  }, [watchedRegion]);
 
   const onSubmit = async (data) => {
     try {
