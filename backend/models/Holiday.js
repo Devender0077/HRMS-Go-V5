@@ -16,13 +16,42 @@ const Holiday = sequelize.define('Holiday', {
     allowNull: false,
   },
   type: {
-    type: DataTypes.ENUM('national', 'regional', 'company', 'religious', 'optional'),
-    defaultValue: 'company',
+    type: DataTypes.ENUM('public', 'optional', 'company'),
+    defaultValue: 'public',
   },
   region: {
-    type: DataTypes.ENUM('india', 'usa', 'both', 'other'),
-    defaultValue: 'both',
-    comment: 'Which region this holiday applies to',
+    type: DataTypes.STRING(500), // Changed to support multiple regions as JSON array
+    allowNull: false,
+    defaultValue: '["global"]',
+    comment: 'JSON array of regions this holiday applies to',
+    get() {
+      const rawValue = this.getDataValue('region');
+      try {
+        // If it's already a string that looks like JSON, parse it
+        if (typeof rawValue === 'string' && rawValue.startsWith('[')) {
+          return JSON.parse(rawValue);
+        }
+        // If it's a plain string (old ENUM value), wrap in array
+        if (typeof rawValue === 'string') {
+          return [rawValue];
+        }
+        // If it's already an array, return as is
+        return Array.isArray(rawValue) ? rawValue : ['global'];
+      } catch {
+        return ['global']; // Fallback
+      }
+    },
+    set(value) {
+      // Convert array to JSON string for storage
+      if (Array.isArray(value)) {
+        this.setDataValue('region', JSON.stringify(value));
+      } else if (typeof value === 'string') {
+        // If already a JSON string, use as is
+        this.setDataValue('region', value.startsWith('[') ? value : `["${value}"]`);
+      } else {
+        this.setDataValue('region', '["global"]');
+      }
+    },
   },
   isRecurring: {
     type: DataTypes.BOOLEAN,
