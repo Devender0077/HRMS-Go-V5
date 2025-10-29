@@ -1,5 +1,5 @@
 import { Helmet } from 'react-helmet-async';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 // @mui
 import {
   Card,
@@ -12,16 +12,14 @@ import {
   TableCell,
   IconButton,
   Stack,
-  Chip,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   TextField,
-  MenuItem,
   Typography,
   Box,
-  Autocomplete,
+  
 } from '@mui/material';
 // routes
 import { PATH_DASHBOARD } from '../../routes/paths';
@@ -30,12 +28,14 @@ import Iconify from '../../components/iconify';
 import Scrollbar from '../../components/scrollbar';
 import CustomBreadcrumbs from '../../components/custom-breadcrumbs';
 import { useSettingsContext } from '../../components/settings';
+import { useSnackbar } from '../../components/snackbar';
 import {
   useTable,
   TableHeadCustom,
   TableNoData,
   TablePaginationCustom,
 } from '../../components/table';
+import employeeService from '../../services/api/employeeService';
 
 // ----------------------------------------------------------------------
 
@@ -49,20 +49,9 @@ const TABLE_HEAD = [
   { id: '', label: 'Actions', align: 'right' },
 ];
 
-const MOCK_EMPLOYEES = [
-  { id: 1, name: 'John Doe', empId: 'EMP001', designation: 'Software Engineer', basic: 50000, gross: 75000, deductions: 8500, net: 66500 },
-  { id: 2, name: 'Jane Smith', empId: 'EMP002', designation: 'HR Manager', basic: 60000, gross: 90000, deductions: 10200, net: 79800 },
-  { id: 3, name: 'Bob Johnson', empId: 'EMP003', designation: 'Marketing Lead', basic: 55000, gross: 82500, deductions: 9350, net: 73150 },
-];
+// We'll load employees from the API instead of using mock data
 
-const SALARY_COMPONENTS = [
-  { id: 1, name: 'Basic Salary', code: 'BASIC', type: 'earning', calculation: 'fixed', amount: 0 },
-  { id: 2, name: 'HRA', code: 'HRA', type: 'earning', calculation: 'percentage', amount: 40 },
-  { id: 3, name: 'DA', code: 'DA', type: 'earning', calculation: 'percentage', amount: 20 },
-  { id: 4, name: 'TA', code: 'TA', type: 'earning', calculation: 'fixed', amount: 1600 },
-  { id: 5, name: 'PF', code: 'PF', type: 'deduction', calculation: 'percentage', amount: 12 },
-  { id: 6, name: 'Professional Tax', code: 'PTAX', type: 'deduction', calculation: 'fixed', amount: 200 },
-];
+// salary components (not used currently)
 
 // ----------------------------------------------------------------------
 
@@ -78,28 +67,128 @@ export default function EmployeeSalaryPage() {
   } = useTable();
 
   const { themeStretch } = useSettingsContext();
-  const [tableData] = useState(MOCK_EMPLOYEES);
+  const [tableData, setTableData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [salaryStructure, setSalaryStructure] = useState([]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const { enqueueSnackbar } = useSnackbar();
 
-  const handleOpenDialog = (employee) => {
+  const handleOpenDialog = (employee, edit = false) => {
     setSelectedEmployee(employee);
+    setIsEditing(Boolean(edit));
     // Mock salary structure
     setSalaryStructure([
-      { componentId: 1, name: 'Basic Salary', value: employee.basic },
-      { componentId: 2, name: 'HRA (40%)', value: employee.basic * 0.4 },
-      { componentId: 3, name: 'DA (20%)', value: employee.basic * 0.2 },
+      { componentId: 1, name: 'Basic Salary', value: (employee.basic ?? employee.basicSalary ?? employee.salary?.basic ?? 0) },
+      { componentId: 2, name: 'HRA (40%)', value: (employee.basic ?? employee.basicSalary ?? employee.salary?.basic ?? 0) * 0.4 },
+      { componentId: 3, name: 'DA (20%)', value: (employee.basic ?? employee.basicSalary ?? employee.salary?.basic ?? 0) * 0.2 },
       { componentId: 4, name: 'TA', value: 1600 },
-      { componentId: 5, name: 'PF (12%)', value: employee.basic * 0.12, isDeduction: true },
+      { componentId: 5, name: 'PF (12%)', value: (employee.basic ?? employee.basicSalary ?? employee.salary?.basic ?? 0) * 0.12, isDeduction: true },
       { componentId: 6, name: 'Professional Tax', value: 200, isDeduction: true },
     ]);
     setOpenDialog(true);
   };
 
+  // (kept for backward compatibility; prefer updateComponentValueById)
+
+  const updateComponentValueById = (componentId, newValue) => {
+    setSalaryStructure((prev) => prev.map((s) => (s.componentId === componentId ? { ...s, value: Number(newValue) } : s)));
+  };
+
+  // Fetch employees from API on mount
+  useEffect(() => {
+    let alive = true;
+    const load = async () => {
+      setLoading(true);
+      setFetchError(null);
+      try {
+        const res = await employeeService.getAll();
+        if (!alive) return;
+        if (res.success) {
+          const mapped = (res.data || []).map((emp) => {
+            const basic = emp.basic ?? emp.basicSalary ?? emp.salary?.basic ?? 0;
+            const gross = emp.gross ?? emp.salary?.gross ?? basic;
+            const deductions = emp.deductions ?? emp.salary?.deductions ?? 0;
+            const net = emp.net ?? (gross - deductions);
+            return {
+              id: emp.id ?? emp._id ?? emp.employeeId,
+              name: emp.name ?? emp.fullName ?? '',
+              empId: emp.empId ?? emp.employeeId ?? `EMP${emp.id ?? ''}`,
+              designation: emp.designation ?? emp.jobTitle ?? '',
+              basic,
+              gross,
+              deductions,
+              net,
+              raw: emp,
+            };
+          });
+          setTableData(mapped);
+        } else {
+          setFetchError(res.message || 'Failed to load employees');
+        }
+      } catch (err) {
+        if (!alive) return;
+        setFetchError(err.message || 'Failed to load employees');
+      } finally {
+        if (alive) setLoading(false);
+      }
+    };
+    load();
+    return () => { alive = false; };
+  }, []);
+
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setSelectedEmployee(null);
+    setIsEditing(false);
+  };
+
+  const handleSaveSalary = () => {
+    // Save salary to backend (attempt)
+    (async () => {
+      if (!selectedEmployee) return;
+      setSaving(true);
+      try {
+        // Build payload: backend expects basicSalary as top-level field (see backend controller)
+        const basicValue = salaryStructure.find(c => c.componentId === 1)?.value ?? 0;
+        const payload = {
+          basicSalary: Number(basicValue),
+          // Optionally include paymentMethod if available: paymentMethod: selectedEmployee.raw?.paymentMethod || selectedEmployee.raw?.payment_method
+        };
+
+        const res = await employeeService.update(selectedEmployee.id, payload);
+        if (res && res.success) {
+          // update table row locally
+          setTableData((prev) => prev.map((r) => {
+            if (String(r.id) === String(selectedEmployee.id)) {
+              return {
+                ...r,
+                basic: salaryStructure.find(c => c.componentId === 1)?.value ?? r.basic,
+                gross: totals.earnings,
+                deductions: totals.deductions,
+                net: totals.net,
+              };
+            }
+            return r;
+          }));
+
+          setOpenDialog(false);
+          setIsEditing(false);
+          enqueueSnackbar('Salary updated successfully');
+        } else {
+          const msg = res?.message || 'Failed to save salary';
+          enqueueSnackbar(msg, { variant: 'error' });
+        }
+      } catch (err) {
+        console.error('Save salary error', err);
+        enqueueSnackbar(err?.message || 'Failed to save salary', { variant: 'error' });
+      } finally {
+        setSaving(false);
+      }
+    })();
   };
 
   const calculateTotals = () => {
@@ -137,9 +226,19 @@ export default function EmployeeSalaryPage() {
                   onSort={onSort}
                 />
                 <TableBody>
-                  {tableData
-                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                    .map((row) => (
+                  {loading ? (
+                      <TableRow>
+                        <TableCell colSpan={TABLE_HEAD.length} align="center">Loading employees…</TableCell>
+                      </TableRow>
+                    ) : fetchError ? (
+                      <TableRow>
+                        <TableCell colSpan={TABLE_HEAD.length} align="center" sx={{ color: 'error.main' }}>{fetchError}</TableCell>
+                      </TableRow>
+                    ) : tableData.length === 0 ? (
+                      <TableNoData isNotFound={true} />
+                    ) : tableData
+                      .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                      .map((row) => (
                       <TableRow key={row.id} hover>
                         <TableCell>
                           <Stack>
@@ -172,13 +271,12 @@ export default function EmployeeSalaryPage() {
                           <IconButton onClick={() => handleOpenDialog(row)} size="small">
                             <Iconify icon="eva:eye-fill" />
                           </IconButton>
-                          <IconButton size="small">
+                          <IconButton onClick={() => handleOpenDialog(row, true)} size="small">
                             <Iconify icon="eva:edit-fill" />
                           </IconButton>
                         </TableCell>
                       </TableRow>
                     ))}
-                  {tableData.length === 0 && <TableNoData isNotFound={true} />}
                 </TableBody>
               </Table>
             </TableContainer>
@@ -212,9 +310,20 @@ export default function EmployeeSalaryPage() {
               {salaryStructure.filter(s => !s.isDeduction).map((component, index) => (
                 <Stack key={index} direction="row" justifyContent="space-between" sx={{ py: 1, borderBottom: '1px dashed', borderColor: 'divider' }}>
                   <Typography variant="body2">{component.name}</Typography>
-                  <Typography variant="body2" fontWeight={600}>
-                    ${component.value.toLocaleString()}
-                  </Typography>
+                  {isEditing ? (
+                    <TextField
+                      size="small"
+                      type="number"
+                      value={component.value}
+                      onChange={(e) => updateComponentValueById(component.componentId, e.target.value)}
+                      inputProps={{ step: '0.01' }}
+                      sx={{ width: 140 }}
+                    />
+                  ) : (
+                    <Typography variant="body2" fontWeight={600}>
+                      ${component.value.toLocaleString()}
+                    </Typography>
+                  )}
                 </Stack>
               ))}
               <Stack direction="row" justifyContent="space-between" sx={{ py: 1.5, bgcolor: 'success.lighter' }}>
@@ -233,9 +342,20 @@ export default function EmployeeSalaryPage() {
               {salaryStructure.filter(s => s.isDeduction).map((component, index) => (
                 <Stack key={index} direction="row" justifyContent="space-between" sx={{ py: 1, borderBottom: '1px dashed', borderColor: 'divider' }}>
                   <Typography variant="body2">{component.name}</Typography>
-                  <Typography variant="body2" fontWeight={600}>
-                    ${component.value.toLocaleString()}
-                  </Typography>
+                  {isEditing ? (
+                    <TextField
+                      size="small"
+                      type="number"
+                      value={component.value}
+                      onChange={(e) => updateComponentValueById(component.componentId, e.target.value)}
+                      inputProps={{ step: '0.01' }}
+                      sx={{ width: 140 }}
+                    />
+                  ) : (
+                    <Typography variant="body2" fontWeight={600}>
+                      ${component.value.toLocaleString()}
+                    </Typography>
+                  )}
                 </Stack>
               ))}
               <Stack direction="row" justifyContent="space-between" sx={{ py: 1.5, bgcolor: 'error.lighter' }}>
@@ -257,9 +377,15 @@ export default function EmployeeSalaryPage() {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Close</Button>
-          <Button variant="contained" startIcon={<Iconify icon="eva:edit-fill" />}>
-            Edit Salary
-          </Button>
+          {!isEditing ? (
+            <Button variant="contained" startIcon={<Iconify icon="eva:edit-fill" />} onClick={() => setIsEditing(true)}>
+              Edit Salary
+            </Button>
+          ) : (
+            <Button variant="contained" color="success" onClick={handleSaveSalary} startIcon={<Iconify icon="eva:save-outline" />} disabled={saving}>
+              {saving ? 'Saving...' : 'Save Salary'}
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
     </>
