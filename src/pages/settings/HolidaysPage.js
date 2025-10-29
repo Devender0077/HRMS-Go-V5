@@ -20,6 +20,13 @@ import {
   Typography,
   TableRow,
   TableCell,
+  Checkbox,
+  FormControl,
+  InputLabel,
+  Select,
+  OutlinedInput,
+  Box,
+  ListItemText,
 } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import { useForm } from 'react-hook-form';
@@ -87,13 +94,15 @@ export default function HolidaysPage() {
   const [currentHoliday, setCurrentHoliday] = useState(null);
   const [totalCount, setTotalCount] = useState(0);
 
+  const [selectedRegions, setSelectedRegions] = useState(['global']);
+
   const methods = useForm({
     resolver: yupResolver(HolidaySchema),
     defaultValues: {
       name: '',
       date: '',
       type: 'public',
-      region: 'global',
+      region: ['global'], // Now an array
       description: '',
       isRecurring: false,
       status: 'active',
@@ -136,22 +145,25 @@ export default function HolidaysPage() {
   const handleOpenDialog = (holiday = null) => {
     if (holiday) {
       setCurrentHoliday(holiday);
+      const regions = Array.isArray(holiday.region) ? holiday.region : [holiday.region];
+      setSelectedRegions(regions);
       reset({
         name: holiday.name,
         date: holiday.date,
         type: holiday.type,
-        region: holiday.region,
+        region: regions,
         description: holiday.description || '',
         isRecurring: holiday.is_recurring || holiday.isRecurring || false,
         status: holiday.status,
       });
     } else {
       setCurrentHoliday(null);
+      setSelectedRegions(['global']);
       reset({
         name: '',
         date: '',
         type: 'public',
-        region: 'global',
+        region: ['global'],
         description: '',
         isRecurring: false,
         status: 'active',
@@ -169,11 +181,16 @@ export default function HolidaysPage() {
   // Submit holiday
   const onSubmit = async (data) => {
     try {
+      const submitData = {
+        ...data,
+        region: selectedRegions, // Use selected regions array
+      };
+      
       let response;
       if (currentHoliday) {
-        response = await holidayService.update(currentHoliday.id, data);
+        response = await holidayService.update(currentHoliday.id, submitData);
       } else {
-        response = await holidayService.create(data);
+        response = await holidayService.create(submitData);
       }
 
       if (response.success) {
@@ -290,12 +307,44 @@ export default function HolidaysPage() {
                 </RHFSelect>
               </Grid>
               <Grid item xs={12} sm={6}>
-                <RHFSelect name="region" label="Region">
-                  <MenuItem value="india">India</MenuItem>
-                  <MenuItem value="usa">USA</MenuItem>
-                  <MenuItem value="global">Global</MenuItem>
-                  <MenuItem value="other">Other</MenuItem>
-                </RHFSelect>
+                <FormControl fullWidth>
+                  <InputLabel>Regions (Multiple)</InputLabel>
+                  <Select
+                    multiple
+                    value={selectedRegions}
+                    onChange={(e) => setSelectedRegions(e.target.value)}
+                    input={<OutlinedInput label="Regions (Multiple)" />}
+                    renderValue={(selected) => (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {selected.map((value) => (
+                          <Chip
+                            key={value}
+                            label={value.toUpperCase()}
+                            size="small"
+                            color={value === 'india' ? 'success' : value === 'usa' ? 'info' : 'default'}
+                          />
+                        ))}
+                      </Box>
+                    )}
+                  >
+                    <MenuItem value="india">
+                      <Checkbox checked={selectedRegions.indexOf('india') > -1} />
+                      <ListItemText primary="India" />
+                    </MenuItem>
+                    <MenuItem value="usa">
+                      <Checkbox checked={selectedRegions.indexOf('usa') > -1} />
+                      <ListItemText primary="USA" />
+                    </MenuItem>
+                    <MenuItem value="global">
+                      <Checkbox checked={selectedRegions.indexOf('global') > -1} />
+                      <ListItemText primary="Global" />
+                    </MenuItem>
+                    <MenuItem value="other">
+                      <Checkbox checked={selectedRegions.indexOf('other') > -1} />
+                      <ListItemText primary="Other" />
+                    </MenuItem>
+                  </Select>
+                </FormControl>
               </Grid>
               <Grid item xs={12} sm={6}>
                 <RHFSelect name="status" label="Status">
@@ -339,12 +388,27 @@ function HolidayTableRow({ row, onEditRow, onDeleteRow }) {
         />
       </TableCell>
       <TableCell>
-        <Chip
-          label={row.region ? row.region.toUpperCase() : 'N/A'}
-          size="small"
-          variant="outlined"
-          color={row.region === 'india' ? 'success' : row.region === 'usa' ? 'info' : 'default'}
-        />
+        <Stack direction="row" spacing={0.5} flexWrap="wrap">
+          {Array.isArray(row.region) ? (
+            row.region.map((region, idx) => (
+              <Chip
+                key={idx}
+                label={region.toUpperCase()}
+                size="small"
+                variant="outlined"
+                color={region === 'india' ? 'success' : region === 'usa' ? 'info' : 'default'}
+                sx={{ mb: 0.5 }}
+              />
+            ))
+          ) : (
+            <Chip
+              label={row.region ? row.region.toUpperCase() : 'N/A'}
+              size="small"
+              variant="outlined"
+              color={row.region === 'india' ? 'success' : row.region === 'usa' ? 'info' : 'default'}
+            />
+          )}
+        </Stack>
       </TableCell>
       <TableCell align="center">
         <Chip
