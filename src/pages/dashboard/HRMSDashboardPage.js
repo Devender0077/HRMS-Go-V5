@@ -244,48 +244,55 @@ export default function HRMSDashboardPage() {
                     value={selectedDate}
                     onChange={(newDate) => setSelectedDate(newDate)}
                     displayStaticWrapperAs="desktop"
-                    slots={{
-                      day: (dayProps) => {
-                        const { day } = dayProps;
-                        const dayEvents = calendarEvents.filter((event) => {
-                          const eventDate = new Date(event.start || event.startDate);
-                          return (
-                            eventDate.getDate() === day.getDate() &&
-                            eventDate.getMonth() === day.getMonth() &&
-                            eventDate.getFullYear() === day.getFullYear()
-                          );
-                        });
-                        
-                        const hasEvents = dayEvents.length > 0;
-                        const primaryEvent = dayEvents[0];
-                        const badgeColor = hasEvents ? getEventColor(primaryEvent?.event_type || primaryEvent?.eventType) : '';
-                        
+                    renderInput={(params) => <Box {...params} />}
+                    renderDay={(day, _value, DayComponentProps) => {
+                      const dayEvents = calendarEvents.filter((event) => {
+                        const eventDate = new Date(event.start || event.startDate);
                         return (
-                          <Box 
-                            sx={{ position: 'relative' }}
-                            onClick={(e) => hasEvents && handleDayClick(day, e)}
-                            role={hasEvents ? "button" : undefined}
-                            tabIndex={hasEvents ? 0 : undefined}
-                          >
-                            <Box {...dayProps} />
-                            {hasEvents && (
-                              <Box
-                                sx={{
-                                  position: 'absolute',
-                                  bottom: 2,
-                                  left: '50%',
-                                  transform: 'translateX(-50%)',
-                                  width: 6,
-                                  height: 6,
-                                  borderRadius: '50%',
-                                  bgcolor: badgeColor,
-                                  cursor: 'pointer',
-                                }}
-                              />
-                            )}
-                          </Box>
+                          eventDate.getDate() === day.getDate() &&
+                          eventDate.getMonth() === day.getMonth() &&
+                          eventDate.getFullYear() === day.getFullYear()
                         );
-                      },
+                      });
+                      
+                      const hasEvents = dayEvents.length > 0;
+                      const primaryEvent = dayEvents[0];
+                      const badgeColor = hasEvents ? getEventColor(primaryEvent?.event_type || primaryEvent?.eventType) : '';
+                      
+                      return (
+                        <Box 
+                          sx={{ position: 'relative' }}
+                          onClick={(e) => {
+                            if (hasEvents) {
+                              e.stopPropagation();
+                              handleDayClick(day, e);
+                            }
+                          }}
+                        >
+                          <Button
+                            {...DayComponentProps}
+                            sx={{
+                              ...DayComponentProps.sx,
+                              cursor: hasEvents ? 'pointer' : 'default',
+                            }}
+                          />
+                          {hasEvents && (
+                            <Box
+                              sx={{
+                                position: 'absolute',
+                                bottom: 4,
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                width: 6,
+                                height: 6,
+                                borderRadius: '50%',
+                                bgcolor: badgeColor,
+                                pointerEvents: 'none',
+                              }}
+                            />
+                          )}
+                        </Box>
+                      );
                     }}
                     sx={{
                       width: '100%',
