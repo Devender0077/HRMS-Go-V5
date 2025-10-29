@@ -133,7 +133,20 @@ exports.update = async (req, res) => {
       });
     }
 
-    // Check if new code already exists (excluding current category)
+    // Check if new name already exists (excluding current category)
+    if (req.body.name && req.body.name !== category.name) {
+      const existing = await AssetCategory.findOne({
+        where: { name: req.body.name },
+      });
+      if (existing) {
+        return res.status(400).json({
+          success: false,
+          message: 'Category name already exists',
+        });
+      }
+    }
+
+    // Check if new code already exists (excluding current category and NULL codes)
     if (req.body.code && req.body.code !== category.code) {
       const existing = await AssetCategory.findOne({
         where: { code: req.body.code },

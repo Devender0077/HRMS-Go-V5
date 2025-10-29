@@ -13,7 +13,7 @@ const AssetCategory = sequelize.define('AssetCategory', {
   },
   code: {
     type: DataTypes.STRING(50),
-    allowNull: false,
+    allowNull: true,
     unique: true,
   },
   description: {
