@@ -186,21 +186,36 @@ export default function HolidaysPage() {
         region: selectedRegions, // Use selected regions array
       };
       
+      console.log('💾 [Holidays Form] Submitting:', {
+        isEdit: !!currentHoliday,
+        holidayId: currentHoliday?.id,
+        submitData,
+        selectedRegions,
+      });
+      
       let response;
       if (currentHoliday) {
+        console.log('📝 [Holidays Form] Updating holiday ID:', currentHoliday.id);
         response = await holidayService.update(currentHoliday.id, submitData);
       } else {
+        console.log('➕ [Holidays Form] Creating new holiday');
         response = await holidayService.create(submitData);
       }
+
+      console.log('✅ [Holidays Form] Response:', response);
 
       if (response.success) {
         enqueueSnackbar(response.message || `Holiday ${currentHoliday ? 'updated' : 'created'} successfully!`);
         handleCloseDialog();
         fetchHolidays();
+      } else {
+        console.error('❌ [Holidays Form] Response success=false:', response);
+        enqueueSnackbar(response.message || 'Operation failed', { variant: 'error' });
       }
     } catch (error) {
-      console.error('Error saving holiday:', error);
-      enqueueSnackbar('Failed to save holiday', { variant: 'error' });
+      console.error('❌ [Holidays Form] Error saving holiday:', error);
+      console.error('❌ [Holidays Form] Error details:', error.response?.data);
+      enqueueSnackbar(error.response?.data?.message || 'Failed to save holiday', { variant: 'error' });
     }
   };
 

@@ -37,10 +37,13 @@ const holidayService = {
   // Update holiday
   update: async (id, data) => {
     try {
+      console.log('🔄 [Holiday Service] Updating holiday:', id, 'with data:', data);
       const response = await apiClient.put(`/holidays/${id}`, data);
+      console.log('✅ [Holiday Service] Update response:', response.data);
       return response.data;
     } catch (error) {
       console.error('❌ [Holiday Service] Update error:', error);
+      console.error('❌ [Holiday Service] Error response:', error.response?.data);
       throw error;
     }
   },
