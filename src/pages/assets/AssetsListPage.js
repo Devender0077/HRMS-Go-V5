@@ -115,12 +115,12 @@ export default function AssetsListPage() {
   };
 
   const handleView = (id) => {
-    navigate(PATH_DASHBOARD.assets.view(id));
+    navigate(`/dashboard/assets/${id}`);
     handleClosePopover();
   };
 
   const handleEdit = (id) => {
-    navigate(PATH_DASHBOARD.assets.edit(id));
+    navigate(`/dashboard/assets/${id}/edit`);
     handleClosePopover();
   };
 
