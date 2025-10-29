@@ -329,6 +329,7 @@ export const PATH_DASHBOARD = {
     security: path(ROOTS_DASHBOARD, '/settings/security'),
     integrations: path(ROOTS_DASHBOARD, '/settings/integrations'),
     subscription: path(ROOTS_DASHBOARD, '/settings/subscription'),
+    holidays: path(ROOTS_DASHBOARD, '/settings/holidays'),
   },
 
   // HRMS - Landing Page

@@ -295,6 +295,12 @@ const navConfig = [
         permission: 'users.view',
       },
       {
+        title: 'Holidays',
+        path: PATH_DASHBOARD.settings.holidays,
+        icon: ICONS.calendar,
+        permission: 'settings.view',
+      },
+      {
         title: 'My Account',
         path: PATH_DASHBOARD.user.account,
         icon: ICONS.user,
