@@ -55,6 +55,11 @@ export default function HRMSDashboardPage() {
   const [dashboardData, setDashboardData] = useState(null);
   const [activities, setActivities] = useState([]);
   const [calendarEvents, setCalendarEvents] = useState([]);
+  const [upcomingBirthdays, setUpcomingBirthdays] = useState([]);
+  const [pendingLeaves, setPendingLeaves] = useState([]);
+  
+  // Check if user is manager or HR
+  const isManagerOrHR = user?.userType === 'super_admin' || user?.userType === 'hr_manager' || user?.userType === 'hr' || user?.userType === 'manager';
 
   // Route to role-based dashboard (check BEFORE fetching data)
   const userType = user?.userType;
@@ -93,6 +98,21 @@ export default function HRMSDashboardPage() {
         setCalendarEvents(eventsResponse);
       } else if (eventsResponse?.data) {
         setCalendarEvents(eventsResponse.data);
+      }
+      
+      // Mock upcoming birthdays (will be real data later)
+      setUpcomingBirthdays([
+        { id: 1, name: 'John Doe', date: 'Nov 15', avatar: '/assets/images/avatars/avatar_1.jpg' },
+        { id: 2, name: 'Jane Smith', date: 'Nov 18', avatar: '/assets/images/avatars/avatar_2.jpg' },
+        { id: 3, name: 'Mike Johnson', date: 'Nov 22', avatar: '/assets/images/avatars/avatar_3.jpg' },
+      ]);
+      
+      // Mock pending leaves for managers
+      if (isManagerOrHR) {
+        setPendingLeaves([
+          { id: 1, employeeName: 'Sarah Wilson', leaveType: 'Annual Leave', days: 3, startDate: 'Nov 10' },
+          { id: 2, employeeName: 'Tom Brown', leaveType: 'Sick Leave', days: 1, startDate: 'Nov 12' },
+        ]);
       }
     } catch (error) {
       // eslint-disable-next-line no-console
@@ -158,7 +178,11 @@ export default function HRMSDashboardPage() {
           {/* Calendar beside Welcome Card */}
           <Grid item xs={12} lg={4}>
             <Card sx={{ height: '100%' }}>
-              <CardHeader title="Calendar" sx={{ pb: 1 }} />
+              <CardHeader 
+                title="Calendar" 
+                subheader={calendarEvents.length > 0 ? `${calendarEvents.length} upcoming events` : 'No events scheduled'}
+                sx={{ pb: 1 }} 
+              />
               <Divider />
               <Box sx={{ px: 1.5, py: 2 }}>
                 <LocalizationProvider dateAdapter={AdapterDateFns}>
@@ -167,6 +191,41 @@ export default function HRMSDashboardPage() {
                     value={selectedDate}
                     onChange={(newDate) => setSelectedDate(newDate)}
                     displayStaticWrapperAs="desktop"
+                    slots={{
+                      day: (dayProps) => {
+                        const { day } = dayProps;
+                        const dayEvents = calendarEvents.filter((event) => {
+                          const eventDate = new Date(event.start || event.startDate);
+                          return (
+                            eventDate.getDate() === day.getDate() &&
+                            eventDate.getMonth() === day.getMonth() &&
+                            eventDate.getFullYear() === day.getFullYear()
+                          );
+                        });
+                        
+                        const hasEvents = dayEvents.length > 0;
+                        
+                        return (
+                          <Box sx={{ position: 'relative' }}>
+                            <Box {...dayProps} />
+                            {hasEvents && (
+                              <Box
+                                sx={{
+                                  position: 'absolute',
+                                  bottom: 2,
+                                  left: '50%',
+                                  transform: 'translateX(-50%)',
+                                  width: 6,
+                                  height: 6,
+                                  borderRadius: '50%',
+                                  bgcolor: 'primary.main',
+                                }}
+                              />
+                            )}
+                          </Box>
+                        );
+                      },
+                    }}
                     sx={{
                       width: '100%',
                       '& .MuiCalendarPicker-root': {
