@@ -1,5 +1,5 @@
 import { Helmet } from 'react-helmet-async';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 // @mui
 import {
   Card,
@@ -22,6 +22,7 @@ import {
   TableHead,
   TableRow,
   Checkbox,
+  CircularProgress,
   Chip,
 } from '@mui/material';
 // routes
@@ -30,16 +31,13 @@ import { PATH_DASHBOARD } from '../../routes/paths';
 import Iconify from '../../components/iconify';
 import CustomBreadcrumbs from '../../components/custom-breadcrumbs';
 import { useSettingsContext } from '../../components/settings';
+import employeeService from '../../services/api/employeeService';
 
 // ----------------------------------------------------------------------
 
 const STEPS = ['Select Period', 'Review Employees', 'Process Payroll'];
 
-const MOCK_EMPLOYEES = [
-  { id: 1, name: 'John Doe', empId: 'EMP001', designation: 'Software Engineer', basic: 50000, gross: 75000, deductions: 8500, net: 66500, selected: true },
-  { id: 2, name: 'Jane Smith', empId: 'EMP002', designation: 'HR Manager', basic: 60000, gross: 90000, deductions: 10200, net: 79800, selected: true },
-  { id: 3, name: 'Bob Johnson', empId: 'EMP003', designation: 'Marketing Lead', basic: 55000, gross: 82500, deductions: 9350, net: 73150, selected: true },
-];
+// Employees will be loaded from API on mount
 
 // ----------------------------------------------------------------------
 
@@ -48,7 +46,8 @@ export default function PayrollProcessingPage() {
   const [activeStep, setActiveStep] = useState(0);
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
-  const [employees, setEmployees] = useState(MOCK_EMPLOYEES);
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
 
   const handleNext = () => {
@@ -75,6 +74,45 @@ export default function PayrollProcessingPage() {
     alert('Payroll processed successfully!');
     setActiveStep(0);
   };
+
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchEmployees = async () => {
+      setLoading(true);
+      try {
+        const res = await employeeService.getAll();
+        const data = res?.data ?? res?.employees ?? res ?? [];
+        const list = Array.isArray(data) ? data : [];
+
+        const mapped = list.map((emp) => ({
+          id: emp.id || emp._id || emp.employeeId || emp.employee_code || Math.random(),
+          name: emp.name || (`${emp.firstName || ''} ${emp.lastName || ''}`.trim()) || emp.fullName || 'Unknown',
+          empId: emp.empId || emp.employeeId || emp.employee_code || emp.code || '',
+          designation: emp.designation || emp.designationName || emp.jobTitle || '',
+          basic: Number(emp.basicSalary || emp.basic || 0),
+          gross: Number(emp.grossSalary || emp.gross || 0),
+          deductions: Number(emp.deductions || emp.deductionsTotal || 0),
+          net: Number(emp.netSalary || emp.net || 0),
+          selected: true,
+        }));
+
+        if (mounted) setEmployees(mapped);
+      } catch (error) {
+        console.error(error);
+        // Keep UX simple for now
+        alert('Failed to load employees.');
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    fetchEmployees();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const selectedEmployees = employees.filter(e => e.selected);
   const totalGross = selectedEmployees.reduce((sum, e) => sum + e.gross, 0);
@@ -159,51 +197,57 @@ export default function PayrollProcessingPage() {
               <Typography variant="h6" gutterBottom>
                 Select Employees for Payroll
               </Typography>
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell padding="checkbox">
-                        <Checkbox
-                          checked={selectedEmployees.length === employees.length}
-                          onChange={(e) => setEmployees(employees.map(emp => ({ ...emp, selected: e.target.checked })))}
-                        />
-                      </TableCell>
-                      <TableCell>Employee</TableCell>
-                      <TableCell>Designation</TableCell>
-                      <TableCell align="right">Basic</TableCell>
-                      <TableCell align="right">Gross</TableCell>
-                      <TableCell align="right">Deductions</TableCell>
-                      <TableCell align="right">Net Salary</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {employees.map((emp) => (
-                      <TableRow key={emp.id} hover>
+              {loading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 6 }}>
+                  <CircularProgress />
+                </Box>
+              ) : (
+                <TableContainer>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
                         <TableCell padding="checkbox">
                           <Checkbox
-                            checked={emp.selected}
-                            onChange={() => handleToggleEmployee(emp.id)}
+                            checked={selectedEmployees.length === employees.length}
+                            onChange={(e) => setEmployees(employees.map(emp => ({ ...emp, selected: e.target.checked })))}
                           />
                         </TableCell>
-                        <TableCell>
-                          <Typography variant="subtitle2">{emp.name}</Typography>
-                          <Typography variant="caption" color="text.secondary">{emp.empId}</Typography>
-                        </TableCell>
-                        <TableCell>{emp.designation}</TableCell>
-                        <TableCell align="right">${emp.basic.toLocaleString()}</TableCell>
-                        <TableCell align="right">${emp.gross.toLocaleString()}</TableCell>
-                        <TableCell align="right">${emp.deductions.toLocaleString()}</TableCell>
-                        <TableCell align="right">
-                          <Typography variant="subtitle2" color="primary.main">
-                            ${emp.net.toLocaleString()}
-                          </Typography>
-                        </TableCell>
+                        <TableCell>Employee</TableCell>
+                        <TableCell>Designation</TableCell>
+                        <TableCell align="right">Basic</TableCell>
+                        <TableCell align="right">Gross</TableCell>
+                        <TableCell align="right">Deductions</TableCell>
+                        <TableCell align="right">Net Salary</TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                    </TableHead>
+                    <TableBody>
+                      {employees.map((emp) => (
+                        <TableRow key={emp.id} hover>
+                          <TableCell padding="checkbox">
+                            <Checkbox
+                              checked={emp.selected}
+                              onChange={() => handleToggleEmployee(emp.id)}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="subtitle2">{emp.name}</Typography>
+                            <Typography variant="caption" color="text.secondary">{emp.empId}</Typography>
+                          </TableCell>
+                          <TableCell>{emp.designation}</TableCell>
+                          <TableCell align="right">${emp.basic.toLocaleString()}</TableCell>
+                          <TableCell align="right">${emp.gross.toLocaleString()}</TableCell>
+                          <TableCell align="right">${emp.deductions.toLocaleString()}</TableCell>
+                          <TableCell align="right">
+                            <Typography variant="subtitle2" color="primary.main">
+                              ${emp.net.toLocaleString()}
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
 
               <Paper sx={{ p: 2, mt: 3 }}>
                 <Typography variant="caption" color="text.secondary">
