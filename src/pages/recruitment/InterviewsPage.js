@@ -1,6 +1,7 @@
 import { Helmet } from 'react-helmet-async';
 import { useState, useEffect } from 'react';
 import { useSnackbar } from 'notistack';
+import { Link as RouterLink } from 'react-router-dom';
 // @mui
 import {
   Card,
@@ -86,7 +87,12 @@ export default function InterviewsPage() {
             { name: 'Interviews' },
           ]}
           action={
-            <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />}>
+            <Button
+              component={RouterLink}
+              to={PATH_DASHBOARD.recruitment.interviews.schedule}
+              variant="contained"
+              startIcon={<Iconify icon="eva:plus-fill" />}
+            >
               Schedule Interview
             </Button>
           }

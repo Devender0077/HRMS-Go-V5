@@ -21,6 +21,10 @@ import {
   TextField,
   InputAdornment,
   Box,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 // components
 import Iconify from '../../components/iconify';
@@ -121,6 +125,12 @@ export default function JobPostingsPage() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [openPopover, setOpenPopover] = useState(null);
   const [selectedJob, setSelectedJob] = useState(null);
+  const [openViewDialog, setOpenViewDialog] = useState(false);
+  const [openEditDialog, setOpenEditDialog] = useState(false);
+  const [openApplicationsDialog, setOpenApplicationsDialog] = useState(false);
+  const [editForm, setEditForm] = useState({ title: '', department: '', location: '', employment_type: '', positions: 1, salary_range: '', experience_required: '', description: '' });
+  const [applications, setApplications] = useState([]);
+  const [appsLoading, setAppsLoading] = useState(false);
 
   // Fetch job postings
   const fetchJobPostings = useCallback(async () => {
@@ -193,6 +203,93 @@ export default function JobPostingsPage() {
   const handleClosePopover = () => {
     setOpenPopover(null);
     setSelectedJob(null);
+  };
+
+  // Modals: open/close handlers
+  const handleOpenView = (job) => {
+    setSelectedJob(job);
+    setOpenViewDialog(true);
+  };
+
+  const handleCloseView = () => {
+    setOpenViewDialog(false);
+    setSelectedJob(null);
+  };
+
+  const handleOpenEdit = (job) => {
+    setSelectedJob(job);
+    setEditForm({
+      title: job.title || '',
+      department: job.department || '',
+      location: job.location || '',
+      employment_type: job.employment_type || 'full_time',
+      positions: job.positions || 1,
+      salary_range: job.salary_range || '',
+      experience_required: job.experience_required || '',
+      description: job.description || '',
+    });
+    setOpenEditDialog(true);
+  };
+
+  const handleCloseEdit = () => {
+    setOpenEditDialog(false);
+    setSelectedJob(null);
+    setEditForm({ title: '', department: '', location: '', employment_type: '', positions: 1, salary_range: '', experience_required: '', description: '' });
+  };
+
+  const handleOpenApplications = async (job) => {
+    setSelectedJob(job);
+    setAppsLoading(true);
+    try {
+      const res = await recruitmentService.getJobApplications();
+      let payload = [];
+      if (res && res.success && Array.isArray(res.data)) payload = res.data;
+      else if (Array.isArray(res)) payload = res;
+
+      // filter by job id - try multiple possible field names
+      const jobIdKey = job.id;
+      const filtered = payload.filter((a) => a.job_id === jobIdKey || a.jobId === jobIdKey || a.job === jobIdKey || a.job_id === String(jobIdKey) || a.jobId === String(jobIdKey));
+      setApplications(filtered);
+    } catch (error) {
+      console.error('Error fetching applications for job:', error);
+      setApplications([]);
+    } finally {
+      setAppsLoading(false);
+      setOpenApplicationsDialog(true);
+    }
+  };
+
+  const handleCloseApplications = () => {
+    setOpenApplicationsDialog(false);
+    setSelectedJob(null);
+    setApplications([]);
+  };
+
+  const handleSubmitEdit = async () => {
+    if (!selectedJob) return;
+    try {
+      const payload = {
+        title: editForm.title,
+        department: editForm.department,
+        location: editForm.location,
+        employment_type: editForm.employment_type,
+        positions: Number(editForm.positions),
+        salary_range: editForm.salary_range,
+        experience_required: editForm.experience_required,
+        description: editForm.description,
+      };
+      const res = await recruitmentService.updateJobPosting(selectedJob.id, payload);
+      if (res && res.success) {
+        setJobPostings((prev) => prev.map((j) => (j.id === selectedJob.id ? { ...j, ...payload } : j)));
+        enqueueSnackbar('Job posting updated', { variant: 'success' });
+        handleCloseEdit();
+      } else {
+        enqueueSnackbar(res?.message || 'Failed to update job posting', { variant: 'error' });
+      }
+    } catch (error) {
+      console.error('Error updating job posting:', error);
+      enqueueSnackbar('Failed to update job posting', { variant: 'error' });
+    }
   };
 
   const handleFilterName = (event) => {
@@ -435,8 +532,11 @@ export default function JobPostingsPage() {
       >
         <MenuItem
           onClick={() => {
-            console.log('View job posting:', selectedJob);
+            // Open view dialog for the selected job
             handleClosePopover();
+            if (selectedJob) {
+              handleOpenView(selectedJob);
+            }
           }}
         >
           <Iconify icon="eva:eye-fill" />
@@ -445,8 +545,11 @@ export default function JobPostingsPage() {
 
         <MenuItem
           onClick={() => {
-            console.log('Edit job posting:', selectedJob);
+            // Open edit dialog for the selected job
             handleClosePopover();
+            if (selectedJob) {
+              handleOpenEdit(selectedJob);
+            }
           }}
         >
           <Iconify icon="eva:edit-fill" />
@@ -455,8 +558,11 @@ export default function JobPostingsPage() {
 
         <MenuItem
           onClick={() => {
-            console.log('View applications:', selectedJob);
+            // Open applications dialog for the selected job
             handleClosePopover();
+            if (selectedJob) {
+              handleOpenApplications(selectedJob);
+            }
           }}
         >
           <Iconify icon="eva:people-fill" />
@@ -518,6 +624,80 @@ export default function JobPostingsPage() {
           Delete
         </MenuItem>
       </MenuPopover>
+      {/* View Dialog */}
+      <Dialog open={openViewDialog} onClose={handleCloseView} maxWidth="sm" fullWidth>
+        <DialogTitle>Job Details</DialogTitle>
+        <DialogContent>
+          {selectedJob ? (
+            <Stack spacing={2} sx={{ mt: 1 }}>
+              <Typography variant="h6">{selectedJob.title}</Typography>
+              <Typography variant="body2" color="text.secondary">{selectedJob.department}</Typography>
+              <Typography variant="body2">Location: {selectedJob.location}</Typography>
+              <Typography variant="body2">Type: {selectedJob.employment_type?.replace('_', ' ')}</Typography>
+              <Typography variant="body2">Positions: {selectedJob.positions}</Typography>
+              <Typography variant="body2">Salary: {selectedJob.salary_range || '-'}</Typography>
+              <Typography variant="body2">Experience: {selectedJob.experience_required || '-'}</Typography>
+              <Typography variant="body2">Status: {selectedJob.status}</Typography>
+              <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>{selectedJob.description || ''}</Typography>
+            </Stack>
+          ) : (
+            <Typography>No job selected</Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseView}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={openEditDialog} onClose={handleCloseEdit} maxWidth="md" fullWidth>
+        <DialogTitle>Edit Job Posting</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField label="Job Title" fullWidth value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} />
+            <TextField label="Department" fullWidth value={editForm.department} onChange={(e) => setEditForm({ ...editForm, department: e.target.value })} />
+            <TextField label="Location" fullWidth value={editForm.location} onChange={(e) => setEditForm({ ...editForm, location: e.target.value })} />
+            <TextField label="Employment Type" select fullWidth value={editForm.employment_type} onChange={(e) => setEditForm({ ...editForm, employment_type: e.target.value })}>
+              <MenuItem value="full_time">Full Time</MenuItem>
+              <MenuItem value="part_time">Part Time</MenuItem>
+              <MenuItem value="contract">Contract</MenuItem>
+              <MenuItem value="intern">Intern</MenuItem>
+            </TextField>
+            <TextField label="Positions" type="number" value={editForm.positions} onChange={(e) => setEditForm({ ...editForm, positions: e.target.value })} />
+            <TextField label="Salary Range" fullWidth value={editForm.salary_range} onChange={(e) => setEditForm({ ...editForm, salary_range: e.target.value })} />
+            <TextField label="Experience Required" fullWidth value={editForm.experience_required} onChange={(e) => setEditForm({ ...editForm, experience_required: e.target.value })} />
+            <TextField label="Description" fullWidth multiline minRows={4} value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseEdit}>Cancel</Button>
+          <Button variant="contained" onClick={handleSubmitEdit}>Save</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Applications Dialog */}
+      <Dialog open={openApplicationsDialog} onClose={handleCloseApplications} maxWidth="md" fullWidth>
+        <DialogTitle>Applications for {selectedJob?.title}</DialogTitle>
+        <DialogContent>
+          {appsLoading ? (
+            <Typography>Loading applications...</Typography>
+          ) : applications && applications.length > 0 ? (
+            <Stack spacing={2} sx={{ mt: 1 }}>
+              {applications.map((app) => (
+                <Box key={app.id || app._id || app.applicationId} sx={{ p: 1, borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
+                  <Typography variant="subtitle2">{app.candidate_name || app.name || app.applicant_name || 'Unnamed'}</Typography>
+                  <Typography variant="caption" color="text.secondary">Status: {app.status || app.state || 'unknown'}</Typography>
+                </Box>
+              ))}
+            </Stack>
+          ) : (
+            <Typography>No applications found for this job.</Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseApplications}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }

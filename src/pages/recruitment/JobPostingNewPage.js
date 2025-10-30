@@ -53,7 +53,8 @@ export default function JobPostingNewPage() {
       if (res && res.success) {
         enqueueSnackbar('Job posting created', { variant: 'success' });
         // navigate back to job postings and signal list to refresh
-        navigate(PATH_DASHBOARD.recruitment.jobs, { state: { refresh: true } });
+        // Use the .root string (e.g. '/dashboard/recruitment/jobs') instead of the jobs object
+        navigate(PATH_DASHBOARD.recruitment.jobs.root, { state: { refresh: true } });
       } else {
         enqueueSnackbar(res?.message || 'Failed to create job posting', { variant: 'error' });
       }

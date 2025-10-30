@@ -2462,10 +2462,10 @@
     react-transition-group "^4.4.5"
     rifm "^0.12.1"
 
-"@napi-rs/canvas-darwin-x64@0.1.81":
+"@napi-rs/canvas-darwin-arm64@0.1.81":
   version "0.1.81"
-  resolved "https://registry.npmjs.org/@napi-rs/canvas-darwin-x64/-/canvas-darwin-x64-0.1.81.tgz"
-  integrity sha512-EYfk+co6BElq5DXNH9PBLYDYwc4QsvIVbyrsVHsxVpn4p6Y3/s8MChgC69AGqj3vzZBQ1qx2CRCMtg5cub+XuQ==
+  resolved "https://registry.npmjs.org/@napi-rs/canvas-darwin-arm64/-/canvas-darwin-arm64-0.1.81.tgz"
+  integrity sha512-omejuKgHWKDGoh8rsgsyhm/whwxMaryTQjJTd9zD7hiB9/rzcEEJLHnzXWR5ysy4/tTjHaQotE6k2t8eodTLnA==
 
 "@napi-rs/canvas@^0.1.80":
   version "0.1.81"
