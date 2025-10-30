@@ -212,6 +212,86 @@ exports.delete = async (req, res) => {
   }
 };
 
+// Download contract document
+exports.download = async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log(`📥 Download request for contract ID: ${id}`);
+
+    const contract = await Contract.findByPk(id);
+
+    if (!contract) {
+      console.error(`❌ Contract not found: ${id}`);
+      return res.status(404).json({
+        success: false,
+        message: 'Contract not found',
+      });
+    }
+
+    if (!contract.filePath) {
+      console.error(`❌ No document found for contract: ${id}`);
+      return res.status(404).json({
+        success: false,
+        message: 'No document uploaded for this contract',
+      });
+    }
+
+    const path = require('path');
+    const fs = require('fs');
+    
+    // Remove leading slash if present
+    const relativePath = contract.filePath.startsWith('/') 
+      ? contract.filePath.substring(1) 
+      : contract.filePath;
+    
+    const filePath = path.join(__dirname, '..', relativePath);
+    console.log(`📂 Looking for file at: ${filePath}`);
+
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      console.error(`❌ File not found at path: ${filePath}`);
+      return res.status(404).json({
+        success: false,
+        message: 'Document file not found on server',
+        path: filePath,
+      });
+    }
+
+    // Get file name
+    const fileName = path.basename(filePath);
+    console.log(`✅ Serving file: ${fileName}`);
+
+    // Set headers for download
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.setHeader('Content-Type', 'application/octet-stream');
+
+    // Stream the file
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+
+    fileStream.on('error', (error) => {
+      console.error('❌ Error streaming file:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error downloading file',
+        error: error.message,
+      });
+    });
+
+    fileStream.on('end', () => {
+      console.log('✅ File download completed');
+    });
+
+  } catch (error) {
+    console.error('❌ Download error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to download document',
+      error: error.message,
+    });
+  }
+};
+
 // Helper function
 function calculateDuration(startDate, endDate) {
   if (!endDate) return 'Indefinite';

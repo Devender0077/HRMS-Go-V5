@@ -189,7 +189,18 @@ export default function ContractsListPage() {
   const handleDownload = () => {
     console.log('📥 Downloading contract:', selectedContract.id);
     handleClosePopover();
-    enqueueSnackbar('Download functionality coming soon', { variant: 'info' });
+    
+    if (!selectedContract.id) {
+      enqueueSnackbar('No contract selected', { variant: 'error' });
+      return;
+    }
+    
+    const downloadUrl = `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/api/contracts/${selectedContract.id}/download`;
+    console.log('📥 Downloading from:', downloadUrl);
+    
+    // Open in new tab to trigger download
+    window.open(downloadUrl, '_blank');
+    enqueueSnackbar('Downloading contract document...', { variant: 'info' });
   };
 
   const getStatusColor = (status) => {

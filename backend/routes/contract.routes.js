@@ -46,6 +46,7 @@ router.use(authenticateToken);
 
 // CRUD routes
 router.get('/', contractController.getAll);
+router.get('/:id/download', contractController.download); // Must be before /:id to avoid conflicts
 router.get('/:id', contractController.getById);
 router.post('/', upload.single('contractFile'), contractController.create);
 router.put('/:id', upload.single('contractFile'), contractController.update);

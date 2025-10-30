@@ -352,9 +352,41 @@ export default function ContractNewEditForm({ isEdit = false, isView = false, cu
                   Contract Document
                 </Typography>
                 
-                {currentFile && !selectedFile && (
-                  <Alert severity="info" sx={{ mb: 2 }}>
-                    Current file: {currentFile.split('/').pop()}
+                {currentFile && (
+                  <Stack spacing={1}>
+                    <Alert 
+                      severity="success" 
+                      sx={{ mb: 1 }}
+                      action={
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          startIcon={<Iconify icon="eva:download-fill" />}
+                          onClick={() => {
+                            const fileName = currentFile.split('/').pop();
+                            const contractId = currentContract?.id;
+                            if (contractId) {
+                              const downloadUrl = `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/api/contracts/${contractId}/download`;
+                              console.log('📥 Downloading from:', downloadUrl);
+                              window.open(downloadUrl, '_blank');
+                              enqueueSnackbar('Downloading contract document...', { variant: 'info' });
+                            } else {
+                              enqueueSnackbar('No contract ID available', { variant: 'error' });
+                            }
+                          }}
+                        >
+                          Download
+                        </Button>
+                      }
+                    >
+                      Current file: {currentFile.split('/').pop()}
+                    </Alert>
+                  </Stack>
+                )}
+
+                {!currentFile && isView && (
+                  <Alert severity="warning" sx={{ mb: 2 }}>
+                    No document uploaded for this contract
                   </Alert>
                 )}
 
