@@ -311,6 +311,9 @@ export const SendContractPage = Loadable(lazy(() => import('../pages/contracts/S
 export const ContractSigningPage = Loadable(lazy(() => import('../pages/contracts/ContractSigningPage')));
 export const EmployeeOnboardingPage = Loadable(lazy(() => import('../pages/contracts/EmployeeOnboardingPage')));
 export const ManageAgreementsPage = Loadable(lazy(() => import('../pages/contracts/ManageAgreementsPage')));
+export const PDFToolsPage = Loadable(lazy(() => import('../pages/contracts/PDFToolsPage')));
+export const MergePDFPage = Loadable(lazy(() => import('../pages/contracts/MergePDFPage')));
+export const CompressPDFPage = Loadable(lazy(() => import('../pages/contracts/CompressPDFPage')));
 export const AssetsListPage = Loadable(lazy(() => import('../pages/assets/AssetsListPage')));
 export const AssetNewPage = Loadable(lazy(() => import('../pages/assets/AssetNewPage')));
 export const AssetCategoriesPage = Loadable(lazy(() => import('../pages/assets/AssetCategoriesPage')));

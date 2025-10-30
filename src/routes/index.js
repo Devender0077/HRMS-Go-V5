@@ -182,6 +182,9 @@ import {
   ContractSigningPage,
   EmployeeOnboardingPage,
   ManageAgreementsPage,
+  PDFToolsPage,
+  MergePDFPage,
+  CompressPDFPage,
   AssetsListPage,
   AssetNewPage,
   AssetCategoriesPage,
@@ -440,6 +443,10 @@ export default function Router() {
             { path: 'agreements', element: <ManageAgreementsPage /> },
             { path: 'send', element: <SendContractPage /> },
             { path: 'sign/:id', element: <ContractSigningPage /> },
+            // PDF Tools
+            { path: 'pdf-tools', element: <PDFToolsPage /> },
+            { path: 'pdf-tools/merge', element: <MergePDFPage /> },
+            { path: 'pdf-tools/compress', element: <CompressPDFPage /> },
             // Legacy (kept for backward compatibility, not in navigation)
             { path: 'list', element: <ContractsListPage /> },
             { path: 'new', element: <ContractNewPage /> },
