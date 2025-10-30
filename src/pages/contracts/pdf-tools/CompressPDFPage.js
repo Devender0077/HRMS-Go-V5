@@ -3,13 +3,13 @@ import { useState } from 'react';
 // @mui
 import { Container, Card, Stack, Button, Typography, Alert, Box, LinearProgress } from '@mui/material';
 // routes
-import { PATH_DASHBOARD } from '../../routes/paths';
+import { PATH_DASHBOARD } from '../../../routes/paths';
 // components
-import Iconify from '../../components/iconify';
-import CustomBreadcrumbs from '../../components/custom-breadcrumbs';
-import { useSettingsContext } from '../../components/settings';
-import { useSnackbar } from '../../components/snackbar';
-import documentEditorService from '../../services/api/documentEditorService';
+import Iconify from '../../../components/iconify';
+import CustomBreadcrumbs from '../../../components/custom-breadcrumbs';
+import { useSettingsContext } from '../../../components/settings';
+import { useSnackbar } from '../../../components/snackbar';
+import documentEditorService from '../../../services/api/documentEditorService';
 
 export default function CompressPDFPage() {
   const { themeStretch } = useSettingsContext();

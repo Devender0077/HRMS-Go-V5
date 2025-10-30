@@ -15,14 +15,14 @@ import {
   LinearProgress,
 } from '@mui/material';
 // routes
-import { PATH_DASHBOARD } from '../../routes/paths';
+import { PATH_DASHBOARD } from '../../../routes/paths';
 // components
-import Iconify from '../../components/iconify';
-import CustomBreadcrumbs from '../../components/custom-breadcrumbs';
-import { useSettingsContext } from '../../components/settings';
-import { useSnackbar } from '../../components/snackbar';
+import Iconify from '../../../components/iconify';
+import CustomBreadcrumbs from '../../../components/custom-breadcrumbs';
+import { useSettingsContext } from '../../../components/settings';
+import { useSnackbar } from '../../../components/snackbar';
 // services
-import documentEditorService from '../../services/api/documentEditorService';
+import documentEditorService from '../../../services/api/documentEditorService';
 
 // ----------------------------------------------------------------------
 
