@@ -110,7 +110,10 @@ export default function ManageAgreementsPage() {
   const fetchAgreements = async () => {
     try {
       setLoading(true);
-      const data = await contractInstanceService.getAll();
+      const response = await contractInstanceService.getAll();
+      
+      // Extract data array from response (handles both { data: [...] } and [...] formats)
+      const data = Array.isArray(response) ? response : (response.data || []);
       
       let filtered = data;
       if (selectedFilter !== 'all') {
@@ -128,6 +131,9 @@ export default function ManageAgreementsPage() {
     } catch (error) {
       console.error('Error fetching agreements:', error);
       enqueueSnackbar('Failed to fetch agreements', { variant: 'error' });
+      // Set empty data on error
+      setAgreements([]);
+      setFilterCounts(STATUS_FILTERS);
     } finally {
       setLoading(false);
     }
