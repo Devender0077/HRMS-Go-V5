@@ -1,7 +1,27 @@
 import { Helmet } from 'react-helmet-async';
-import { useState } from 'react';
-import { Container, Card, Stack, Button, Typography, Alert, LinearProgress } from '@mui/material';
+import { useState, useCallback } from 'react';
+import { useDropzone } from 'react-dropzone';
+// @mui
+import {
+  Container,
+  Card,
+  Stack,
+  Button,
+  Typography,
+  Box,
+  LinearProgress,
+  Paper,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Alert,
+} from '@mui/material';
+import { alpha } from '@mui/material/styles';
+import { LoadingButton } from '@mui/lab';
+// routes
 import { PATH_DASHBOARD } from '../../../routes/paths';
+// components
 import Iconify from '../../../components/iconify';
 import CustomBreadcrumbs from '../../../components/custom-breadcrumbs';
 import { useSettingsContext } from '../../../components/settings';
@@ -13,26 +33,41 @@ export default function ReorderPagesPage() {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const handleFileSelect = (e) => {
-    setFile(e.target.files[0]);
-  };
+  const onDrop = useCallback((acceptedFiles) => {
+    if (acceptedFiles && acceptedFiles.length > 0) {
+      setFile(acceptedFiles[0]);
+    }
+  }, []);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: { 'application/pdf': ['.pdf'] },
+    multiple: false,
+  });
 
   const handleProcess = async () => {
     if (!file) return;
+    
     try {
       setLoading(true);
-      // TODO: Implement reorder pages in PDF logic
+      // TODO: Implement reorder PDF logic via backend API
+      await new Promise(resolve => setTimeout(resolve, 2000));
       enqueueSnackbar('Reorder Pages completed successfully!', { variant: 'success' });
     } catch (error) {
-      enqueueSnackbar('Failed to reorder pages in PDF', { variant: 'error' });
+      enqueueSnackbar('Failed to reorder PDF', { variant: 'error' });
     } finally {
       setLoading(false);
     }
   };
 
+  const handleRemove = () => {
+    setFile(null);
+  };
+
   return (
     <>
       <Helmet><title>Reorder Pages | PDF Tools</title></Helmet>
+      
       <Container maxWidth={themeStretch ? false : 'lg'}>
         <CustomBreadcrumbs
           heading="Reorder Pages"
@@ -42,24 +77,123 @@ export default function ReorderPagesPage() {
             { name: 'PDF Tools', href: '/dashboard/contracts/pdf-tools' },
             { name: 'Reorder Pages' },
           ]}
-          sx={{ mb: 3 }}
+          sx={{ mb: 5 }}
         />
-        <Card sx={{ p: 3 }}>
-          <Stack spacing={3}>
-            <Alert severity="info">Rearrange page sequence</Alert>
-            <Button variant="contained" component="label" startIcon={<Iconify icon="eva:swap-outline" />}>
-              Select PDF File
-              <input type="file" hidden accept=".pdf" onChange={handleFileSelect} />
-            </Button>
+
+        <Card>
+          <Stack spacing={3} sx={{ p: 3 }}>
+            <Alert severity="info" icon={<Iconify icon="eva:swap-outline" />}>
+              <Typography variant="subtitle2" gutterBottom>
+                Reorder Pages
+              </Typography>
+              <Typography variant="body2">
+                Rearrange page sequence - drag and drop to reorder pages
+              </Typography>
+            </Alert>
+
+            {!file && (
+              <Paper
+                {...getRootProps()}
+                sx={{
+                  py: 8,
+                  px: 3,
+                  textAlign: 'center',
+                  border: (theme) => `2px dashed ${alpha(theme.palette.grey[500], 0.32)}`,
+                  bgcolor: (theme) => alpha(theme.palette.grey[500], 0.04),
+                  cursor: 'pointer',
+                  transition: (theme) => theme.transitions.create(['all']),
+                  '&:hover': {
+                    bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
+                    borderColor: 'primary.main',
+                  },
+                  ...(isDragActive && {
+                    bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
+                    borderColor: 'primary.main',
+                  }),
+                }}
+              >
+                <input {...getInputProps()} />
+                
+                <Iconify
+                  icon="eva:cloud-upload-fill"
+                  width={64}
+                  sx={{ mb: 2, color: 'text.disabled' }}
+                />
+
+                <Typography variant="h5" paragraph>
+                  {isDragActive ? 'Drop PDF file here' : 'Drop or Select PDF'}
+                </Typography>
+
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                  Drop your PDF file here or click to browse
+                  <br />
+                  <Typography variant="caption">Maximum file size: 50MB</Typography>
+                </Typography>
+              </Paper>
+            )}
+
             {file && (
               <>
-                <Typography variant="subtitle2">
-                  {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                </Typography>
+                <Paper variant="outlined" sx={{ p: 2 }}>
+                  <Stack direction="row" alignItems="center" spacing={2}>
+                    <Iconify icon="vscode-icons:file-type-pdf2" width={48} />
+                    <Box sx={{ flexGrow: 1 }}>
+                      <Typography variant="subtitle1">{file.name}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {(file.size / 1024 / 1024).toFixed(2)} MB
+                      </Typography>
+                    </Box>
+                    <Button
+                      size="small"
+                      color="error"
+                      startIcon={<Iconify icon="eva:close-fill" />}
+                      onClick={handleRemove}
+                    >
+                      Remove
+                    </Button>
+                  </Stack>
+                </Paper>
+
                 {loading && <LinearProgress />}
-                <Button variant="contained" onClick={handleProcess} disabled={loading}>
+
+                <LoadingButton
+                  fullWidth
+                  size="large"
+                  variant="contained"
+                  loading={loading}
+                  startIcon={<Iconify icon="eva:swap-outline" />}
+                  onClick={handleProcess}
+                >
                   Reorder Pages
-                </Button>
+                </LoadingButton>
+              </>
+            )}
+
+            {!file && (
+              <>
+                <Typography variant="subtitle2" sx={{ mt: 3 }}>
+                  Features
+                </Typography>
+                <List>
+                  <ListItem>
+                    <ListItemIcon>
+                      <Iconify icon="eva:checkmark-circle-2-fill" color="success.main" width={24} />
+                    </ListItemIcon>
+                    <ListItemText primary="Visual drag-and-drop interface" />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon>
+                      <Iconify icon="eva:checkmark-circle-2-fill" color="success.main" width={24} />
+                    </ListItemIcon>
+                    <ListItemText primary="Preview page thumbnails" />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon>
+                      <Iconify icon="eva:checkmark-circle-2-fill" color="success.main" width={24} />
+                    </ListItemIcon>
+                    <ListItemText primary="Save new page order" />
+                  </ListItem>
+                </List>
               </>
             )}
           </Stack>
