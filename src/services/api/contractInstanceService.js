@@ -11,10 +11,30 @@ class ContractInstanceService {
   async getAll(params = {}) {
     try {
       const response = await apiClient.get('/contract-instances', { params });
+      const rawData = response.data?.data || [];
+      
+      // Transform camelCase from backend to snake_case for frontend
+      const transformedData = rawData.map(item => ({
+        id: item.id,
+        contract_number: item.contractNumber || item.contract_number,
+        template_id: item.templateId || item.template_id,
+        template_name: item.templateName || item.template_name || item.ContractTemplate?.name,
+        recipient_name: item.recipientName || item.recipient_name,
+        recipient_email: item.recipientEmail || item.recipient_email,
+        recipient_type: item.recipientType || item.recipient_type,
+        status: item.status,
+        sent_date: item.sentDate || item.sent_date,
+        viewed_date: item.viewedDate || item.viewed_date,
+        completed_date: item.completedDate || item.completed_date,
+        expires_at: item.expiresAt || item.expires_at,
+        created_at: item.createdAt || item.created_at,
+        updated_at: item.updatedAt || item.updated_at,
+      }));
+      
       return {
         success: true,
-        data: response.data?.data || [],
-        totalCount: response.data?.totalCount || 0,
+        data: transformedData,
+        totalCount: response.data?.totalCount || transformedData.length,
         currentPage: response.data?.currentPage || 1,
         totalPages: response.data?.totalPages || 1,
       };

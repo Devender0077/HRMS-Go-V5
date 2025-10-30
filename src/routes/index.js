@@ -438,11 +438,14 @@ export default function Router() {
             { path: 'templates/new', element: <TemplateNewPage /> },
             { path: 'templates/:id/edit', element: <TemplateNewPage /> },
             { path: 'templates/:id/fields', element: <TemplateFieldEditorPage /> },
-            { path: 'instances', element: <ContractInstancesPage /> },
-            { path: 'instances/:id/view', element: <ContractInstancesPage /> },
+            // Manage Agreements (formerly "instances")
             { path: 'agreements', element: <ManageAgreementsPage /> },
+            { path: 'agreements/:id/view', element: <ManageAgreementsPage /> },
             { path: 'send', element: <SendContractPage /> },
             { path: 'sign/:id', element: <ContractSigningPage /> },
+            // Legacy route redirects for backward compatibility
+            { path: 'instances', element: <Navigate to="/dashboard/contracts/agreements" replace /> },
+            { path: 'instances/:id/view', element: <Navigate to="/dashboard/contracts/agreements" replace /> },
             // PDF Tools
             { path: 'pdf-tools', element: <PDFToolsPage /> },
             { path: 'pdf-tools/merge', element: <MergePDFPage /> },
