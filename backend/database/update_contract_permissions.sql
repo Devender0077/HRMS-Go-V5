@@ -8,7 +8,7 @@ USE hrms;
 -- Add new permissions for contract management
 -- ============================================================================
 
-INSERT INTO permissions (name, slug, description, category, created_at, updated_at) VALUES
+INSERT INTO permissions (name, slug, description, module, created_at, updated_at) VALUES
 -- Templates Management
 ('View Contract Templates', 'contracts.templates.view', 'View contract templates list', 'Contracts', NOW(), NOW()),
 ('Create Contract Template', 'contracts.templates.create', 'Upload new contract templates', 'Contracts', NOW(), NOW()),
@@ -59,7 +59,7 @@ SET @accountant_id = (SELECT id FROM user_roles WHERE slug = 'accountant' LIMIT 
 INSERT INTO role_permissions (role_id, permission_id, created_at)
 SELECT @superadmin_id, id, NOW()
 FROM permissions
-WHERE category = 'Contracts'
+WHERE module = 'Contracts'
 ON DUPLICATE KEY UPDATE updated_at = NOW();
 
 -- ============================================================================
@@ -69,7 +69,7 @@ ON DUPLICATE KEY UPDATE updated_at = NOW();
 INSERT INTO role_permissions (role_id, permission_id, created_at)
 SELECT @admin_id, id, NOW()
 FROM permissions
-WHERE category = 'Contracts'
+WHERE module = 'Contracts'
 ON DUPLICATE KEY UPDATE updated_at = NOW();
 
 -- ============================================================================
@@ -173,10 +173,10 @@ ON DUPLICATE KEY UPDATE updated_at = NOW();
 
 SELECT 
   'Contract Permissions Update Complete!' as Status,
-  (SELECT COUNT(*) FROM permissions WHERE category = 'Contracts') as Total_Permissions,
+  (SELECT COUNT(*) FROM permissions WHERE module = 'Contracts') as Total_Permissions,
   (SELECT COUNT(DISTINCT role_id) FROM role_permissions 
    JOIN permissions ON role_permissions.permission_id = permissions.id 
-   WHERE permissions.category = 'Contracts') as Roles_With_Permissions;
+   WHERE permissions.module = 'Contracts') as Roles_With_Permissions;
 
 -- Show permissions by role
 SELECT 
@@ -184,7 +184,7 @@ SELECT
   COUNT(rp.id) as Contract_Permissions
 FROM user_roles ur
 LEFT JOIN role_permissions rp ON ur.id = rp.role_id
-LEFT JOIN permissions p ON rp.permission_id = p.id AND p.category = 'Contracts'
+LEFT JOIN permissions p ON rp.permission_id = p.id AND p.module = 'Contracts'
 WHERE ur.slug IN ('superadmin', 'admin', 'hr_manager', 'hr', 'manager', 'employee', 'accountant')
 GROUP BY ur.id, ur.name
 ORDER BY COUNT(rp.id) DESC;
