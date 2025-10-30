@@ -7,11 +7,12 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 // @mui
 import { LoadingButton } from '@mui/lab';
-import { Card, Grid, Stack, Typography, MenuItem, TextField } from '@mui/material';
+import { Card, Grid, Stack, Typography, MenuItem, TextField, Button, Box, Alert } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
 // components
 import { useSnackbar } from '../../../components/snackbar';
 import FormProvider, { RHFSelect, RHFTextField } from '../../../components/hook-form';
+import Iconify from '../../../components/iconify';
 // services
 import contractService from '../../../services/api/contractService';
 import employeeService from '../../../services/api/employeeService';
@@ -46,6 +47,8 @@ export default function ContractNewEditForm({ isEdit = false, isView = false, cu
   const { enqueueSnackbar } = useSnackbar();
 
   const [employees, setEmployees] = useState([]);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [currentFile, setCurrentFile] = useState(currentContract?.filePath || null);
 
   useEffect(() => {
     fetchEmployees();
@@ -128,9 +131,11 @@ export default function ContractNewEditForm({ isEdit = false, isView = false, cu
       console.log('📝 Resetting form with contract data:', currentContract);
       console.log('📝 Default values:', defaultValues);
       reset(defaultValues);
+      setCurrentFile(currentContract.filePath || null);
     }
     if (!isEdit) {
       reset(defaultValues);
+      setCurrentFile(null);
     }
   }, [isEdit, currentContract, reset, defaultValues]);
 
@@ -154,10 +159,25 @@ export default function ContractNewEditForm({ isEdit = false, isView = false, cu
         endDate: data.endDate ? new Date(data.endDate).toISOString().split('T')[0] : null,
       };
 
-      console.log('📤 Sending to backend:', formattedData);
+      // If file is selected, create FormData for multipart upload
+      let submitData;
+      if (selectedFile) {
+        console.log('📎 Uploading file:', selectedFile.name);
+        submitData = new FormData();
+        Object.keys(formattedData).forEach(key => {
+          if (formattedData[key] !== null && formattedData[key] !== undefined) {
+            submitData.append(key, formattedData[key]);
+          }
+        });
+        submitData.append('contractFile', selectedFile);
+      } else {
+        submitData = formattedData;
+      }
+
+      console.log('📤 Sending to backend:', selectedFile ? 'FormData with file' : formattedData);
 
       if (isEdit) {
-        const response = await contractService.update(currentContract.id, formattedData);
+        const response = await contractService.update(currentContract.id, submitData);
         console.log('✅ Update response:', response);
         if (response.success) {
           enqueueSnackbar('Contract updated successfully!', { variant: 'success' });
@@ -165,7 +185,7 @@ export default function ContractNewEditForm({ isEdit = false, isView = false, cu
           throw new Error(response.message);
         }
       } else {
-        const response = await contractService.create(formattedData);
+        const response = await contractService.create(submitData);
         console.log('✅ Create response:', response);
         if (response.success) {
           enqueueSnackbar('Contract created successfully!', { variant: 'success' });
@@ -268,6 +288,48 @@ export default function ContractNewEditForm({ isEdit = false, isView = false, cu
                 placeholder="Enter contract terms and conditions..."
                 disabled={isView}
               />
+
+              {/* File Upload Section */}
+              <Box>
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                  Contract Document
+                </Typography>
+                
+                {currentFile && !selectedFile && (
+                  <Alert severity="info" sx={{ mb: 2 }}>
+                    Current file: {currentFile.split('/').pop()}
+                  </Alert>
+                )}
+
+                {!isView && (
+                  <Button
+                    variant="outlined"
+                    component="label"
+                    startIcon={<Iconify icon="eva:cloud-upload-fill" />}
+                    fullWidth
+                  >
+                    {selectedFile ? `Selected: ${selectedFile.name}` : 'Upload Contract Document'}
+                    <input
+                      type="file"
+                      hidden
+                      accept=".pdf,.doc,.docx"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          console.log('📎 File selected:', file.name);
+                          setSelectedFile(file);
+                        }
+                      }}
+                    />
+                  </Button>
+                )}
+
+                {selectedFile && (
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                    File: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(2)} KB)
+                  </Typography>
+                )}
+              </Box>
             </Stack>
 
             <Stack direction="row" spacing={1.5} sx={{ mt: 3 }}>

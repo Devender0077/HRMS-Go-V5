@@ -44,6 +44,10 @@ const Contract = sequelize.define('Contract', {
     type: DataTypes.DATEONLY,
     field: 'signed_date',
   },
+  filePath: {
+    type: DataTypes.STRING(255),
+    field: 'file_path',
+  },
 }, {
   tableName: 'contracts',
   timestamps: true,

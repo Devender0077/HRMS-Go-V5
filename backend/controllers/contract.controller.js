@@ -114,8 +114,17 @@ exports.getById = async (req, res) => {
 // Create contract
 exports.create = async (req, res) => {
   try {
-    console.log('Creating contract:', req.body);
-    const contract = await Contract.create(req.body);
+    console.log('➕ Creating contract:', req.body);
+    console.log('📎 Uploaded file:', req.file);
+
+    const contractData = {
+      ...req.body,
+      filePath: req.file ? `/uploads/contracts/${req.file.filename}` : null,
+    };
+
+    const contract = await Contract.create(contractData);
+
+    console.log('✅ Contract created:', contract.id);
 
     res.status(201).json({
       success: true,
@@ -123,7 +132,7 @@ exports.create = async (req, res) => {
       data: contract,
     });
   } catch (error) {
-    console.error('Create contract error:', error);
+    console.error('❌ Create contract error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to create contract',
@@ -135,6 +144,9 @@ exports.create = async (req, res) => {
 // Update contract
 exports.update = async (req, res) => {
   try {
+    console.log('✏️ Updating contract:', req.params.id);
+    console.log('📎 Uploaded file:', req.file);
+
     const contract = await Contract.findByPk(req.params.id);
 
     if (!contract) {
@@ -144,7 +156,19 @@ exports.update = async (req, res) => {
       });
     }
 
-    await contract.update(req.body);
+    const updateData = {
+      ...req.body,
+    };
+
+    // If new file uploaded, update file path
+    if (req.file) {
+      updateData.filePath = `/uploads/contracts/${req.file.filename}`;
+      console.log('✅ New file uploaded:', updateData.filePath);
+    }
+
+    await contract.update(updateData);
+
+    console.log('✅ Contract updated:', contract.id);
 
     res.json({
       success: true,
@@ -152,6 +176,7 @@ exports.update = async (req, res) => {
       data: contract,
     });
   } catch (error) {
+    console.error('❌ Update contract error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to update contract',
