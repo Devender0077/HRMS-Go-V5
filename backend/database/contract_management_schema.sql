@@ -173,7 +173,6 @@ CREATE TABLE IF NOT EXISTS contract_signing_sessions (
   user_agent TEXT,
   last_activity_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (instance_id) REFERENCES contract_instances(id) ON DELETE CASCADE,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
   INDEX idx_instance (instance_id),
   INDEX idx_token (session_token),
   INDEX idx_status (status)
@@ -184,27 +183,27 @@ CREATE TABLE IF NOT EXISTS contract_signing_sessions (
 -- ============================================================================
 
 -- Sample USA Templates
-INSERT INTO contract_templates (name, description, category, region, is_active, created_at) VALUES
-('Employment Agreement - USA', 'Standard employment agreement for USA employees', 'employee', 'usa', TRUE, NOW()),
-('Form I-9', 'Employment Eligibility Verification (USA)', 'employee', 'usa', TRUE, NOW()),
-('Form W-4', 'Employee Withholding Certificate (USA)', 'employee', 'usa', TRUE, NOW()),
-('NDA - USA', 'Non-Disclosure Agreement for USA employees', 'nda', 'usa', TRUE, NOW()),
-('Direct Deposit Authorization', 'Bank account authorization for direct deposit', 'employee', 'usa', TRUE, NOW());
+INSERT INTO contract_templates (name, description, category, region, is_active, created_at, updated_at) VALUES
+('Employment Agreement - USA', 'Standard employment agreement for USA employees', 'employee', 'usa', TRUE, NOW(), NOW()),
+('Form I-9', 'Employment Eligibility Verification (USA)', 'employee', 'usa', TRUE, NOW(), NOW()),
+('Form W-4', 'Employee Withholding Certificate (USA)', 'employee', 'usa', TRUE, NOW(), NOW()),
+('NDA - USA', 'Non-Disclosure Agreement for USA employees', 'nda', 'usa', TRUE, NOW(), NOW()),
+('Direct Deposit Authorization', 'Bank account authorization for direct deposit', 'employee', 'usa', TRUE, NOW(), NOW());
 
 -- Sample India Templates
-INSERT INTO contract_templates (name, description, category, region, is_active, created_at) VALUES
-('Employment Contract - India', 'Standard employment contract for India employees', 'employee', 'india', TRUE, NOW()),
-('Appointment Letter - India', 'Formal appointment letter for new hires in India', 'employee', 'india', TRUE, NOW()),
-('NDA - India', 'Non-Disclosure Agreement for India employees', 'nda', 'india', TRUE, NOW()),
-('Form 11 (EPF)', 'Employee Provident Fund nomination form', 'employee', 'india', TRUE, NOW()),
-('Gratuity Nomination', 'Gratuity nominee details form', 'employee', 'india', TRUE, NOW());
+INSERT INTO contract_templates (name, description, category, region, is_active, created_at, updated_at) VALUES
+('Employment Contract - India', 'Standard employment contract for India employees', 'employee', 'india', TRUE, NOW(), NOW()),
+('Appointment Letter - India', 'Formal appointment letter for new hires in India', 'employee', 'india', TRUE, NOW(), NOW()),
+('NDA - India', 'Non-Disclosure Agreement for India employees', 'nda', 'india', TRUE, NOW(), NOW()),
+('Form 11 (EPF)', 'Employee Provident Fund nomination form', 'employee', 'india', TRUE, NOW(), NOW()),
+('Gratuity Nomination', 'Gratuity nominee details form', 'employee', 'india', TRUE, NOW(), NOW());
 
 -- Sample Vendor/Business Templates
-INSERT INTO contract_templates (name, description, category, region, is_active, created_at) VALUES
-('Master Service Agreement (MSA)', 'Framework agreement for ongoing vendor services', 'msa', 'global', TRUE, NOW()),
-('Statement of Work (SOW)', 'Project-specific work details', 'sow', 'global', TRUE, NOW()),
-('Purchase Order (PO)', 'Standard purchase order template', 'po', 'global', TRUE, NOW()),
-('Business NDA', 'Mutual non-disclosure agreement for business partnerships', 'nda', 'global', TRUE, NOW());
+INSERT INTO contract_templates (name, description, category, region, is_active, created_at, updated_at) VALUES
+('Master Service Agreement (MSA)', 'Framework agreement for ongoing vendor services', 'msa', 'global', TRUE, NOW(), NOW()),
+('Statement of Work (SOW)', 'Project-specific work details', 'sow', 'global', TRUE, NOW(), NOW()),
+('Purchase Order (PO)', 'Standard purchase order template', 'po', 'global', TRUE, NOW(), NOW()),
+('Business NDA', 'Mutual non-disclosure agreement for business partnerships', 'nda', 'global', TRUE, NOW(), NOW());
 
 -- ============================================================================
 -- INDEXES FOR PERFORMANCE
