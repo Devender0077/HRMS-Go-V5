@@ -25,6 +25,8 @@ import {
   IconButton,
   MenuItem,
   Divider,
+  Checkbox,
+  Tooltip,
 } from '@mui/material';
 // routes
 import { PATH_DASHBOARD } from '../../routes/paths';
@@ -288,6 +290,32 @@ export default function ManageAgreementsPage() {
           <Grid item xs={12} md={9}>
             <Card>
               <TableContainer sx={{ position: 'relative', overflow: 'unset' }}>
+                <TableSelectedAction
+                  dense={false}
+                  numSelected={selected.length}
+                  rowCount={agreements.length}
+                  onSelectAllRows={(checked) =>
+                    onSelectAllRows(
+                      checked,
+                      agreements.map((row) => row.id)
+                    )
+                  }
+                  action={
+                    <Stack direction="row" spacing={1}>
+                      <Tooltip title="Send Selected">
+                        <IconButton color="primary">
+                          <Iconify icon="eva:email-outline" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Cancel Selected">
+                        <IconButton color="error">
+                          <Iconify icon="eva:close-circle-outline" />
+                        </IconButton>
+                      </Tooltip>
+                    </Stack>
+                  }
+                />
+                
                 <Scrollbar>
                   <Table size="medium">
                     <TableHeadCustom
@@ -308,39 +336,49 @@ export default function ManageAgreementsPage() {
                     <TableBody>
                       {agreements
                         .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                        .map((row) => (
-                          <TableRow key={row.id} hover>
-                            <TableCell>{row.contract_number || '-'}</TableCell>
-                            <TableCell>
-                              <Typography variant="subtitle2" noWrap>
-                                {row.template_name || '-'}
-                              </Typography>
-                            </TableCell>
-                            <TableCell>
-                              <Stack>
-                                <Typography variant="body2">{row.recipient_email || '-'}</Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                  {row.employee_name || ''}
+                        .map((row) => {
+                          const isSelected = selected.includes(row.id);
+                          
+                          return (
+                            <TableRow key={row.id} hover selected={isSelected}>
+                              <TableCell padding="checkbox">
+                                <Checkbox
+                                  checked={isSelected}
+                                  onChange={() => onSelectRow(row.id)}
+                                />
+                              </TableCell>
+                              <TableCell>{row.contract_number || '-'}</TableCell>
+                              <TableCell>
+                                <Typography variant="subtitle2" noWrap>
+                                  {row.template_name || '-'}
                                 </Typography>
-                              </Stack>
-                            </TableCell>
-                            <TableCell>
-                              <Chip
-                                label={row.status}
-                                size="small"
-                                color={STATUS_COLORS[row.status] || 'default'}
-                                variant="soft"
-                              />
-                            </TableCell>
-                            <TableCell>{formatDate(row.sent_date)}</TableCell>
-                            <TableCell>{formatDate(row.completed_date)}</TableCell>
-                            <TableCell align="right">
-                              <IconButton onClick={(e) => handleOpenPopover(e, row)}>
-                                <Iconify icon="eva:more-vertical-fill" />
-                              </IconButton>
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                              </TableCell>
+                              <TableCell>
+                                <Stack>
+                                  <Typography variant="body2">{row.recipient_email || '-'}</Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {row.employee_name || ''}
+                                  </Typography>
+                                </Stack>
+                              </TableCell>
+                              <TableCell>
+                                <Chip
+                                  label={row.status}
+                                  size="small"
+                                  color={STATUS_COLORS[row.status] || 'default'}
+                                  variant="soft"
+                                />
+                              </TableCell>
+                              <TableCell>{formatDate(row.sent_date)}</TableCell>
+                              <TableCell>{formatDate(row.completed_date)}</TableCell>
+                              <TableCell align="right">
+                                <IconButton onClick={(e) => handleOpenPopover(e, row)}>
+                                  <Iconify icon="eva:more-vertical-fill" />
+                                </IconButton>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
                     </TableBody>
 
                     {!loading && agreements.length === 0 && (

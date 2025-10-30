@@ -21,6 +21,7 @@ import {
   TextField,
   InputAdornment,
   Divider,
+  Checkbox,
 } from '@mui/material';
 // routes
 import { PATH_DASHBOARD } from '../../routes/paths';
@@ -36,6 +37,7 @@ import {
   useTable,
   TableNoData,
   TableHeadCustom,
+  TableSelectedAction,
 } from '../../components/table';
 // services
 import contractTemplateService from '../../services/api/contractTemplateService';
@@ -77,6 +79,9 @@ export default function ContractTemplatesPage() {
     order,
     orderBy,
     rowsPerPage,
+    selected,
+    onSelectRow,
+    onSelectAllRows,
     onSort,
     onChangePage,
     onChangeRowsPerPage,
@@ -292,20 +297,63 @@ export default function ContractTemplatesPage() {
             </TextField>
           </Stack>
 
-          <Scrollbar>
-            <TableContainer sx={{ minWidth: 800 }}>
+          <TableContainer sx={{ position: 'relative', overflow: 'unset', minWidth: 800 }}>
+            <TableSelectedAction
+              dense={false}
+              numSelected={selected.length}
+              rowCount={tableData.length}
+              onSelectAllRows={(checked) =>
+                onSelectAllRows(
+                  checked,
+                  tableData.map((row) => row.id)
+                )
+              }
+              action={
+                <Stack direction="row" spacing={1}>
+                  <Tooltip title="Delete Selected">
+                    <IconButton color="error">
+                      <Iconify icon="eva:trash-2-outline" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Activate Selected">
+                    <IconButton color="success">
+                      <Iconify icon="eva:checkmark-circle-outline" />
+                    </IconButton>
+                  </Tooltip>
+                </Stack>
+              }
+            />
+
+            <Scrollbar>
               <Table>
                 <TableHeadCustom
                   order={order}
                   orderBy={orderBy}
                   headLabel={TABLE_HEAD}
+                  rowCount={tableData.length}
+                  numSelected={selected.length}
                   onSort={onSort}
+                  onSelectAllRows={(checked) =>
+                    onSelectAllRows(
+                      checked,
+                      tableData.map((row) => row.id)
+                    )
+                  }
                 />
 
                 <TableBody>
-                  {!loading && tableData.map((row) => (
-                    <TableRow key={row.id} hover>
-                      <TableCell>
+                  {!loading && tableData.map((row) => {
+                    const isSelected = selected.includes(row.id);
+                    
+                    return (
+                      <TableRow key={row.id} hover selected={isSelected}>
+                        <TableCell padding="checkbox">
+                          <Checkbox
+                            checked={isSelected}
+                            onChange={() => onSelectRow(row.id)}
+                          />
+                        </TableCell>
+                        <TableCell>
                         <Stack direction="row" alignItems="center" spacing={2}>
                           <Iconify
                             icon={
@@ -358,13 +406,14 @@ export default function ContractTemplatesPage() {
                         </IconButton>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
 
                   <TableNoData isNotFound={!loading && tableData.length === 0} />
                 </TableBody>
               </Table>
-            </TableContainer>
-          </Scrollbar>
+            </Scrollbar>
+          </TableContainer>
 
           <TablePagination
             rowsPerPageOptions={[5, 10, 25]}
