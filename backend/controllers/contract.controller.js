@@ -98,6 +98,13 @@ exports.getById = async (req, res) => {
       });
     }
 
+    console.log('📄 Contract data:', {
+      id: contract.id,
+      filePath: contract.filePath,
+      file_path: contract.file_path,
+      dataValues: contract.dataValues,
+    });
+
     res.json({
       success: true,
       data: contract,
