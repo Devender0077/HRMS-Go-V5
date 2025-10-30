@@ -138,6 +138,28 @@ class RecruitmentService {
   }
 
   /**
+   * Create a job application
+   * @param {Object} application - Application payload
+   * @returns {Promise} Create response
+   */
+  async createJobApplication(application) {
+    try {
+      const response = await apiClient.post(`${BASE_PATH}/applications`, application);
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      console.error('Error creating job application:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to create job application',
+        error,
+      };
+    }
+  }
+
+  /**
    * Get job application by ID
    * @param {string} id - Application ID
    * @returns {Promise} Application details

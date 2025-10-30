@@ -1,7 +1,5 @@
 // routes
-import { PATH_AUTH, PATH_DOCS, PATH_PAGE } from '../../../routes/paths';
-// config
-import { PATH_AFTER_LOGIN } from '../../../config-global';
+import { PATH_PAGE } from '../../../routes/paths';
 // components
 import Iconify from '../../../components/iconify';
 
@@ -19,14 +17,14 @@ const navConfig = [
     path: PATH_PAGE.about,
   },
   {
+    title: 'Jobs',
+    icon: <Iconify icon="eva:briefcase-fill" />,
+    path: PATH_PAGE.jobs,
+  },
+  {
     title: 'Contact',
     icon: <Iconify icon="eva:email-fill" />,
     path: PATH_PAGE.contact,
-  },
-  {
-    title: 'Documentation',
-    icon: <Iconify icon="eva:book-open-fill" />,
-    path: PATH_DOCS.root,
   },
 ];
 

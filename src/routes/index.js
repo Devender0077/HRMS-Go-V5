@@ -63,6 +63,7 @@ import {
   Page403,
   Page404,
   HomePage,
+  JobsLandingPage,
   FaqsPage,
   AboutPage,
   Contact,
@@ -194,7 +195,6 @@ import {
   AnnouncementsListPage,
   MessengerPage,
   ReportsDashboardPage,
-  ProgramsPage,
   RolesPage,
   PermissionsPage,
   UsersPage,
@@ -489,6 +489,7 @@ export default function Router() {
       element: <MainLayout />,
       children: [
         { element: <HomePage />, index: true },
+          { path: 'jobs', element: <JobsLandingPage /> },
         { path: 'about-us', element: <AboutPage /> },
         { path: 'contact-us', element: <Contact /> },
         { path: 'faqs', element: <FaqsPage /> },

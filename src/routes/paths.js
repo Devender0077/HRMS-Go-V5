@@ -26,6 +26,7 @@ export const PATH_PAGE = {
   pricing: '/pricing',
   payment: '/payment',
   about: '/about-us',
+  jobs: '/jobs',
   contact: '/contact-us',
   faqs: '/faqs',
   page403: '/403',
@@ -368,17 +369,6 @@ export const PATH_DASHBOARD = {
     income: path(ROOTS_DASHBOARD, '/finance/income'),
     reports: path(ROOTS_DASHBOARD, '/finance/reports'),
   },
-
-  // Assets
-  assets: {
-    root: path(ROOTS_DASHBOARD, '/assets'),
-  },
-
-  // Announcements
-  announcements: path(ROOTS_DASHBOARD, '/announcements'),
-
-  // Messenger
-  messenger: path(ROOTS_DASHBOARD, '/messenger'),
   eCommerce: {
     root: path(ROOTS_DASHBOARD, '/e-commerce'),
     shop: path(ROOTS_DASHBOARD, '/e-commerce/shop'),
