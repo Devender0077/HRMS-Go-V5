@@ -35,6 +35,17 @@ import contractService from '../../services/api/contractService';
 // utils
 import { fDate } from '../../utils/formatTime';
 
+// Safe date formatter that handles null/undefined/invalid dates
+const safeDateFormat = (date) => {
+  if (!date) return '-';
+  try {
+    const formatted = fDate(date);
+    return formatted === 'Invalid Date' ? '-' : formatted;
+  } catch (error) {
+    return '-';
+  }
+};
+
 // ----------------------------------------------------------------------
 
 const TABLE_HEAD = [
@@ -188,10 +199,10 @@ export default function ContractsListPage() {
                           <TableCell>
                             <Chip label={row.type} size="small" variant="outlined" />
                           </TableCell>
-                          <TableCell>{fDate(row.startDate)}</TableCell>
+                          <TableCell>{safeDateFormat(row.startDate)}</TableCell>
                           <TableCell>
                             <Typography variant="body2">
-                              {row.endDate ? fDate(row.endDate) : '-'}
+                              {safeDateFormat(row.endDate)}
                             </Typography>
                           </TableCell>
                           <TableCell align="center">{row.duration}</TableCell>
