@@ -16,6 +16,7 @@ import {
   Stack,
   Typography,
   CircularProgress,
+  MenuItem,
 } from '@mui/material';
 // routes
 import { PATH_DASHBOARD } from '../../routes/paths';
@@ -25,6 +26,7 @@ import Scrollbar from '../../components/scrollbar';
 import CustomBreadcrumbs from '../../components/custom-breadcrumbs';
 import { useSettingsContext } from '../../components/settings';
 import { useSnackbar } from '../../components/snackbar';
+import MenuPopover from '../../components/menu-popover';
 import {
   useTable,
   TableHeadCustom,
@@ -79,6 +81,8 @@ export default function ContractsListPage() {
   const [tableData, setTableData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
+  const [openPopover, setOpenPopover] = useState(null);
+  const [selectedContract, setSelectedContract] = useState(null);
 
   useEffect(() => {
     fetchContracts();
@@ -100,13 +104,35 @@ export default function ContractsListPage() {
         console.log('✅ Loaded contracts:', contracts);
         
         // Ensure employee names are properly displayed
-        const processedContracts = contracts.map(contract => ({
-          ...contract,
-          employeeName: contract.employeeName || contract.employee?.first_name 
-            ? `${contract.employee?.first_name || ''} ${contract.employee?.last_name || ''}`.trim() 
-            : 'Unknown Employee',
-          employeeCode: contract.employeeCode || contract.employee?.employee_id || '-',
-        }));
+        const processedContracts = contracts.map(contract => {
+          // Check if employeeName looks like an ID (e.g., "HR002", "EMP001")
+          const isEmployeeId = contract.employeeName && /^[A-Z]{2,4}\d{3,4}$/.test(contract.employeeName);
+          
+          let displayName = 'No Employee Assigned';
+          let displayCode = '-';
+          
+          // If employee object exists, use that data
+          if (contract.employee && contract.employee.first_name) {
+            displayName = `${contract.employee.first_name} ${contract.employee.last_name}`.trim();
+            displayCode = contract.employee.employee_id || '-';
+          }
+          // If employeeName is a proper name (not an ID), use it
+          else if (contract.employeeName && !isEmployeeId) {
+            displayName = contract.employeeName;
+            displayCode = contract.employeeCode || '-';
+          }
+          // If employeeName is an ID, show it as the code
+          else if (contract.employeeName && isEmployeeId) {
+            displayName = 'No Name on Record';
+            displayCode = contract.employeeName;
+          }
+          
+          return {
+            ...contract,
+            employeeName: displayName,
+            employeeCode: displayCode,
+          };
+        });
 
         setTableData(processedContracts);
         setTotalCount(response.data.totalCount || 0);
@@ -122,21 +148,33 @@ export default function ContractsListPage() {
     }
   };
 
-  const handleView = (contract) => {
-    console.log('👁️ Viewing contract:', contract.id);
-    navigate(`/dashboard/contracts/${contract.id}/view`);
+  const handleOpenPopover = (event, contract) => {
+    setSelectedContract(contract);
+    setOpenPopover(event.currentTarget);
   };
 
-  const handleEdit = (contract) => {
-    console.log('✏️ Editing contract:', contract.id);
-    navigate(`/dashboard/contracts/${contract.id}/edit`);
+  const handleClosePopover = () => {
+    setOpenPopover(null);
   };
 
-  const handleDelete = async (contractId) => {
+  const handleView = () => {
+    console.log('👁️ Viewing contract:', selectedContract.id);
+    navigate(`/dashboard/contracts/${selectedContract.id}/view`);
+    handleClosePopover();
+  };
+
+  const handleEdit = () => {
+    console.log('✏️ Editing contract:', selectedContract.id);
+    navigate(`/dashboard/contracts/${selectedContract.id}/edit`);
+    handleClosePopover();
+  };
+
+  const handleDelete = async () => {
+    handleClosePopover();
     if (!window.confirm('Are you sure you want to delete this contract?')) return;
     
     try {
-      const response = await contractService.delete(contractId);
+      const response = await contractService.delete(selectedContract.id);
       if (response.success) {
         enqueueSnackbar('Contract deleted successfully', { variant: 'success' });
         fetchContracts();
@@ -148,8 +186,9 @@ export default function ContractsListPage() {
     }
   };
 
-  const handleDownload = (contract) => {
-    console.log('Download contract:', contract);
+  const handleDownload = () => {
+    console.log('📥 Downloading contract:', selectedContract.id);
+    handleClosePopover();
     enqueueSnackbar('Download functionality coming soon', { variant: 'info' });
   };
 
@@ -236,17 +275,8 @@ export default function ContractsListPage() {
                             />
                           </TableCell>
                           <TableCell align="right">
-                            <IconButton size="small" onClick={() => handleView(row)}>
-                              <Iconify icon="eva:eye-fill" />
-                            </IconButton>
-                            <IconButton size="small" onClick={() => handleEdit(row)}>
-                              <Iconify icon="eva:edit-fill" />
-                            </IconButton>
-                            <IconButton size="small" onClick={() => handleDownload(row)}>
-                              <Iconify icon="eva:download-fill" />
-                            </IconButton>
-                            <IconButton size="small" color="error" onClick={() => handleDelete(row.id)}>
-                              <Iconify icon="eva:trash-2-outline" />
+                            <IconButton onClick={(event) => handleOpenPopover(event, row)}>
+                              <Iconify icon="eva:more-vertical-fill" />
                             </IconButton>
                           </TableCell>
                         </TableRow>
@@ -268,6 +298,25 @@ export default function ContractsListPage() {
           />
         </Card>
       </Container>
+
+      <MenuPopover open={openPopover} onClose={handleClosePopover} arrow="right-top" sx={{ width: 160 }}>
+        <MenuItem onClick={handleView}>
+          <Iconify icon="eva:eye-fill" />
+          View
+        </MenuItem>
+        <MenuItem onClick={handleEdit}>
+          <Iconify icon="eva:edit-fill" />
+          Edit
+        </MenuItem>
+        <MenuItem onClick={handleDownload}>
+          <Iconify icon="eva:download-fill" />
+          Download
+        </MenuItem>
+        <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
+          <Iconify icon="eva:trash-2-outline" />
+          Delete
+        </MenuItem>
+      </MenuPopover>
     </>
   );
 }
