@@ -118,8 +118,15 @@ export default function AssetAssignmentNewEditForm({ isEdit = false, currentAssi
     watch,
     setValue,
     handleSubmit,
-    formState: { isSubmitting },
+    formState: { isSubmitting, errors },
   } = methods;
+
+  // Log validation errors
+  useEffect(() => {
+    if (Object.keys(errors).length > 0) {
+      console.log('❌ Form validation errors:', errors);
+    }
+  }, [errors]);
 
   const values = watch();
 
@@ -134,7 +141,7 @@ export default function AssetAssignmentNewEditForm({ isEdit = false, currentAssi
 
   const onSubmit = async (data) => {
     try {
-      console.log('📝 Submitting assignment:', data);
+      console.log('📝 Form submitted with data:', data);
 
       // Format dates
       const formattedData = {
@@ -143,18 +150,25 @@ export default function AssetAssignmentNewEditForm({ isEdit = false, currentAssi
         expected_return_date: data.expected_return_date ? new Date(data.expected_return_date).toISOString().split('T')[0] : null,
       };
 
+      console.log('📤 Sending to backend:', formattedData);
+
       if (isEdit) {
-        await assetAssignmentService.update(currentAssignment.id, formattedData);
+        const response = await assetAssignmentService.update(currentAssignment.id, formattedData);
+        console.log('✅ Update response:', response);
         enqueueSnackbar('Assignment updated successfully!', { variant: 'success' });
       } else {
-        await assetAssignmentService.create(formattedData);
+        const response = await assetAssignmentService.create(formattedData);
+        console.log('✅ Create response:', response);
         enqueueSnackbar('Assignment created successfully!', { variant: 'success' });
       }
 
       navigate('/dashboard/assets/assignments');
     } catch (error) {
       console.error('❌ Error saving assignment:', error);
-      enqueueSnackbar(error.message || 'Failed to save assignment', { variant: 'error' });
+      console.error('❌ Error details:', error.response?.data || error.message);
+      
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to save assignment';
+      enqueueSnackbar(errorMessage, { variant: 'error' });
     }
   };
 

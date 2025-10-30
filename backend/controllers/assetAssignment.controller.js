@@ -76,6 +76,8 @@ exports.getById = async (req, res) => {
 // Create asset assignment
 exports.create = async (req, res) => {
   try {
+    console.log('➕ Creating asset assignment:', req.body);
+
     const {
       asset_id,
       employee_id,
@@ -83,7 +85,30 @@ exports.create = async (req, res) => {
       expected_return_date,
       condition_at_assignment,
       assignment_notes,
+      status,
     } = req.body;
+
+    // Validate required fields
+    if (!asset_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Asset is required',
+      });
+    }
+
+    if (!employee_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Employee is required',
+      });
+    }
+
+    if (!assigned_date) {
+      return res.status(400).json({
+        success: false,
+        message: 'Assigned date is required',
+      });
+    }
 
     // Check if asset exists
     const asset = await Asset.findByPk(asset_id);
@@ -94,19 +119,30 @@ exports.create = async (req, res) => {
       });
     }
 
-    // Check if asset is already assigned
-    const existingAssignment = await AssetAssignment.findOne({
-      where: {
-        asset_id,
-        status: 'active',
-      },
-    });
-
-    if (existingAssignment) {
-      return res.status(400).json({
+    // Check if employee exists
+    const employee = await Employee.findByPk(employee_id);
+    if (!employee) {
+      return res.status(404).json({
         success: false,
-        message: 'Asset is already assigned',
+        message: 'Employee not found',
       });
+    }
+
+    // Check if asset is already assigned (only for active status)
+    if (status === 'active' || !status) {
+      const existingAssignment = await AssetAssignment.findOne({
+        where: {
+          asset_id,
+          status: 'active',
+        },
+      });
+
+      if (existingAssignment) {
+        return res.status(400).json({
+          success: false,
+          message: 'Asset is already assigned',
+        });
+      }
     }
 
     const assignment = await AssetAssignment.create({
@@ -117,11 +153,15 @@ exports.create = async (req, res) => {
       expected_return_date,
       condition_at_assignment: condition_at_assignment || 'good',
       assignment_notes,
-      status: 'active',
+      status: status || 'active',
     });
 
-    // Update asset status to assigned
-    await asset.update({ current_status: 'assigned' });
+    // Update asset status to assigned (only if status is active)
+    if (status === 'active' || !status) {
+      await asset.update({ current_status: 'assigned' });
+    }
+
+    console.log('✅ Asset assignment created:', assignment.id);
 
     res.status(201).json({
       success: true,
@@ -129,7 +169,7 @@ exports.create = async (req, res) => {
       data: { assignment },
     });
   } catch (error) {
-    console.error('Create asset assignment error:', error);
+    console.error('❌ Create asset assignment error:', error);
     res.status(500).json({
       success: false,
       message: 'Error assigning asset',
