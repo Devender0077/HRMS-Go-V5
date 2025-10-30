@@ -114,8 +114,9 @@ export default function TemplateNewPage() {
       const response = await contractTemplateService.create(uploadData);
 
       if (response.success) {
-        enqueueSnackbar('Template created successfully!', { variant: 'success' });
-        navigate('/dashboard/contracts/templates');
+        enqueueSnackbar('Template uploaded! Now add fields...', { variant: 'success' });
+        // Redirect to field editor to add signature/text fields
+        navigate(`/dashboard/contracts/templates/${response.data.id}/fields`);
       } else {
         enqueueSnackbar(response.message || 'Failed to create template', { variant: 'error' });
       }

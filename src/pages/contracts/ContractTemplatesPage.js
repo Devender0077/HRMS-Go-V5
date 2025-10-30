@@ -143,7 +143,7 @@ export default function ContractTemplatesPage() {
   };
 
   const handleEdit = () => {
-    navigate(`/dashboard/contracts/templates/${selectedTemplate.id}/edit`);
+    navigate(`/dashboard/contracts/templates/${selectedTemplate.id}/fields`);
     handleClosePopover();
   };
 

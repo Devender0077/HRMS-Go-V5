@@ -96,7 +96,7 @@
     "nprogress": "^0.2.0",
     "numeral": "^2.0.6",
     "openai": "^4.20.0",
-    "pdfjs-dist": "^5.4.296",
+    "pdfjs-dist": "^3.11.174",
     "prop-types": "^15.8.1",
     "pusher-js": "^8.4.0",
     "qrcode.react": "^3.1.0",
