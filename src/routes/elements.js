@@ -302,6 +302,7 @@ export const ExpensesPage = Loadable(lazy(() => import('../pages/finance/Expense
 export const IncomePage = Loadable(lazy(() => import('../pages/finance/IncomePage')));
 export const FinanceReportsPage = Loadable(lazy(() => import('../pages/finance/ReportsPage')));
 export const ContractsListPage = Loadable(lazy(() => import('../pages/contracts/ContractsListPage')));
+export const ContractNewPage = Loadable(lazy(() => import('../pages/contracts/ContractNewPage')));
 export const AssetsListPage = Loadable(lazy(() => import('../pages/assets/AssetsListPage')));
 export const AssetNewPage = Loadable(lazy(() => import('../pages/assets/AssetNewPage')));
 export const AssetCategoriesPage = Loadable(lazy(() => import('../pages/assets/AssetCategoriesPage')));

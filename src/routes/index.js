@@ -173,6 +173,7 @@ import {
   IncomePage,
   FinanceReportsPage,
   ContractsListPage,
+  ContractNewPage,
   AssetsListPage,
   AssetNewPage,
   AssetCategoriesPage,
@@ -417,7 +418,16 @@ export default function Router() {
             { path: 'reports', element: <FinanceReportsPage /> },
           ],
         },
-        { path: 'contracts', element: <ContractsListPage /> },
+        {
+          path: 'contracts',
+          children: [
+            { element: <Navigate to="/dashboard/contracts/list" replace />, index: true },
+            { path: 'list', element: <ContractsListPage /> },
+            { path: 'new', element: <ContractNewPage /> },
+            { path: ':id/edit', element: <ContractNewPage /> },
+            { path: ':id/view', element: <ContractNewPage /> },
+          ],
+        },
         {
           path: 'assets',
           children: [

@@ -1,5 +1,6 @@
 import { Helmet } from 'react-helmet-async';
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 // @mui
 import {
   Card,
@@ -71,6 +72,7 @@ export default function ContractsListPage() {
     onChangeRowsPerPage,
   } = useTable();
 
+  const navigate = useNavigate();
   const { themeStretch } = useSettingsContext();
   const { enqueueSnackbar } = useSnackbar();
   
@@ -91,28 +93,43 @@ export default function ContractsListPage() {
         limit: rowsPerPage,
       });
 
+      console.log('📦 Contracts response:', response);
+
       if (response.success && response.data) {
-        setTableData(response.data.contracts || []);
+        const contracts = response.data.contracts || [];
+        console.log('✅ Loaded contracts:', contracts);
+        
+        // Ensure employee names are properly displayed
+        const processedContracts = contracts.map(contract => ({
+          ...contract,
+          employeeName: contract.employeeName || contract.employee?.first_name 
+            ? `${contract.employee?.first_name || ''} ${contract.employee?.last_name || ''}`.trim() 
+            : 'Unknown Employee',
+          employeeCode: contract.employeeCode || contract.employee?.employee_id || '-',
+        }));
+
+        setTableData(processedContracts);
         setTotalCount(response.data.totalCount || 0);
       } else {
         setTableData([]);
       }
     } catch (error) {
-      console.error('Error fetching contracts:', error);
+      console.error('❌ Error fetching contracts:', error);
       enqueueSnackbar('Error loading contracts', { variant: 'error' });
+      setTableData([]);
     } finally {
       setLoading(false);
     }
   };
 
   const handleView = (contract) => {
-    console.log('View contract:', contract);
-    enqueueSnackbar('View functionality coming soon', { variant: 'info' });
+    console.log('👁️ Viewing contract:', contract.id);
+    navigate(`/dashboard/contracts/${contract.id}/view`);
   };
 
   const handleEdit = (contract) => {
-    console.log('Edit contract:', contract);
-    enqueueSnackbar('Edit functionality coming soon', { variant: 'info' });
+    console.log('✏️ Editing contract:', contract.id);
+    navigate(`/dashboard/contracts/${contract.id}/edit`);
   };
 
   const handleDelete = async (contractId) => {
@@ -161,7 +178,11 @@ export default function ContractsListPage() {
             { name: 'List' },
           ]}
           action={
-            <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />}>
+            <Button 
+              variant="contained" 
+              startIcon={<Iconify icon="eva:plus-fill" />}
+              onClick={() => navigate('/dashboard/contracts/new')}
+            >
               Add Contract
             </Button>
           }
