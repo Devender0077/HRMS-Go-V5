@@ -11,6 +11,8 @@ import {
   IconButton,
   TableContainer,
   TablePagination,
+  TableRow,
+  TableCell,
   Chip,
   Stack,
   MenuItem,
@@ -33,8 +35,6 @@ import {
   useTable,
   TableNoData,
   TableHeadCustom,
-  TableRow,
-  TableCell,
 } from '../../components/table';
 // services
 import contractInstanceService from '../../services/api/contractInstanceService';

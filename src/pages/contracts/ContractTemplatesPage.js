@@ -12,6 +12,8 @@ import {
   IconButton,
   TableContainer,
   TablePagination,
+  TableRow,
+  TableCell,
   Chip,
   Stack,
   Typography,
@@ -34,8 +36,6 @@ import {
   TableNoData,
   TableHeadCustom,
   TableSelectedAction,
-  TableRow,
-  TableCell,
 } from '../../components/table';
 // services
 import contractTemplateService from '../../services/api/contractTemplateService';

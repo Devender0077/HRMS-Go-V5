@@ -164,6 +164,7 @@ export default function ContractSigningPage() {
   }
 
   const daysRemaining = getDaysRemaining();
+  const disabled = contract.status === 'completed' || contract.status === 'declined';
 
   return (
     <>
