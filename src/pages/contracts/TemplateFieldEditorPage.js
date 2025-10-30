@@ -39,13 +39,22 @@ export default function TemplateFieldEditorPage() {
       setLoading(true);
       
       // Fetch template details
-      const templateData = await contractTemplateService.getById(id);
+      const response = await contractTemplateService.getById(id);
+      
+      // Extract template data from response
+      const templateData = response.data || response;
       setTemplate(templateData);
 
       // Construct PDF URL
-      if (templateData.file_path) {
-        const url = `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}${templateData.file_path}`;
+      if (templateData.filePath || templateData.file_path) {
+        const filePath = templateData.filePath || templateData.file_path;
+        const url = `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}${filePath}`;
+        console.log('📄 Template filePath:', filePath);
+        console.log('📄 Constructed PDF URL:', url);
         setPdfUrl(url);
+      } else {
+        console.error('❌ No filePath in template data:', templateData);
+        enqueueSnackbar('PDF file path not found in template', { variant: 'error' });
       }
 
       // Fetch existing fields
