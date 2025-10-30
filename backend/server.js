@@ -123,6 +123,7 @@ app.use('/api/contract-instances', require('./routes/contractInstance.routes'));
 app.use('/api/template-fields', require('./routes/templateField.routes'));
 app.use('/api/employee-onboarding-documents', require('./routes/employeeOnboarding.routes'));
 app.use('/api/contract-analytics', require('./routes/contractAnalytics.routes'));
+app.use('/api/document-editor', require('./routes/documentEditor.routes'));
 app.use('/api/expenses', require('./routes/expense.routes'));
 app.use('/api/income', require('./routes/income.routes'));
 app.use('/api/holidays', require('./routes/holiday.routes'));
