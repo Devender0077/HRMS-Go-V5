@@ -72,6 +72,7 @@ const PDFContainer = styled(Box)(({ theme }) => ({
 const PDFWrapper = styled(Box)({
   position: 'relative',
   boxShadow: '0 0 20px rgba(0,0,0,0.3)',
+  display: 'inline-block', // Wrapper shrinks to PDF size
 });
 
 const FieldButton = styled(Button, {
@@ -598,6 +599,10 @@ export default function PDFFieldEditor({ pdfUrl, initialFields = [], onSave, onC
             onDrop={handleDrop}
             onDragOver={(e) => e.preventDefault()}
             onClick={() => setSelectedField(null)}
+            sx={{
+              width: pdfDimensions.width,
+              height: pdfDimensions.height,
+            }}
           >
             <Document
               file={pdfUrl}
