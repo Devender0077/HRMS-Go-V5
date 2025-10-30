@@ -4,16 +4,42 @@ const templateFieldService = {
   // Get all fields for a template
   getByTemplate: async (templateId) => {
     const response = await apiClient.get(`/template-fields/template/${templateId}`);
-    return response.data.data;
+    // Transform camelCase from backend to snake_case for frontend
+    const fields = response.data.data || [];
+    return fields.map(field => ({
+      id: field.id,
+      template_id: field.templateId,
+      field_name: field.fieldName,
+      field_type: field.fieldType,
+      x_pos: field.xPosition,
+      y_pos: field.yPosition,
+      width: field.width,
+      height: field.height,
+      page_number: field.pageNumber,
+      is_required: field.required,
+    }));
   },
 
   // Create a single field
   create: async (templateId, fieldData) => {
     const response = await apiClient.post('/template-fields', {
-      template_id: templateId,
+      templateId, // camelCase for Sequelize
       ...fieldData,
     });
-    return response.data.data;
+    // Transform response back to snake_case
+    const field = response.data.data;
+    return {
+      id: field.id,
+      template_id: field.templateId,
+      field_name: field.fieldName,
+      field_type: field.fieldType,
+      x_pos: field.xPosition,
+      y_pos: field.yPosition,
+      width: field.width,
+      height: field.height,
+      page_number: field.pageNumber,
+      is_required: field.required,
+    };
   },
 
   // Update a field
@@ -42,16 +68,17 @@ const templateFieldService = {
     }
 
     // Then create new fields
+    // Transform snake_case to camelCase for Sequelize model
     const results = await Promise.all(
       fields.map(field => templateFieldService.create(templateId, {
-        field_name: field.field_name,
-        field_type: field.field_type,
-        x_pos: field.x_pos,
-        y_pos: field.y_pos,
+        fieldName: field.field_name,
+        fieldType: field.field_type,
+        xPosition: field.x_pos, // camelCase for Sequelize
+        yPosition: field.y_pos, // camelCase for Sequelize
         width: field.width,
         height: field.height,
-        page_number: field.page_number,
-        is_required: field.is_required,
+        pageNumber: field.page_number,
+        required: field.is_required || false,
       }))
     );
 

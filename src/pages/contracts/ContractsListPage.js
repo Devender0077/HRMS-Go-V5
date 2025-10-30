@@ -258,41 +258,41 @@ export default function ContractsListPage() {
                   ) : (
                     <>
                       {tableData.map((row) => (
-                        <TableRow key={row.id} hover>
-                          <TableCell>
+                      <TableRow key={row.id} hover>
+                        <TableCell>
                             <Stack>
                               <Typography variant="subtitle2">{row.employeeName}</Typography>
                               <Typography variant="caption" color="text.secondary">
                                 {row.employeeCode}
                               </Typography>
                             </Stack>
-                          </TableCell>
-                          <TableCell>
-                            <Chip label={row.type} size="small" variant="outlined" />
-                          </TableCell>
+                        </TableCell>
+                        <TableCell>
+                          <Chip label={row.type} size="small" variant="outlined" />
+                        </TableCell>
                           <TableCell>{safeDateFormat(row.startDate)}</TableCell>
-                          <TableCell>
+                        <TableCell>
                             <Typography variant="body2">
                               {safeDateFormat(row.endDate)}
-                            </Typography>
-                          </TableCell>
-                          <TableCell align="center">{row.duration}</TableCell>
-                          <TableCell align="center">
-                            <Chip
-                              label={row.status}
-                              size="small"
-                              color={getStatusColor(row.status)}
-                              sx={{ textTransform: 'capitalize' }}
-                            />
-                          </TableCell>
-                          <TableCell align="right">
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="center">{row.duration}</TableCell>
+                        <TableCell align="center">
+                          <Chip
+                            label={row.status}
+                            size="small"
+                            color={getStatusColor(row.status)}
+                            sx={{ textTransform: 'capitalize' }}
+                          />
+                        </TableCell>
+                        <TableCell align="right">
                             <IconButton onClick={(event) => handleOpenPopover(event, row)}>
                               <Iconify icon="eva:more-vertical-fill" />
                             </IconButton>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      {tableData.length === 0 && <TableNoData isNotFound={true} />}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  {tableData.length === 0 && <TableNoData isNotFound={true} />}
                     </>
                   )}
                 </TableBody>

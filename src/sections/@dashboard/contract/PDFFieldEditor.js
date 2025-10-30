@@ -16,6 +16,8 @@ import {
   FormControlLabel,
   Divider,
   Alert,
+  Collapse,
+  Fab,
 } from '@mui/material';
 import { styled, alpha } from '@mui/material/styles';
 // components
@@ -43,13 +45,19 @@ const RootStyle = styled(Box)(({ theme }) => ({
   overflow: 'hidden',
 }));
 
-const SidebarStyle = styled(Paper)(({ theme}) => ({
-  width: 280,
+const SidebarStyle = styled(Paper, {
+  shouldForwardProp: (prop) => prop !== 'collapsed',
+})(({ theme, collapsed }) => ({
+  width: collapsed ? 0 : 240, // Reduced from 280 to 240
   flexShrink: 0,
   display: 'flex',
   flexDirection: 'column',
   borderRadius: 0,
-  borderRight: `1px solid ${theme.palette.divider}`,
+  borderRight: collapsed ? 'none' : `1px solid ${theme.palette.divider}`,
+  transition: theme.transitions.create('width', {
+    duration: theme.transitions.duration.shorter,
+  }),
+  overflow: 'hidden',
 }));
 
 const ContentStyle = styled(Box)(({ theme }) => ({
@@ -98,6 +106,8 @@ export default function PDFFieldEditor({ pdfUrl, initialFields = [], onSave, onC
   const [fields, setFields] = useState(initialFields);
   const [selectedField, setSelectedField] = useState(null);
   const [draggingFieldType, setDraggingFieldType] = useState(null);
+  const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
+  const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
   const [draggedField, setDraggedField] = useState(null);
   const [dragStart, setDragStart] = useState(null);
   const [resizeHandle, setResizeHandle] = useState(null);
@@ -476,9 +486,16 @@ export default function PDFFieldEditor({ pdfUrl, initialFields = [], onSave, onC
   return (
     <RootStyle>
       {/* LEFT SIDEBAR - Field Palette */}
-      <SidebarStyle>
+      <SidebarStyle collapsed={leftPanelCollapsed}>
         <Stack spacing={2} sx={{ p: 2 }}>
-          <Typography variant="h6">Field Palette</Typography>
+          <Stack direction="row" alignItems="center" justifyContent="space-between">
+            <Typography variant="h6">Field Palette</Typography>
+            <Tooltip title="Collapse panel">
+              <IconButton size="small" onClick={() => setLeftPanelCollapsed(true)}>
+                <Iconify icon="eva:arrow-ios-back-fill" />
+              </IconButton>
+            </Tooltip>
+          </Stack>
           <Typography variant="caption" color="text.secondary">
             Drag fields onto the PDF to place them
           </Typography>
@@ -773,17 +790,24 @@ export default function PDFFieldEditor({ pdfUrl, initialFields = [], onSave, onC
 
       {/* RIGHT SIDEBAR - Field Properties */}
       {selectedFieldData && (
-        <SidebarStyle>
+        <SidebarStyle collapsed={rightPanelCollapsed}>
           <Stack spacing={2} sx={{ p: 2 }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between">
               <Typography variant="h6">Field Properties</Typography>
-              <IconButton
-                size="small"
-                color="error"
-                onClick={() => handleFieldDelete(selectedFieldData.id)}
-              >
-                <Iconify icon="eva:trash-2-outline" />
-              </IconButton>
+              <Stack direction="row" spacing={0.5}>
+                <Tooltip title="Collapse panel">
+                  <IconButton size="small" onClick={() => setRightPanelCollapsed(true)}>
+                    <Iconify icon="eva:arrow-ios-forward-fill" />
+                  </IconButton>
+                </Tooltip>
+                <IconButton
+                  size="small"
+                  color="error"
+                  onClick={() => handleFieldDelete(selectedFieldData.id)}
+                >
+                  <Iconify icon="eva:trash-2-outline" />
+                </IconButton>
+              </Stack>
             </Stack>
 
             <TextField
@@ -901,6 +925,45 @@ export default function PDFFieldEditor({ pdfUrl, initialFields = [], onSave, onC
             </Alert>
           </Stack>
         </SidebarStyle>
+      )}
+
+      {/* FLOATING TOGGLE BUTTONS */}
+      {leftPanelCollapsed && (
+        <Tooltip title="Show Field Palette">
+          <Fab
+            size="small"
+            color="primary"
+            onClick={() => setLeftPanelCollapsed(false)}
+            sx={{
+              position: 'absolute',
+              left: 16,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              zIndex: 1000,
+            }}
+          >
+            <Iconify icon="eva:arrow-ios-forward-fill" />
+          </Fab>
+        </Tooltip>
+      )}
+
+      {rightPanelCollapsed && selectedFieldData && (
+        <Tooltip title="Show Field Properties">
+          <Fab
+            size="small"
+            color="primary"
+            onClick={() => setRightPanelCollapsed(false)}
+            sx={{
+              position: 'absolute',
+              right: 16,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              zIndex: 1000,
+            }}
+          >
+            <Iconify icon="eva:arrow-ios-back-fill" />
+          </Fab>
+        </Tooltip>
       )}
     </RootStyle>
   );
