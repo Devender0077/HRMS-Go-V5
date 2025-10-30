@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 // @mui
 import { LoadingButton } from '@mui/lab';
-import { Card, Grid, Stack, Typography, MenuItem } from '@mui/material';
+import { Card, Grid, Stack, Typography, MenuItem, TextField } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
 // components
 import { useSnackbar } from '../../../components/snackbar';
@@ -190,11 +190,7 @@ export default function AssetAssignmentNewEditForm({ isEdit = false, currentAssi
                     label="Assigned Date"
                     value={values.assigned_date}
                     onChange={(newValue) => setValue('assigned_date', newValue)}
-                    slotProps={{
-                      textField: {
-                        fullWidth: true,
-                      },
-                    }}
+                    renderInput={(params) => <TextField {...params} fullWidth />}
                   />
                 </Grid>
                 <Grid item xs={12} md={6}>
@@ -202,11 +198,7 @@ export default function AssetAssignmentNewEditForm({ isEdit = false, currentAssi
                     label="Expected Return Date"
                     value={values.expected_return_date}
                     onChange={(newValue) => setValue('expected_return_date', newValue)}
-                    slotProps={{
-                      textField: {
-                        fullWidth: true,
-                      },
-                    }}
+                    renderInput={(params) => <TextField {...params} fullWidth />}
                   />
                 </Grid>
               </Grid>
