@@ -23,8 +23,8 @@ import { styled, alpha } from '@mui/material/styles';
 import Iconify from '../../../components/iconify';
 import Scrollbar from '../../../components/scrollbar';
 
-// Configure PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+// Configure PDF.js worker - use CDN with correct version
+pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
 
 // ----------------------------------------------------------------------
 
@@ -75,7 +75,9 @@ const PDFWrapper = styled(Box)({
   boxShadow: '0 0 20px rgba(0,0,0,0.3)',
 });
 
-const FieldOverlay = styled(Box)(({ theme, fieldType }) => {
+const FieldOverlay = styled(Box, {
+  shouldForwardProp: (prop) => prop !== 'fieldType',
+})(({ theme, fieldType }) => {
   const field = FIELD_TYPES.find(f => f.value === fieldType);
   return {
     position: 'absolute',
@@ -95,7 +97,9 @@ const FieldOverlay = styled(Box)(({ theme, fieldType }) => {
   };
 });
 
-const FieldButton = styled(Button)(({ theme, fieldType }) => {
+const FieldButton = styled(Button, {
+  shouldForwardProp: (prop) => prop !== 'fieldType',
+})(({ theme, fieldType }) => {
   const field = FIELD_TYPES.find(f => f.value === fieldType);
   return {
     justifyContent: 'flex-start',
