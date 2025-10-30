@@ -37,10 +37,11 @@ const CONTRACT_STATUS = [
 
 ContractNewEditForm.propTypes = {
   isEdit: PropTypes.bool,
+  isView: PropTypes.bool,
   currentContract: PropTypes.object,
 };
 
-export default function ContractNewEditForm({ isEdit = false, currentContract }) {
+export default function ContractNewEditForm({ isEdit = false, isView = false, currentContract }) {
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
 
@@ -168,7 +169,7 @@ export default function ContractNewEditForm({ isEdit = false, currentContract })
             <Stack spacing={3}>
               <Typography variant="h6">Contract Information</Typography>
 
-              <RHFSelect name="employeeId" label="Employee">
+              <RHFSelect name="employeeId" label="Employee" disabled={isView}>
                 <MenuItem value="">-- Select Employee --</MenuItem>
                 {Array.isArray(employees) && employees.map((employee) => (
                   <MenuItem key={employee.id} value={employee.id}>
@@ -179,7 +180,7 @@ export default function ContractNewEditForm({ isEdit = false, currentContract })
 
               <Grid container spacing={2}>
                 <Grid item xs={12} md={6}>
-                  <RHFSelect name="contractType" label="Contract Type">
+                  <RHFSelect name="contractType" label="Contract Type" disabled={isView}>
                     {CONTRACT_TYPES.map((type) => (
                       <MenuItem key={type.value} value={type.value}>
                         {type.label}
@@ -188,7 +189,7 @@ export default function ContractNewEditForm({ isEdit = false, currentContract })
                   </RHFSelect>
                 </Grid>
                 <Grid item xs={12} md={6}>
-                  <RHFTextField name="contractNumber" label="Contract Number" />
+                  <RHFTextField name="contractNumber" label="Contract Number" disabled={isView} />
                 </Grid>
               </Grid>
 
@@ -198,6 +199,7 @@ export default function ContractNewEditForm({ isEdit = false, currentContract })
                     label="Start Date"
                     value={values.startDate}
                     onChange={(newValue) => setValue('startDate', newValue)}
+                    disabled={isView}
                     renderInput={(params) => <TextField {...params} fullWidth />}
                   />
                 </Grid>
@@ -206,6 +208,7 @@ export default function ContractNewEditForm({ isEdit = false, currentContract })
                     label="End Date"
                     value={values.endDate}
                     onChange={(newValue) => setValue('endDate', newValue)}
+                    disabled={isView}
                     renderInput={(params) => <TextField {...params} fullWidth helperText="Leave empty for permanent contracts" />}
                   />
                 </Grid>
@@ -217,13 +220,14 @@ export default function ContractNewEditForm({ isEdit = false, currentContract })
                     name="salary" 
                     label="Salary" 
                     type="number"
+                    disabled={isView}
                     InputProps={{
                       startAdornment: <Typography sx={{ mr: 1 }}>$</Typography>
                     }}
                   />
                 </Grid>
                 <Grid item xs={12} md={6}>
-                  <RHFSelect name="status" label="Status">
+                  <RHFSelect name="status" label="Status" disabled={isView}>
                     {CONTRACT_STATUS.map((status) => (
                       <MenuItem key={status.value} value={status.value}>
                         {status.label}
@@ -239,19 +243,31 @@ export default function ContractNewEditForm({ isEdit = false, currentContract })
                 multiline
                 rows={6}
                 placeholder="Enter contract terms and conditions..."
+                disabled={isView}
               />
             </Stack>
 
             <Stack direction="row" spacing={1.5} sx={{ mt: 3 }}>
-              <LoadingButton
-                fullWidth
-                type="submit"
-                variant="contained"
-                size="large"
-                loading={isSubmitting}
-              >
-                {!isEdit ? 'Create Contract' : 'Save Changes'}
-              </LoadingButton>
+              {isView ? (
+                <LoadingButton
+                  fullWidth
+                  variant="outlined"
+                  size="large"
+                  onClick={() => navigate('/dashboard/contracts')}
+                >
+                  Back to List
+                </LoadingButton>
+              ) : (
+                <LoadingButton
+                  fullWidth
+                  type="submit"
+                  variant="contained"
+                  size="large"
+                  loading={isSubmitting}
+                >
+                  {!isEdit ? 'Create Contract' : 'Save Changes'}
+                </LoadingButton>
+              )}
             </Stack>
           </Card>
         </Grid>
