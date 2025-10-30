@@ -51,6 +51,12 @@ const models = {
   
   // Contract & Finance Models
   Contract: require('../models/Contract'),
+  ContractTemplate: require('../models/ContractTemplate'),
+  ContractInstance: require('../models/ContractInstance'),
+  TemplateField: require('../models/TemplateField'),
+  ContractFieldValue: require('../models/ContractFieldValue'),
+  ContractAuditLog: require('../models/ContractAuditLog'),
+  EmployeeOnboardingDocument: require('../models/EmployeeOnboardingDocument'),
   Expense: require('../models/Expense'),
   Income: require('../models/Income'),
   Holiday: require('../models/Holiday'),
@@ -171,6 +177,10 @@ const setupAssociations = () => {
     Contract.belongsTo(Employee, { foreignKey: 'employeeId', as: 'employee' });
     Employee.hasMany(Contract, { foreignKey: 'employeeId' });
   }
+  
+  // Digital Contract Management associations
+  const { setupContractAssociations } = require('../models/contractAssociations');
+  setupContractAssociations();
   
   // Expense associations
   if (Expense && Employee) {
