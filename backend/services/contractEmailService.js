@@ -1,5 +1,3 @@
-const nodemailer = require('nodemailer');
-
 /**
  * Contract Email Notification Service
  * Handles all email communications for the contract management system
@@ -7,16 +5,31 @@ const nodemailer = require('nodemailer');
 
 class ContractEmailService {
   constructor() {
-    // Configure email transporter
-    this.transporter = nodemailer.createTransporter({
-      host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-      port: process.env.EMAIL_PORT || 587,
-      secure: false,
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
+    this.transporter = null;
+  }
+
+  /**
+   * Get email transporter (lazy initialization)
+   */
+  getTransporter() {
+    if (!this.transporter) {
+      try {
+        const nodemailer = require('nodemailer');
+        this.transporter = nodemailer.createTransporter({
+          host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+          port: process.env.EMAIL_PORT || 587,
+          secure: false,
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS,
+          },
+        });
+      } catch (error) {
+        console.error('❌ Email transporter initialization error:', error);
+        throw error;
+      }
+    }
+    return this.transporter;
   }
 
   /**
@@ -24,6 +37,13 @@ class ContractEmailService {
    */
   async sendContract(contract) {
     try {
+      // Check if email is configured
+      if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+        console.warn('⚠️ Email not configured. Skipping email send.');
+        return { success: true, skipped: true, message: 'Email not configured' };
+      }
+
+      const transporter = this.getTransporter();
       const signUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/contracts/sign/${contract.id}`;
 
       const mailOptions = {
@@ -67,7 +87,7 @@ class ContractEmailService {
         `,
       };
 
-      const info = await this.transporter.sendMail(mailOptions);
+      const info = await transporter.sendMail(mailOptions);
       console.log('✅ Contract email sent:', info.messageId);
 
       return {
@@ -88,6 +108,13 @@ class ContractEmailService {
    */
   async sendReminder(contract, reminderType = 'followup') {
     try {
+      // Check if email is configured
+      if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+        console.warn('⚠️ Email not configured. Skipping reminder send.');
+        return { success: true, skipped: true, message: 'Email not configured' };
+      }
+
+      const transporter = this.getTransporter();
       const signUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/contracts/sign/${contract.id}`;
       const daysRemaining = Math.ceil((new Date(contract.expiresAt) - new Date()) / (1000 * 60 * 60 * 24));
 
@@ -142,7 +169,7 @@ class ContractEmailService {
         `,
       };
 
-      const info = await this.transporter.sendMail(mailOptions);
+      const info = await transporter.sendMail(mailOptions);
       console.log('✅ Reminder email sent:', info.messageId);
 
       return {
@@ -163,6 +190,13 @@ class ContractEmailService {
    */
   async sendCompletionNotification(contract) {
     try {
+      // Check if email is configured
+      if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+        console.warn('⚠️ Email not configured. Skipping completion notification.');
+        return { success: true, skipped: true, message: 'Email not configured' };
+      }
+
+      const transporter = this.getTransporter();
       const mailOptions = {
         from: `"${process.env.COMPANY_NAME || 'HRMS Go'}" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
         to: contract.recipientEmail,
@@ -192,7 +226,7 @@ class ContractEmailService {
         `,
       };
 
-      const info = await this.transporter.sendMail(mailOptions);
+      const info = await transporter.sendMail(mailOptions);
       console.log('✅ Completion email sent:', info.messageId);
 
       return {
@@ -213,6 +247,13 @@ class ContractEmailService {
    */
   async sendExpiryNotification(contract, hrEmail) {
     try {
+      // Check if email is configured
+      if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+        console.warn('⚠️ Email not configured. Skipping expiry notification.');
+        return { success: true, skipped: true, message: 'Email not configured' };
+      }
+
+      const transporter = this.getTransporter();
       const mailOptions = {
         from: `"${process.env.COMPANY_NAME || 'HRMS Go'}" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
         to: hrEmail,
@@ -236,7 +277,7 @@ class ContractEmailService {
         `,
       };
 
-      const info = await this.transporter.sendMail(mailOptions);
+      const info = await transporter.sendMail(mailOptions);
       console.log('✅ Expiry notification sent to HR:', info.messageId);
 
       return {
