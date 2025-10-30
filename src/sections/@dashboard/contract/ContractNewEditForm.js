@@ -49,6 +49,7 @@ export default function ContractNewEditForm({ isEdit = false, isView = false, cu
   const [employees, setEmployees] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [currentFile, setCurrentFile] = useState(currentContract?.filePath || null);
+  const [loadingEmployees, setLoadingEmployees] = useState(true);
 
   useEffect(() => {
     fetchEmployees();
@@ -56,26 +57,74 @@ export default function ContractNewEditForm({ isEdit = false, isView = false, cu
 
   const fetchEmployees = async () => {
     try {
+      setLoadingEmployees(true);
+      console.log('🔄 Fetching employees from API...');
+      
       const response = await employeeService.getAll();
-      console.log('✅ Employees loaded for dropdown:', response);
+      console.log('✅ Employees API response:', response);
+      
+      if (!response || !response.success) {
+        console.error('❌ API returned error:', response);
+        enqueueSnackbar('Failed to load employees. Please refresh the page.', { variant: 'error' });
+        setEmployees([]);
+        return;
+      }
       
       const employeesData = response?.data || [];
-      const employeesList = Array.isArray(employeesData) ? employeesData : [];
+      console.log('📦 Raw employee data type:', typeof employeesData, Array.isArray(employeesData));
+      console.log('📦 Raw employee data:', employeesData);
+      
+      let employeesList = [];
+      if (Array.isArray(employeesData)) {
+        employeesList = employeesData;
+      } else {
+        console.error('❌ Employee data is not an array:', employeesData);
+        setEmployees([]);
+        return;
+      }
+      
+      // Filter out any invalid entries
+      const validEmployees = employeesList.filter(emp => {
+        const isValid = emp && emp.id && emp.first_name;
+        if (!isValid) {
+          console.warn('⚠️ Skipping invalid employee:', emp);
+        }
+        return isValid;
+      });
+      
+      console.log(`🔍 Filtered ${validEmployees.length} valid employees from ${employeesList.length} total`);
       
       // If editing and contract has employee data, ensure it's in the list
       if (currentContract?.employee && currentContract.employee.id) {
-        const employeeExists = employeesList.find(emp => emp.id === currentContract.employee.id);
-        if (!employeeExists) {
+        const employeeExists = validEmployees.find(emp => emp.id === currentContract.employee.id);
+        if (!employeeExists && currentContract.employee.first_name) {
           console.log('ℹ️ Adding contract employee to dropdown:', currentContract.employee);
-          employeesList.unshift(currentContract.employee);
+          validEmployees.unshift(currentContract.employee);
         }
       }
       
-      console.log(`📋 Total employees in dropdown: ${employeesList.length}`);
-      setEmployees(employeesList);
+      console.log(`📋 Total valid employees in dropdown: ${validEmployees.length}`);
+      if (validEmployees.length > 0) {
+        console.log('👥 First 3 employees:');
+        validEmployees.slice(0, 3).forEach((emp, idx) => {
+          console.log(`   ${idx + 1}. ID: ${emp.id} - ${emp.first_name} ${emp.last_name} (${emp.employee_id})`);
+        });
+      }
+      
+      setEmployees(validEmployees);
+      
+      if (validEmployees.length === 0) {
+        console.warn('⚠️ No employees available! Please add employees first.');
+        enqueueSnackbar('No employees found. Please add employees via HR > Employees menu.', { variant: 'warning' });
+      }
     } catch (error) {
       console.error('❌ Error fetching employees:', error);
+      console.error('❌ Error details:', error.response?.data || error.message);
+      console.error('❌ Full error object:', error);
+      enqueueSnackbar(`Failed to load employees: ${error.message}`, { variant: 'error' });
       setEmployees([]);
+    } finally {
+      setLoadingEmployees(false);
     }
   };
 
@@ -212,8 +261,15 @@ export default function ContractNewEditForm({ isEdit = false, isView = false, cu
             <Stack spacing={3}>
               <Typography variant="h6">Contract Information</Typography>
 
-              <RHFSelect name="employeeId" label="Employee" disabled={isView}>
-                <MenuItem value="">-- Select Employee --</MenuItem>
+              <RHFSelect name="employeeId" label="Employee" disabled={isView || loadingEmployees}>
+                <MenuItem value="">
+                  {loadingEmployees ? '-- Loading employees...' : '-- Select Employee --'}
+                </MenuItem>
+                {!loadingEmployees && employees.length === 0 && (
+                  <MenuItem value="" disabled>
+                    No employees found. Please add employees first.
+                  </MenuItem>
+                )}
                 {Array.isArray(employees) && employees.map((employee) => (
                   <MenuItem key={employee.id} value={employee.id}>
                     {employee.first_name} {employee.last_name} - {employee.employee_id}
@@ -360,4 +416,5 @@ export default function ContractNewEditForm({ isEdit = false, isView = false, cu
     </FormProvider>
   );
 }
+
 
