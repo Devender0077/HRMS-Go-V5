@@ -49,15 +49,27 @@ export default function ContractNewEditForm({ isEdit = false, isView = false, cu
 
   useEffect(() => {
     fetchEmployees();
-  }, []);
+  }, [currentContract]); // Re-fetch when currentContract changes
 
   const fetchEmployees = async () => {
     try {
       const response = await employeeService.getAll();
-      console.log('✅ Employees loaded:', response);
+      console.log('✅ Employees loaded for dropdown:', response);
       
       const employeesData = response?.data || [];
-      setEmployees(Array.isArray(employeesData) ? employeesData : []);
+      const employeesList = Array.isArray(employeesData) ? employeesData : [];
+      
+      // If editing and contract has employee data, ensure it's in the list
+      if (currentContract?.employee && currentContract.employee.id) {
+        const employeeExists = employeesList.find(emp => emp.id === currentContract.employee.id);
+        if (!employeeExists) {
+          console.log('ℹ️ Adding contract employee to dropdown:', currentContract.employee);
+          employeesList.unshift(currentContract.employee);
+        }
+      }
+      
+      console.log(`📋 Total employees in dropdown: ${employeesList.length}`);
+      setEmployees(employeesList);
     } catch (error) {
       console.error('❌ Error fetching employees:', error);
       setEmployees([]);
@@ -113,12 +125,23 @@ export default function ContractNewEditForm({ isEdit = false, isView = false, cu
 
   useEffect(() => {
     if (isEdit && currentContract) {
+      console.log('📝 Resetting form with contract data:', currentContract);
+      console.log('📝 Default values:', defaultValues);
       reset(defaultValues);
     }
     if (!isEdit) {
       reset(defaultValues);
     }
   }, [isEdit, currentContract, reset, defaultValues]);
+
+  // Debug log for current employee value
+  useEffect(() => {
+    if (values.employeeId) {
+      console.log('👤 Current employeeId in form:', values.employeeId);
+      const selectedEmployee = employees.find(emp => emp.id === values.employeeId);
+      console.log('👤 Selected employee object:', selectedEmployee);
+    }
+  }, [values.employeeId, employees]);
 
   const onSubmit = async (data) => {
     try {

@@ -35,11 +35,14 @@ export default function ContractNewPage() {
     try {
       setLoading(true);
       const response = await contractService.getById(id);
+      console.log('📄 Contract data loaded:', response);
       if (response.success) {
-        setCurrentContract(response.data);
+        const contractData = response.data;
+        console.log('✅ Contract with employee:', contractData);
+        setCurrentContract(contractData);
       }
     } catch (error) {
-      console.error('Error fetching contract:', error);
+      console.error('❌ Error fetching contract:', error);
     } finally {
       setLoading(false);
     }
