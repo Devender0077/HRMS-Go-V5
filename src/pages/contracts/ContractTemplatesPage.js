@@ -20,6 +20,7 @@ import {
   MenuItem,
   TextField,
   InputAdornment,
+  Divider,
 } from '@mui/material';
 // routes
 import { PATH_DASHBOARD } from '../../routes/paths';
@@ -380,22 +381,120 @@ export default function ContractTemplatesPage() {
           open={openPopover}
           onClose={handleClosePopover}
           arrow="right-top"
-          sx={{ width: 200 }}
+          sx={{ width: 280 }}
         >
+          {/* E-SIGNATURE FEATURES */}
+          <Typography variant="caption" sx={{ px: 2, py: 1, color: 'text.secondary', fontWeight: 600, display: 'block' }}>
+            GET OTHERS TO SIGN
+          </Typography>
+          
           <MenuItem onClick={handleUse}>
             <Iconify icon="eva:paper-plane-fill" />
-            Use Template
+            Request E-Signatures
           </MenuItem>
 
           <MenuItem onClick={handleEdit}>
             <Iconify icon="eva:edit-fill" />
-            Edit Fields
+            Edit Fields (Template)
           </MenuItem>
 
           <MenuItem onClick={handleDuplicate}>
             <Iconify icon="eva:copy-fill" />
-            Duplicate
+            Duplicate Template
           </MenuItem>
+
+          <Divider sx={{ my: 1 }} />
+
+          {/* EDIT PDF FEATURES */}
+          <Typography variant="caption" sx={{ px: 2, py: 1, color: 'text.secondary', fontWeight: 600, display: 'block' }}>
+            EDIT PDF
+          </Typography>
+          
+          <MenuItem onClick={() => console.log('Edit text & images')}>
+            <Iconify icon="eva:edit-2-outline" />
+            Edit Text & Images
+          </MenuItem>
+
+          <MenuItem onClick={() => console.log('Add comments')}>
+            <Iconify icon="eva:message-square-outline" />
+            Add Comments
+          </MenuItem>
+
+          <MenuItem onClick={() => console.log('Crop pages')}>
+            <Iconify icon="eva:crop-outline" />
+            Crop Pages
+          </MenuItem>
+
+          <MenuItem onClick={() => console.log('Number pages')}>
+            <Iconify icon="eva:hash-outline" />
+            Number Pages
+          </MenuItem>
+
+          <Divider sx={{ my: 1 }} />
+
+          {/* ORGANIZE PDF FEATURES */}
+          <Typography variant="caption" sx={{ px: 2, py: 1, color: 'text.secondary', fontWeight: 600, display: 'block' }}>
+            ORGANIZE PDF
+          </Typography>
+
+          <MenuItem onClick={() => console.log('Merge PDFs')}>
+            <Iconify icon="eva:layers-outline" />
+            Merge PDFs
+          </MenuItem>
+
+          <MenuItem onClick={() => console.log('Split PDF')}>
+            <Iconify icon="eva:scissors-outline" />
+            Split PDF
+          </MenuItem>
+
+          <MenuItem onClick={() => console.log('Rotate pages')}>
+            <Iconify icon="eva:refresh-outline" />
+            Rotate Pages
+          </MenuItem>
+
+          <MenuItem onClick={() => console.log('Reorder pages')}>
+            <Iconify icon="eva:swap-outline" />
+            Reorder Pages
+          </MenuItem>
+
+          <MenuItem onClick={() => console.log('Extract pages')}>
+            <Iconify icon="eva:copy-outline" />
+            Extract Pages
+          </MenuItem>
+
+          <MenuItem onClick={() => console.log('Delete pages')}>
+            <Iconify icon="eva:trash-2-outline" />
+            Delete Pages
+          </MenuItem>
+
+          <Divider sx={{ my: 1 }} />
+
+          {/* SECURE PDF FEATURES */}
+          <Typography variant="caption" sx={{ px: 2, py: 1, color: 'text.secondary', fontWeight: 600, display: 'block' }}>
+            SECURE PDF
+          </Typography>
+
+          <MenuItem onClick={() => console.log('Protect PDF')}>
+            <Iconify icon="eva:lock-outline" />
+            Protect PDF
+          </MenuItem>
+
+          <MenuItem onClick={() => console.log('Add watermark')}>
+            <Iconify icon="eva:droplet-outline" />
+            Add Watermark
+          </MenuItem>
+
+          <MenuItem onClick={() => console.log('Compress PDF')}>
+            <Iconify icon="eva:archive-outline" />
+            Compress PDF
+          </MenuItem>
+
+          <Divider sx={{ my: 1 }} />
+
+          {/* TEMPLATE MANAGEMENT */}
+          <Typography variant="caption" sx={{ px: 2, py: 1, color: 'text.secondary', fontWeight: 600, display: 'block' }}>
+            TEMPLATE
+          </Typography>
 
           <MenuItem onClick={handleToggleActive}>
             <Iconify icon={selectedTemplate?.isActive ? 'eva:eye-off-fill' : 'eva:eye-fill'} />
@@ -403,8 +502,8 @@ export default function ContractTemplatesPage() {
           </MenuItem>
 
           <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
-            <Iconify icon="eva:trash-2-outline" />
-            Delete
+            <Iconify icon="eva:trash-2-fill" />
+            Delete Template
           </MenuItem>
         </MenuPopover>
 

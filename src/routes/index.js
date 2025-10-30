@@ -181,6 +181,7 @@ import {
   SendContractPage,
   ContractSigningPage,
   EmployeeOnboardingPage,
+  ManageAgreementsPage,
   AssetsListPage,
   AssetNewPage,
   AssetCategoriesPage,
@@ -436,6 +437,7 @@ export default function Router() {
             { path: 'templates/:id/fields', element: <TemplateFieldEditorPage /> },
             { path: 'instances', element: <ContractInstancesPage /> },
             { path: 'instances/:id/view', element: <ContractInstancesPage /> },
+            { path: 'agreements', element: <ManageAgreementsPage /> },
             { path: 'send', element: <SendContractPage /> },
             { path: 'sign/:id', element: <ContractSigningPage /> },
             // Legacy (kept for backward compatibility, not in navigation)

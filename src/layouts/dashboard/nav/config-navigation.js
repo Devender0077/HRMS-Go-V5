@@ -213,9 +213,9 @@ const navConfig = [
         icon: ICONS.contracts,
         permission: 'documents.view_all',
         children: [
+          { title: 'Manage Agreements', path: '/dashboard/contracts/agreements', permission: 'documents.view_all' },
           { title: 'Templates', path: '/dashboard/contracts/templates', permission: 'documents.view_all' },
-          { title: 'Digital Contracts', path: '/dashboard/contracts/instances', permission: 'documents.view_all' },
-          { title: 'Send Contract', path: '/dashboard/contracts/send', permission: 'documents.create' },
+          { title: 'Send for E-Signature', path: '/dashboard/contracts/send', permission: 'documents.create' },
         ],
       },
 

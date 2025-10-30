@@ -23,8 +23,8 @@ import { styled, alpha } from '@mui/material/styles';
 import Iconify from '../../../components/iconify';
 import Scrollbar from '../../../components/scrollbar';
 
-// Configure PDF.js worker - use jsDelivr CDN with matching version
-pdfjs.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+// Configure PDF.js worker - use local file from public folder
+pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
 
 // ----------------------------------------------------------------------
 
