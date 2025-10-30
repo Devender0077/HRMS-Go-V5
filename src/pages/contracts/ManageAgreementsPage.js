@@ -10,6 +10,8 @@ import {
   TableBody,
   TableContainer,
   TablePagination,
+  TableRow,
+  TableCell,
   Stack,
   Typography,
   Chip,
