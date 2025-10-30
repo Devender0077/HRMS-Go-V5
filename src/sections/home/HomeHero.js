@@ -70,6 +70,8 @@ const StyledEllipseTop = styled('div')(({ theme }) => ({
   filter: 'blur(100px)',
   WebkitFilter: 'blur(100px)',
   backgroundColor: alpha(theme.palette.primary.darker, 0.12),
+  // Make decorative element non-interactive so it doesn't block buttons
+  pointerEvents: 'none',
 }));
 
 const StyledEllipseBottom = styled('div')(({ theme }) => ({
@@ -82,6 +84,8 @@ const StyledEllipseBottom = styled('div')(({ theme }) => ({
   filter: 'blur(100px)',
   WebkitFilter: 'blur(100px)',
   backgroundColor: alpha(theme.palette.primary.darker, 0.08),
+  // Make decorative element non-interactive so it doesn't block buttons
+  pointerEvents: 'none',
 }));
 
 // ----------------------------------------------------------------------
@@ -110,7 +114,7 @@ export default function HomeHero() {
   return (
     <>
       <StyledRoot>
-        <Container component={MotionContainer} sx={{ height: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Container component={MotionContainer} sx={{ height: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
           <Description />
         </Container>
 

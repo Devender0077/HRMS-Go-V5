@@ -604,8 +604,36 @@ export default function JobPostingsPage() {
 
         <MenuItem
           onClick={() => {
-            console.log('Duplicate job posting:', selectedJob);
+            // Duplicate job posting: create a new posting using the same fields
             handleClosePopover();
+            if (selectedJob) {
+              (async (job) => {
+                try {
+                  const payload = {
+                    title: job.title,
+                    department: job.department,
+                    location: job.location,
+                    employment_type: job.employment_type,
+                    positions: job.positions,
+                    salary_range: job.salary_range,
+                    experience_required: job.experience_required,
+                    description: job.description,
+                    status: 'open',
+                  };
+                  const res = await recruitmentService.createJobPosting(payload);
+                  if (res && res.success) {
+                    enqueueSnackbar('Job duplicated successfully', { variant: 'success' });
+                    // Refresh list to include the duplicated job
+                    fetchJobPostings();
+                  } else {
+                    enqueueSnackbar(res?.message || 'Failed to duplicate job posting', { variant: 'error' });
+                  }
+                } catch (error) {
+                  console.error('Error duplicating job posting:', error);
+                  enqueueSnackbar('Failed to duplicate job posting', { variant: 'error' });
+                }
+              })(selectedJob);
+            }
           }}
         >
           <Iconify icon="eva:copy-fill" />
