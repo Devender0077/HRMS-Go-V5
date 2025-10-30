@@ -304,6 +304,7 @@ export const FinanceReportsPage = Loadable(lazy(() => import('../pages/finance/R
 export const ContractsListPage = Loadable(lazy(() => import('../pages/contracts/ContractsListPage')));
 export const ContractNewPage = Loadable(lazy(() => import('../pages/contracts/ContractNewPage')));
 export const ContractTemplatesPage = Loadable(lazy(() => import('../pages/contracts/ContractTemplatesPage')));
+export const TemplateNewPage = Loadable(lazy(() => import('../pages/contracts/TemplateNewPage')));
 export const ContractInstancesPage = Loadable(lazy(() => import('../pages/contracts/ContractInstancesPage')));
 export const SendContractPage = Loadable(lazy(() => import('../pages/contracts/SendContractPage')));
 export const ContractSigningPage = Loadable(lazy(() => import('../pages/contracts/ContractSigningPage')));

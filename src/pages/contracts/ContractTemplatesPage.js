@@ -35,7 +35,6 @@ import {
   useTable,
   TableNoData,
   TableHeadCustom,
-  TableSelectedAction,
 } from '../../components/table';
 // services
 import contractTemplateService from '../../services/api/contractTemplateService';
@@ -77,9 +76,6 @@ export default function ContractTemplatesPage() {
     order,
     orderBy,
     rowsPerPage,
-    selected,
-    onSelectRow,
-    onSelectAllRows,
     onSort,
     onChangePage,
     onChangeRowsPerPage,
@@ -302,15 +298,7 @@ export default function ContractTemplatesPage() {
                   order={order}
                   orderBy={orderBy}
                   headLabel={TABLE_HEAD}
-                  rowCount={tableData.length}
-                  numSelected={selected.length}
                   onSort={onSort}
-                  onSelectAllRows={(checked) =>
-                    onSelectAllRows(
-                      checked,
-                      tableData.map((row) => row.id)
-                    )
-                  }
                 />
 
                 <TableBody>

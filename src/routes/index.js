@@ -175,6 +175,7 @@ import {
   ContractsListPage,
   ContractNewPage,
   ContractTemplatesPage,
+  TemplateNewPage,
   ContractInstancesPage,
   SendContractPage,
   ContractSigningPage,
@@ -433,8 +434,8 @@ export default function Router() {
             { path: ':id/view', element: <ContractNewPage /> },
             // Digital Contract Management
             { path: 'templates', element: <ContractTemplatesPage /> },
-            { path: 'templates/new', element: <ContractTemplatesPage /> },
-            { path: 'templates/:id/edit', element: <ContractTemplatesPage /> },
+            { path: 'templates/new', element: <TemplateNewPage /> },
+            { path: 'templates/:id/edit', element: <TemplateNewPage /> },
             { path: 'instances', element: <ContractInstancesPage /> },
             { path: 'instances/:id/view', element: <ContractInstancesPage /> },
             { path: 'send', element: <SendContractPage /> },
