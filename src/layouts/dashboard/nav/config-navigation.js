@@ -212,6 +212,12 @@ const navConfig = [
         path: PATH_DASHBOARD.contracts.root,
         icon: ICONS.contracts,
         permission: 'documents.view_all',
+        children: [
+          { title: 'Contract List', path: '/dashboard/contracts/list', permission: 'documents.view_all' },
+          { title: 'Templates', path: '/dashboard/contracts/templates', permission: 'documents.view_all' },
+          { title: 'Digital Contracts', path: '/dashboard/contracts/instances', permission: 'documents.view_all' },
+          { title: 'Send Contract', path: '/dashboard/contracts/send', permission: 'documents.create' },
+        ],
       },
 
       // ASSETS
@@ -227,6 +233,20 @@ const navConfig = [
           { title: 'Assignments', path: '/dashboard/assets/assignments', permission: ['assets.view', 'assets.assign'] },
           { title: 'Maintenance', path: '/dashboard/assets/maintenance', permission: ['assets.view', 'assets.edit'] },
         ],
+      },
+    ],
+  },
+
+  // EMPLOYEE SELF-SERVICE
+  // ----------------------------------------------------------------------
+  {
+    subheader: 'Employee Self-Service',
+    items: [
+      {
+        title: 'Onboarding',
+        path: '/dashboard/onboarding',
+        icon: ICONS.file,
+        permission: 'dashboard.view', // All employees can access onboarding
       },
     ],
   },
