@@ -5,6 +5,7 @@ const { Op } = require('sequelize');
 // Get all contracts
 exports.getAll = async (req, res) => {
   try {
+    console.log('📋 Fetching contracts...');
     const { page = 1, limit = 10, status, employeeId, contractType } = req.query;
     const offset = (page - 1) * limit;
 
@@ -19,32 +20,46 @@ exports.getAll = async (req, res) => {
         model: Employee,
         as: 'employee',
         attributes: ['id', 'first_name', 'last_name', 'employee_id'],
+        required: false, // LEFT JOIN instead of INNER JOIN
       }],
       order: [['created_at', 'DESC']],
       limit: parseInt(limit),
       offset,
     });
 
+    console.log(`✅ Found ${contracts.length} contracts`);
+
     const totalCount = await Contract.count({ where });
 
-    // Transform data
-    const formattedContracts = contracts.map(contract => ({
-      id: contract.id,
-      employeeId: contract.employeeId,
-      employeeName: contract.employee ? `${contract.employee.first_name} ${contract.employee.last_name}` : 'Unknown',
-      employeeCode: contract.employee?.employee_id || '',
-      type: contract.contractType,
-      startDate: contract.startDate,
-      endDate: contract.endDate || '-',
-      duration: contract.duration || calculateDuration(contract.startDate, contract.endDate),
-      salary: contract.salary,
-      status: contract.status,
-      filePath: contract.filePath,
-      terms: contract.terms,
-      notes: contract.notes,
-      createdAt: contract.createdAt,
-      updatedAt: contract.updatedAt,
-    }));
+    // Transform data with better logging
+    const formattedContracts = contracts.map(contract => {
+      const contractData = contract.get({ plain: true });
+      console.log('📄 Contract:', {
+        id: contractData.id,
+        employeeId: contractData.employeeId,
+        employee: contractData.employee,
+      });
+
+      return {
+        id: contractData.id,
+        employeeId: contractData.employeeId,
+        employeeName: contractData.employee 
+          ? `${contractData.employee.first_name} ${contractData.employee.last_name}` 
+          : 'No Employee Assigned',
+        employeeCode: contractData.employee?.employee_id || '-',
+        type: contractData.contractType,
+        startDate: contractData.startDate,
+        endDate: contractData.endDate || null,
+        duration: calculateDuration(contractData.startDate, contractData.endDate),
+        salary: contractData.salary,
+        status: contractData.status,
+        terms: contractData.terms,
+        createdAt: contractData.createdAt,
+        updatedAt: contractData.updatedAt,
+      };
+    });
+
+    console.log('📤 Sending formatted contracts:', formattedContracts.length);
 
     res.json({
       success: true,
@@ -56,7 +71,7 @@ exports.getAll = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Get contracts error:', error);
+    console.error('❌ Get contracts error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch contracts',
