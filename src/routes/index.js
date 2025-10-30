@@ -427,11 +427,7 @@ export default function Router() {
         {
           path: 'contracts',
           children: [
-            { element: <Navigate to="/dashboard/contracts/list" replace />, index: true },
-            { path: 'list', element: <ContractsListPage /> },
-            { path: 'new', element: <ContractNewPage /> },
-            { path: ':id/edit', element: <ContractNewPage /> },
-            { path: ':id/view', element: <ContractNewPage /> },
+            { element: <Navigate to="/dashboard/contracts/templates" replace />, index: true },
             // Digital Contract Management
             { path: 'templates', element: <ContractTemplatesPage /> },
             { path: 'templates/new', element: <TemplateNewPage /> },
@@ -440,6 +436,11 @@ export default function Router() {
             { path: 'instances/:id/view', element: <ContractInstancesPage /> },
             { path: 'send', element: <SendContractPage /> },
             { path: 'sign/:id', element: <ContractSigningPage /> },
+            // Legacy (kept for backward compatibility, not in navigation)
+            { path: 'list', element: <ContractsListPage /> },
+            { path: 'new', element: <ContractNewPage /> },
+            { path: ':id/edit', element: <ContractNewPage /> },
+            { path: ':id/view', element: <ContractNewPage /> },
           ],
         },
         {

@@ -206,14 +206,13 @@ const navConfig = [
         ],
       },
 
-      // CONTRACTS
+      // CONTRACTS (Digital Contract Management)
       {
         title: 'Contracts',
         path: PATH_DASHBOARD.contracts.root,
         icon: ICONS.contracts,
         permission: 'documents.view_all',
         children: [
-          { title: 'Contract List', path: '/dashboard/contracts/list', permission: 'documents.view_all' },
           { title: 'Templates', path: '/dashboard/contracts/templates', permission: 'documents.view_all' },
           { title: 'Digital Contracts', path: '/dashboard/contracts/instances', permission: 'documents.view_all' },
           { title: 'Send Contract', path: '/dashboard/contracts/send', permission: 'documents.create' },
