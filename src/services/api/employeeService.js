@@ -39,6 +39,35 @@ class EmployeeService {
   }
 
   /**
+   * Get employees for dropdowns (no RBAC restrictions)
+   * @returns {Promise} Employee list response for dropdowns
+   */
+  async getForDropdown() {
+    try {
+      console.log('📋 Calling /employees/dropdown endpoint...');
+      const response = await apiClient.get('/employees/dropdown');
+      console.log('📦 Dropdown endpoint response:', response.data);
+      
+      const employees = Array.isArray(response.data) 
+        ? response.data 
+        : response.data?.employees || response.data?.data || [];
+      
+      return {
+        success: true,
+        data: employees,
+        totalCount: response.data?.totalCount || employees.length,
+      };
+    } catch (error) {
+      console.error('❌ Error calling dropdown endpoint:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to fetch employees for dropdown',
+        error,
+      };
+    }
+  }
+
+  /**
    * Get employee by ID
    * @param {number} id - Employee ID
    * @returns {Promise} Employee response

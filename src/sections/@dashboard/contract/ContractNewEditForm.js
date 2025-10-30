@@ -60,7 +60,8 @@ export default function ContractNewEditForm({ isEdit = false, isView = false, cu
       setLoadingEmployees(true);
       console.log('🔄 Fetching employees from API...');
       
-      const response = await employeeService.getAll();
+      // Use dedicated dropdown endpoint that bypasses RBAC
+      const response = await employeeService.getForDropdown();
       console.log('✅ Employees API response:', response);
       
       if (!response || !response.success) {

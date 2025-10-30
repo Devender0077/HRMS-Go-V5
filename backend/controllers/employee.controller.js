@@ -4,6 +4,46 @@ const { Op } = require('sequelize');
 const { generateRandomPassword } = require('../utils/passwordGenerator');
 const { sendWelcomeEmail } = require('../utils/emailService');
 
+// Get employees for dropdowns (no RBAC restrictions)
+exports.getForDropdown = async (req, res) => {
+  try {
+    console.log('📋 Fetching employees for dropdown (no RBAC)...');
+    
+    const db = require('../config/database');
+    
+    const [employees] = await db.query(
+      `SELECT 
+        e.id,
+        e.employee_id,
+        e.first_name,
+        e.last_name,
+        e.email,
+        d.name as department_name
+       FROM employees e
+       LEFT JOIN departments d ON e.department_id = d.id
+       WHERE e.status = 'active'
+       ORDER BY e.first_name, e.last_name
+       LIMIT 500`,
+      []
+    );
+
+    console.log(`✅ Found ${employees.length} active employees for dropdown`);
+
+    res.json({
+      success: true,
+      data: employees,
+      totalCount: employees.length,
+    });
+  } catch (error) {
+    console.error('❌ Get employees for dropdown error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch employees',
+      error: error.message,
+    });
+  }
+};
+
 // Get all employees
 exports.getAll = async (req, res) => {
   try {

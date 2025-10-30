@@ -7,8 +7,9 @@ const { authenticateToken } = require('../middleware/auth.middleware');
 router.use(authenticateToken);
 
 // Routes
-router.get('/', employeeController.getAll);
+router.get('/dropdown', employeeController.getForDropdown); // No RBAC restrictions for dropdowns
 router.get('/stats/summary', employeeController.getStatistics); // Move before /:id to avoid conflicts
+router.get('/', employeeController.getAll);
 router.get('/:id', employeeController.getById);
 router.post('/', employeeController.create);
 router.put('/:id', employeeController.update);
