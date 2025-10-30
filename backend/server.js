@@ -121,6 +121,7 @@ app.use('/api/contracts', require('./routes/contract.routes'));
 app.use('/api/contract-templates', require('./routes/contractTemplate.routes'));
 app.use('/api/contract-instances', require('./routes/contractInstance.routes'));
 app.use('/api/template-fields', require('./routes/templateField.routes'));
+app.use('/api/employee-onboarding-documents', require('./routes/employeeOnboarding.routes'));
 app.use('/api/expenses', require('./routes/expense.routes'));
 app.use('/api/income', require('./routes/income.routes'));
 app.use('/api/holidays', require('./routes/holiday.routes'));
@@ -179,6 +180,9 @@ app.use((err, req, res, next) => {
   });
 });
 
+// Import contract cron service
+const contractCronService = require('./services/contractCronService');
+
 // Database connection and server start
 const PORT = process.env.PORT || 8000;
 
@@ -202,6 +206,11 @@ syncStrategies[syncStrategy]()
       console.log(`🔄 Sync Strategy:  ${syncStrategy}`);
       console.log(`📦 Models Loaded:  ${result.models.length}`);
       console.log('════════════════════════════════════════════════════════════════\n');
+      
+      // Start contract management cron jobs
+      if (process.env.ENABLE_CONTRACT_CRON !== 'false') {
+        contractCronService.start();
+      }
     });
   })
   .catch((err) => {

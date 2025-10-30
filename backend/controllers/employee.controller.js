@@ -3,6 +3,7 @@ const User = require('../models/User');
 const { Op } = require('sequelize');
 const { generateRandomPassword } = require('../utils/passwordGenerator');
 const { sendWelcomeEmail } = require('../utils/emailService');
+const onboardingAutomationService = require('../services/onboardingAutomationService');
 
 // Get employees for dropdowns (no RBAC restrictions)
 exports.getForDropdown = async (req, res) => {
@@ -458,6 +459,27 @@ exports.create = async (req, res) => {
       console.error('❌ Error creating user account:', userError);
       // Don't fail employee creation if user creation fails
       // HR can manually create user account later
+    }
+
+    // Auto-create onboarding checklist (Phase 4: Workflow Automation)
+    try {
+      console.log('📋 Auto-creating onboarding checklist...');
+      const onboardingResult = await onboardingAutomationService.createOnboardingChecklist(employee);
+      
+      if (onboardingResult.success) {
+        console.log(`✅ Created ${onboardingResult.documents.length} onboarding documents`);
+        
+        // Optionally auto-send documents (controlled by env variable)
+        if (process.env.AUTO_SEND_ONBOARDING === 'true') {
+          await onboardingAutomationService.sendOnboardingDocuments(employee.id);
+          console.log('✅ Onboarding documents sent to employee');
+        }
+      } else {
+        console.warn('⚠️ Failed to create onboarding checklist:', onboardingResult.error);
+      }
+    } catch (onboardingError) {
+      console.error('❌ Onboarding automation error (non-fatal):', onboardingError);
+      // Don't fail employee creation if onboarding automation fails
     }
 
     res.status(201).json({

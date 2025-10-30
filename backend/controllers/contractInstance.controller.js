@@ -3,6 +3,8 @@ const ContractTemplate = require('../models/ContractTemplate');
 const ContractAuditLog = require('../models/ContractAuditLog');
 const Employee = require('../models/Employee');
 const { Op } = require('sequelize');
+const contractEmailService = require('../services/contractEmailService');
+const pdfService = require('../services/pdfService');
 
 // Helper function to generate unique contract number
 function generateContractNumber() {
@@ -268,7 +270,15 @@ exports.send = async (req, res) => {
       }
     );
 
-    // TODO: Send email notification to recipient
+    // Send email notification to recipient
+    const emailResult = await contractEmailService.sendContract(instance.toJSON());
+    
+    if (!emailResult.success) {
+      console.warn('⚠️ Email sending failed but contract marked as sent:', emailResult.error);
+      // Don't fail the request, email can be resent later
+    } else {
+      console.log('✅ Email sent to recipient:', instance.recipientEmail);
+    }
 
     console.log('✅ Contract sent:', instance.contractNumber);
 
@@ -369,7 +379,14 @@ exports.complete = async (req, res) => {
 
     console.log('✅ Contract completed:', instance.contractNumber);
 
-    // TODO: Send completion notification email
+    // Send completion notification email
+    const emailResult = await contractEmailService.sendCompletionNotification(instance.toJSON());
+    
+    if (!emailResult.success) {
+      console.warn('⚠️ Completion email failed:', emailResult.error);
+    } else {
+      console.log('✅ Completion email sent to:', instance.recipientEmail);
+    }
 
     res.json({
       success: true,
