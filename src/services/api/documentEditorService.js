@@ -10,7 +10,7 @@ const documentEditorService = {
   convertWordToPdf: async (file) => {
     const formData = new FormData();
     formData.append('file', file);
-    const response = await apiClient.post('/api/document-editor/convert-word-to-pdf', formData, {
+    const response = await apiClient.post('/document-editor/convert-word-to-pdf', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     return response.data;
@@ -18,7 +18,7 @@ const documentEditorService = {
 
   // PDF editing operations
   addWatermark: async (templateId, watermarkText) => {
-    const response = await apiClient.post('/api/document-editor/add-watermark', {
+    const response = await apiClient.post('/document-editor/add-watermark', {
       templateId,
       watermarkText,
     });
@@ -26,14 +26,14 @@ const documentEditorService = {
   },
 
   compressPdf: async (templateId) => {
-    const response = await apiClient.post('/api/document-editor/compress', {
+    const response = await apiClient.post('/document-editor/compress', {
       templateId,
     });
     return response.data;
   },
 
   editMetadata: async (templateId, metadata) => {
-    const response = await apiClient.post('/api/document-editor/edit-metadata', {
+    const response = await apiClient.post('/document-editor/edit-metadata', {
       templateId,
       metadata,
     });
@@ -42,14 +42,14 @@ const documentEditorService = {
 
   // PDF organization operations
   mergePdfs: async (templateIds) => {
-    const response = await apiClient.post('/api/document-editor/merge', {
+    const response = await apiClient.post('/document-editor/merge', {
       templateIds,
     });
     return response.data;
   },
 
   extractPages: async (templateId, pageNumbers) => {
-    const response = await apiClient.post('/api/document-editor/extract-pages', {
+    const response = await apiClient.post('/document-editor/extract-pages', {
       templateId,
       pageNumbers,
     });
@@ -57,7 +57,7 @@ const documentEditorService = {
   },
 
   rotatePages: async (templateId, rotation, pageNumbers = null) => {
-    const response = await apiClient.post('/api/document-editor/rotate-pages', {
+    const response = await apiClient.post('/document-editor/rotate-pages', {
       templateId,
       rotation,
       pageNumbers,
@@ -66,7 +66,7 @@ const documentEditorService = {
   },
 
   reorderPages: async (templateId, newOrder) => {
-    const response = await apiClient.post('/api/document-editor/reorder-pages', {
+    const response = await apiClient.post('/document-editor/reorder-pages', {
       templateId,
       newOrder,
     });
@@ -74,7 +74,7 @@ const documentEditorService = {
   },
 
   deletePages: async (templateId, pageNumbers) => {
-    const response = await apiClient.post('/api/document-editor/delete-pages', {
+    const response = await apiClient.post('/document-editor/delete-pages', {
       templateId,
       pageNumbers,
     });
@@ -82,7 +82,7 @@ const documentEditorService = {
   },
 
   splitPdf: async (templateId) => {
-    const response = await apiClient.post('/api/document-editor/split', {
+    const response = await apiClient.post('/document-editor/split', {
       templateId,
     });
     return response.data;
@@ -90,7 +90,7 @@ const documentEditorService = {
 
   // Signing operations
   addTextAnnotation: async (templateId, text, x, y, pageNumber) => {
-    const response = await apiClient.post('/api/document-editor/add-text-annotation', {
+    const response = await apiClient.post('/document-editor/add-text-annotation', {
       templateId,
       text,
       x,
@@ -101,7 +101,7 @@ const documentEditorService = {
   },
 
   addStamp: async (templateId, stampText, x, y, pageNumber) => {
-    const response = await apiClient.post('/api/document-editor/add-stamp', {
+    const response = await apiClient.post('/document-editor/add-stamp', {
       templateId,
       stampText,
       x,
@@ -113,7 +113,7 @@ const documentEditorService = {
 
   // PDF info
   getPdfInfo: async (templateId) => {
-    const response = await apiClient.get(`/api/document-editor/info/${templateId}`);
+    const response = await apiClient.get(`/document-editor/info/${templateId}`);
     return response.data;
   },
 };

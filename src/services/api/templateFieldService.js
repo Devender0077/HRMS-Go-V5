@@ -3,13 +3,13 @@ import { apiClient } from './authService';
 const templateFieldService = {
   // Get all fields for a template
   getByTemplate: async (templateId) => {
-    const response = await apiClient.get(`/api/template-fields/template/${templateId}`);
+    const response = await apiClient.get(`/template-fields/template/${templateId}`);
     return response.data.data;
   },
 
   // Create a single field
   create: async (templateId, fieldData) => {
-    const response = await apiClient.post('/api/template-fields', {
+    const response = await apiClient.post('/template-fields', {
       template_id: templateId,
       ...fieldData,
     });
@@ -18,13 +18,13 @@ const templateFieldService = {
 
   // Update a field
   update: async (fieldId, fieldData) => {
-    const response = await apiClient.put(`/api/template-fields/${fieldId}`, fieldData);
+    const response = await apiClient.put(`/template-fields/${fieldId}`, fieldData);
     return response.data.data;
   },
 
   // Delete a field
   delete: async (fieldId) => {
-    const response = await apiClient.delete(`/api/template-fields/${fieldId}`);
+    const response = await apiClient.delete(`/template-fields/${fieldId}`);
     return response.data;
   },
 
