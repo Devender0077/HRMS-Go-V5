@@ -143,11 +143,12 @@ export default function SendContractPage() {
         if (window.confirm('Contract created! Would you like to send it now?')) {
           const sendResponse = await contractInstanceService.send(response.data.id);
           if (sendResponse.success) {
-            enqueueSnackbar('Contract sent successfully!', { variant: 'success' });
+            enqueueSnackbar('Contract sent for e-signature successfully!', { variant: 'success' });
+            navigate('/dashboard/contracts/agreements');
           }
+        } else {
+          navigate('/dashboard/contracts/agreements');
         }
-
-        navigate('/dashboard/contracts/instances');
       } else {
         enqueueSnackbar(response.message || 'Failed to create contract', { variant: 'error' });
       }

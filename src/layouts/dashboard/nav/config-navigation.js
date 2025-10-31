@@ -242,6 +242,12 @@ const navConfig = [
     subheader: 'Employee Self-Service',
     items: [
       {
+        title: 'My Contracts',
+        path: '/dashboard/contracts/my-contracts',
+        icon: ICONS.contracts,
+        permission: 'contracts.sign', // Employees who need to sign contracts
+      },
+      {
         title: 'Onboarding',
         path: '/dashboard/onboarding',
         icon: ICONS.file,

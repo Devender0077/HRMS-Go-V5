@@ -54,8 +54,10 @@ exports.getAll = async (req, res) => {
     // Role-based filtering
     if (userType === 'employee') {
       // Employees can only see their own contracts
-      whereConditions.recipientId = user.id;
+      // Use email matching since recipientId is from employees table but user.id is from users table
+      whereConditions.recipientEmail = user.email;
       whereConditions.recipientType = 'employee';
+      console.log('📧 Filtering contracts for employee email:', user.email);
     } else if (userType === 'manager') {
       // Managers can see team contracts (same department employees)
       // This requires a JOIN with employees table - will implement later

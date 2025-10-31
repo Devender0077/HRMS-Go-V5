@@ -183,6 +183,7 @@ import {
   ContractSigningPage,
   EmployeeOnboardingPage,
   ManageAgreementsPage,
+  MyContractsPage,
   AssetsListPage,
   AssetNewPage,
   AssetCategoriesPage,
@@ -438,6 +439,7 @@ export default function Router() {
             // Manage Agreements (formerly "instances")
             { path: 'agreements', element: <ManageAgreementsPage /> },
             { path: 'agreements/:id/view', element: <ManageAgreementsPage /> },
+            { path: 'my-contracts', element: <MyContractsPage /> },
             { path: 'send', element: <SendContractPage /> },
             { path: 'sign/:id', element: <ContractSigningPage /> },
             // Legacy route redirects for backward compatibility
