@@ -346,6 +346,90 @@ exports.markViewed = async (req, res) => {
   }
 };
 
+// Download signed contract
+exports.downloadSigned = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const instance = await ContractInstance.findByPk(id, {
+      include: [{
+        model: ContractTemplate,
+        as: 'template',
+      }],
+    });
+
+    if (!instance) {
+      return res.status(404).json({
+        success: false,
+        message: 'Contract instance not found',
+      });
+    }
+
+    if (instance.status !== 'completed') {
+      return res.status(400).json({
+        success: false,
+        message: 'Contract is not completed yet',
+      });
+    }
+
+    // For now, return the template file path since signed file might not exist
+    // In production, this would be the actual signed PDF with signatures embedded
+    const filePath = instance.signedFilePath || instance.template?.filePath;
+
+    if (!filePath) {
+      return res.status(404).json({
+        success: false,
+        message: 'Signed contract file not found',
+      });
+    }
+
+    const fs = require('fs');
+    const path = require('path');
+    const fullPath = path.join(__dirname, '..', filePath);
+
+    if (!fs.existsSync(fullPath)) {
+      return res.status(404).json({
+        success: false,
+        message: 'Contract file not found on server',
+      });
+    }
+
+    // Set filename
+    const filename = `${instance.contractNumber}_signed.pdf`;
+
+    // Log audit trail
+    await logAudit(
+      instance.id,
+      'downloaded',
+      req.user?.id,
+      req.user?.name || instance.recipientName,
+      req.ip,
+      req.get('user-agent'),
+      { action: 'download_signed' }
+    );
+
+    // Send file
+    res.download(fullPath, filename, (err) => {
+      if (err) {
+        console.error('Download error:', err);
+        if (!res.headersSent) {
+          res.status(500).json({
+            success: false,
+            message: 'Error downloading file',
+          });
+        }
+      }
+    });
+  } catch (error) {
+    console.error('❌ Download signed contract error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to download signed contract',
+      error: error.message,
+    });
+  }
+};
+
 // Complete contract (after signing)
 exports.complete = async (req, res) => {
   try {

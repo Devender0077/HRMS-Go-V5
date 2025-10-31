@@ -154,6 +154,28 @@ class ContractInstanceService {
   }
 
   /**
+   * Download signed contract
+   */
+  async downloadSigned(id) {
+    try {
+      const response = await apiClient.get(`/contract-instances/${id}/download`, {
+        responseType: 'blob', // Important for file download
+      });
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      console.error('❌ Download signed contract error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to download signed contract',
+        error,
+      };
+    }
+  }
+
+  /**
    * Decline contract
    */
   async decline(id, reason) {

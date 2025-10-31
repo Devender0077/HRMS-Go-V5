@@ -319,11 +319,45 @@ export default function ContractSigningPage() {
 
             <Stack direction="row" spacing={2} sx={{ mt: 3 }}>
               <Button
+                variant="contained"
+                color="primary"
+                startIcon={<Iconify icon="eva:eye-fill" />}
+                onClick={() => {
+                  // Open PDF in new tab
+                  const pdfUrl = `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/api/contract-instances/${id}/download`;
+                  window.open(pdfUrl, '_blank');
+                }}
+              >
+                View Document
+              </Button>
+
+              <Button
                 variant="outlined"
                 startIcon={<Iconify icon="eva:download-fill" />}
-                onClick={() => {
-                  // TODO: Download signed PDF
-                  enqueueSnackbar('Download coming soon', { variant: 'info' });
+                onClick={async () => {
+                  try {
+                    enqueueSnackbar('Downloading...', { variant: 'info' });
+                    const response = await contractInstanceService.downloadSigned(id);
+                    
+                    if (response.success) {
+                      // Create blob link to download
+                      const url = window.URL.createObjectURL(new Blob([response.data]));
+                      const link = document.createElement('a');
+                      link.href = url;
+                      link.setAttribute('download', `${contract.contractNumber}_signed.pdf`);
+                      document.body.appendChild(link);
+                      link.click();
+                      link.remove();
+                      window.URL.revokeObjectURL(url);
+                      
+                      enqueueSnackbar('Contract downloaded successfully', { variant: 'success' });
+                    } else {
+                      enqueueSnackbar(response.message || 'Failed to download contract', { variant: 'error' });
+                    }
+                  } catch (error) {
+                    console.error('Download error:', error);
+                    enqueueSnackbar('Error downloading contract', { variant: 'error' });
+                  }
                 }}
               >
                 Download Signed Copy
@@ -331,9 +365,9 @@ export default function ContractSigningPage() {
 
               <Button
                 variant="outlined"
-                onClick={() => navigate('/dashboard/onboarding')}
+                onClick={() => navigate('/dashboard/contracts/my-contracts')}
               >
-                Back to Onboarding
+                Back to My Contracts
               </Button>
             </Stack>
           </Card>

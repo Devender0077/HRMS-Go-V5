@@ -19,6 +19,7 @@ router.post('/:id/viewed', contractInstanceController.markViewed);
 router.post('/:id/complete', contractInstanceController.complete);
 router.post('/:id/decline', contractInstanceController.decline);
 router.post('/:id/cancel', contractInstanceController.cancel);
+router.get('/:id/download', contractInstanceController.downloadSigned);
 
 module.exports = router;
 
