@@ -26,6 +26,7 @@ import CustomBreadcrumbs from '../../components/custom-breadcrumbs';
 import { useSettingsContext } from '../../components/settings';
 import { useSnackbar } from '../../components/snackbar';
 import SignatureCanvas from '../../components/signature/SignatureCanvas';
+import ContractDocumentViewer from '../../sections/@dashboard/contract/ContractDocumentViewer';
 import ConfirmDialog from '../../components/confirm-dialog';
 // services
 import contractInstanceService from '../../services/api/contractInstanceService';
@@ -51,6 +52,7 @@ export default function ContractSigningPage() {
   // Form fields
   const [fullName, setFullName] = useState('');
   const [signDate, setSignDate] = useState(new Date().toISOString().split('T')[0]);
+  const [fieldValues, setFieldValues] = useState({});
 
   useEffect(() => {
     fetchContract();
@@ -151,6 +153,13 @@ export default function ContractSigningPage() {
     return days;
   };
 
+  const handleFieldChange = (fieldId, value) => {
+    setFieldValues(prev => ({
+      ...prev,
+      [fieldId]: value,
+    }));
+  };
+
   if (loading) {
     return (
       <Container>
@@ -223,11 +232,28 @@ export default function ContractSigningPage() {
           </Stack>
         </Card>
 
+        {/* Contract Document with Fields */}
+        {contract.status !== 'completed' && contract.status !== 'declined' && contract.template && (
+          <Card sx={{ p: 3, mb: 3 }}>
+            <Typography variant="h6" sx={{ mb: 3 }}>
+              Review Contract Document
+            </Typography>
+            
+            <ContractDocumentViewer
+              contractInstance={contract}
+              templateId={contract.templateId}
+              fieldValues={fieldValues}
+              onFieldChange={handleFieldChange}
+              disabled={disabled}
+            />
+          </Card>
+        )}
+
         {/* Contract Form */}
         {contract.status !== 'completed' && contract.status !== 'declined' && (
           <Card sx={{ p: 3 }}>
             <Typography variant="h6" sx={{ mb: 3 }}>
-              Complete Your Contract
+              Complete Your Signature
             </Typography>
 
             <Stack spacing={3}>

@@ -1,0 +1,12 @@
+.signature-canvas {
+  display: block;
+  width: 500px !important;
+  height: 200px !important;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.signature-canvas:active {
+  cursor: crosshair;
+}
+

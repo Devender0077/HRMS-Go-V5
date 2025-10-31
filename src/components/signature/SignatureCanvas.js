@@ -19,6 +19,8 @@ import {
 } from '@mui/material';
 // components
 import Iconify from '../iconify';
+// styles
+import './signature-canvas.css';
 
 // ----------------------------------------------------------------------
 
@@ -170,6 +172,8 @@ const SignatureCanvas = forwardRef(({ onSave, disabled = false }, ref) => {
                 borderRadius: 1,
                 overflow: 'hidden',
                 bgcolor: 'background.paper',
+                width: '100%',
+                maxWidth: 500,
               }}
             >
               <SignatureCanvasLib
@@ -178,12 +182,13 @@ const SignatureCanvas = forwardRef(({ onSave, disabled = false }, ref) => {
                   width: 500,
                   height: 200,
                   className: 'signature-canvas',
-                  style: { width: '100%', height: 200, cursor: 'crosshair' },
                 }}
                 backgroundColor="rgb(255,255,255)"
                 penColor="rgb(0,0,0)"
                 minWidth={0.5}
                 maxWidth={2.5}
+                dotSize={0}
+                throttle={8}
               />
             </Box>
           </Stack>
