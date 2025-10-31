@@ -3,7 +3,7 @@ const sequelize = require('../config/database2');
 
 const ContractInstance = sequelize.define('ContractInstance', {
   id: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.BIGINT.UNSIGNED,
     primaryKey: true,
     autoIncrement: true,
   },
@@ -108,7 +108,7 @@ const ContractInstance = sequelize.define('ContractInstance', {
 }, {
   tableName: 'contract_instances',
   timestamps: true,
-  underscored: false,
+  underscored: true,
 });
 
 module.exports = ContractInstance;

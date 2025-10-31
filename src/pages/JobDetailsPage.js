@@ -1,6 +1,6 @@
 import { Helmet } from 'react-helmet-async';
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 // @mui
 import {
   Container,
@@ -23,8 +23,11 @@ export default function JobDetailsPage() {
   const { enqueueSnackbar } = useSnackbar();
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const [job, setJob] = useState(null);
+  // If navigated from JobsPage we may already have the job in location.state — use it as an immediate fallback
+  const initialJob = location?.state?.job ?? null;
+  const [job, setJob] = useState(initialJob);
   const [loading, setLoading] = useState(true);
 
   const [form, setForm] = useState({ candidate_name: '', email: '', phone: '', experience: '', current_company: '', cover_letter: '', resume: '' });
@@ -35,22 +38,38 @@ export default function JobDetailsPage() {
     (async () => {
       try {
         setLoading(true);
-        const res = await recruitmentService.getJobPosting(id);
-        let payload = res && res.success && res.data ? res.data : res;
-        if (payload) {
-          // normalize
+        // If we already have a job from navigation state, use it immediately and skip the network call
+        if (initialJob) {
+          // ensure normalization of the incoming job object
+          const incoming = initialJob;
           const j = {
-            id: payload.id || payload._id || payload.jobId || id,
-            title: payload.title || payload.job_title || payload.name || 'Untitled',
-            department: payload.department || payload.departmentName || 'General',
-            location: payload.location || 'Remote',
-            employment_type: payload.employment_type || payload.type || 'full_time',
-            positions: Number(payload.positions ?? 1),
-            description: payload.description || payload.summary || '',
+            id: incoming.id || incoming._id || incoming.jobId || id,
+            title: incoming.title || incoming.job_title || incoming.name || 'Untitled',
+            department: incoming.department || incoming.departmentName || 'General',
+            location: incoming.location || 'Remote',
+            employment_type: incoming.employment_type || incoming.type || 'full_time',
+            positions: Number(incoming.positions ?? 1),
+            description: incoming.description || incoming.summary || '',
           };
           setJob(j);
         } else {
-          setJob(null);
+          const res = await recruitmentService.getJobPosting(id);
+          let payload = res && res.success && res.data ? res.data : res;
+          if (payload) {
+            // normalize
+            const j = {
+              id: payload.id || payload._id || payload.jobId || id,
+              title: payload.title || payload.job_title || payload.name || 'Untitled',
+              department: payload.department || payload.departmentName || 'General',
+              location: payload.location || 'Remote',
+              employment_type: payload.employment_type || payload.type || 'full_time',
+              positions: Number(payload.positions ?? 1),
+              description: payload.description || payload.summary || '',
+            };
+            setJob(j);
+          } else {
+            setJob(null);
+          }
         }
       } catch (error) {
         console.error('Error fetching job:', error);
@@ -60,7 +79,7 @@ export default function JobDetailsPage() {
         setLoading(false);
       }
     })();
-  }, [id, enqueueSnackbar]);
+  }, [id, enqueueSnackbar, initialJob]);
 
   const handleSubmit = async () => {
     if (!job) return;
@@ -91,7 +110,7 @@ export default function JobDetailsPage() {
           cover_letter: form.cover_letter,
           resume_path: resumeFile.name,
           resume_base64: dataUrl,
-          status: 'submitted',
+          status: 'applied',
         };
         res = await recruitmentService.createJobApplication(payload);
       } else {
@@ -104,7 +123,7 @@ export default function JobDetailsPage() {
           current_company: form.current_company,
           cover_letter: form.cover_letter,
           resume: form.resume,
-          status: 'submitted',
+          status: 'applied',
         };
         res = await recruitmentService.createJobApplication(payload);
       }

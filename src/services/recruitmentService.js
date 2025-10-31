@@ -123,10 +123,20 @@ class RecruitmentService {
   async getJobApplications() {
     try {
   const response = await apiClient.get(`${BASE_PATH}/applications`);
-      return {
-        success: true,
-        data: response.data,
-      };
+      // Normalize backend shape: some endpoints return { success: true, data: [...] }
+      // while others return the array directly. Unwrap when needed so callers
+      // like ApplicationsPage can rely on response.data being an array.
+      const payload = response.data;
+      if (payload && typeof payload === 'object' && payload.success && Array.isArray(payload.data)) {
+        return { success: true, data: payload.data };
+      }
+
+      if (Array.isArray(payload)) {
+        return { success: true, data: payload };
+      }
+
+      // Fallback: return whatever is present (may be an object)
+      return { success: true, data: payload };
     } catch (error) {
       console.error('Error fetching job applications:', error);
       return {

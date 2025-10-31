@@ -1,5 +1,5 @@
 import { Helmet } from 'react-helmet-async';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSnackbar } from 'notistack';
 // @mui
 import {
@@ -21,6 +21,11 @@ import {
   InputAdornment,
   Box,
   Avatar,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Link,
 } from '@mui/material';
 // components
 import Iconify from '../../components/iconify';
@@ -30,6 +35,7 @@ import { useSettingsContext } from '../../components/settings';
 import { TableHeadCustom, TableNoData } from '../../components/table';
 import MenuPopover from '../../components/menu-popover';
 import recruitmentService from '../../services/recruitmentService';
+import apiClient from '../../utils/axios';
 import { PATH_DASHBOARD } from '../../routes/paths';
 
 // ----------------------------------------------------------------------
@@ -43,64 +49,7 @@ const TABLE_HEAD = [
   { id: 'actions', label: 'Actions', alignRight: true },
 ];
 
-const MOCK_APPLICATIONS = [
-  {
-    id: 1,
-    applicant: {
-      name: 'Alice Johnson',
-      email: 'alice.johnson@email.com',
-      phone: '+1-555-0101',
-    },
-    job_title: 'Senior Software Developer',
-    applied_date: '2024-01-20',
-    experience: '4 years',
-    status: 'under_review',
-    resume_url: '/resumes/alice_johnson.pdf',
-    cover_letter: 'I am very interested in this position...',
-  },
-  {
-    id: 2,
-    applicant: {
-      name: 'Bob Smith',
-      email: 'bob.smith@email.com',
-      phone: '+1-555-0102',
-    },
-    job_title: 'Marketing Manager',
-    applied_date: '2024-01-19',
-    experience: '3 years',
-    status: 'shortlisted',
-    resume_url: '/resumes/bob_smith.pdf',
-    cover_letter: 'I have extensive experience in marketing...',
-  },
-  {
-    id: 3,
-    applicant: {
-      name: 'Carol Davis',
-      email: 'carol.davis@email.com',
-      phone: '+1-555-0103',
-    },
-    job_title: 'HR Intern',
-    applied_date: '2024-01-18',
-    experience: '1 year',
-    status: 'interviewed',
-    resume_url: '/resumes/carol_davis.pdf',
-    cover_letter: 'I am excited about this internship opportunity...',
-  },
-  {
-    id: 4,
-    applicant: {
-      name: 'David Wilson',
-      email: 'david.wilson@email.com',
-      phone: '+1-555-0104',
-    },
-    job_title: 'Senior Software Developer',
-    applied_date: '2024-01-17',
-    experience: '5 years',
-    status: 'rejected',
-    resume_url: '/resumes/david_wilson.pdf',
-    cover_letter: 'I am a senior developer with 5 years of experience...',
-  },
-];
+// (Removed static mock data — live data is fetched from the API)
 
 // ----------------------------------------------------------------------
 
@@ -115,14 +64,46 @@ export default function ApplicationsPage() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [openPopover, setOpenPopover] = useState(null);
   const [selectedApplication, setSelectedApplication] = useState(null);
+  const [openDetails, setOpenDetails] = useState(false);
+  const [detailsApplication, setDetailsApplication] = useState(null);
 
   // Fetch applications
-  const fetchApplications = async () => {
+  const fetchApplications = useCallback(async () => {
     try {
       setLoading(true);
       const response = await recruitmentService.getJobApplications();
+      // also fetch job postings to map job_id -> job_title
+      let jobsMap = {};
+      try {
+        const jobsRes = await recruitmentService.getJobPostings();
+        let jobsPayload = [];
+        if (jobsRes && jobsRes.success && Array.isArray(jobsRes.data)) jobsPayload = jobsRes.data;
+        else if (Array.isArray(jobsRes)) jobsPayload = jobsRes;
+        jobsPayload.forEach((j) => { jobsMap[String(j.id)] = j.title || j.job_title || j.name || 'Untitled'; });
+      } catch (err) {
+        console.warn('Failed to fetch job postings for mapping:', err);
+      }
+
       if (response.success && Array.isArray(response.data)) {
-        setApplications(response.data);
+        // normalize applications to UI shape
+        const normalized = response.data.map((a) => ({
+          id: a.id || a._id,
+          applicant: {
+            name: a.candidate_name || a.name || a.applicant_name || '',
+            email: a.email || '',
+            phone: a.phone || '',
+          },
+          job_title: a.job_title || jobsMap[String(a.job_id)] || a.job_title || (a.job && a.job.title) || 'Unknown',
+          applied_date: a.applied_date || a.created_at || a.appliedAt || new Date().toISOString(),
+          experience: a.experience || a.years_experience || '',
+          status: a.status || 'applied',
+          resume_url: a.resume_path || a.resume || '',
+          cover_letter: a.cover_letter || a.coverLetter || '',
+        }));
+        setApplications(normalized);
+      } else if (Array.isArray(response)) {
+        // legacy shape
+        setApplications(response);
       } else {
         setApplications([]);
         enqueueSnackbar('No applications found', { variant: 'info' });
@@ -134,11 +115,11 @@ export default function ApplicationsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [enqueueSnackbar]);
 
   useEffect(() => {
     fetchApplications();
-  }, []);
+  }, [fetchApplications]);
 
   const handleOpenPopover = (event, application) => {
     setOpenPopover(event.currentTarget);
@@ -148,6 +129,37 @@ export default function ApplicationsPage() {
   const handleClosePopover = () => {
     setOpenPopover(null);
     setSelectedApplication(null);
+  };
+
+  const getResumeUrl = (resumePath) => {
+    if (!resumePath) return '';
+    if (resumePath.startsWith('http')) return resumePath;
+    // apiClient.defaults.baseURL might be like 'http://localhost:8000/api'
+    const base = apiClient.defaults?.baseURL || '';
+    const stripped = base.replace(/\/api\/?$/, '');
+    return `${stripped}${resumePath.startsWith('/') ? '' : '/'}${resumePath}`;
+  };
+
+  const handleViewDetails = (application) => {
+    setDetailsApplication(application);
+    setOpenDetails(true);
+    handleClosePopover();
+  };
+
+  const handleCloseDetails = () => {
+    setOpenDetails(false);
+    setDetailsApplication(null);
+  };
+
+  const handleDownloadResume = (application) => {
+    const path = application?.resume_url || application?.resume_path || application?.resume || '';
+    const url = getResumeUrl(path);
+    if (url) {
+      window.open(url, '_blank');
+    } else {
+      enqueueSnackbar('Resume not available', { variant: 'warning' });
+    }
+    handleClosePopover();
   };
 
   // Handle status update
@@ -205,10 +217,17 @@ export default function ApplicationsPage() {
 
   const getStatusColor = (status) => {
     switch (status) {
+      case 'applied':
+        return 'warning';
+      case 'screening':
+        return 'warning';
       case 'shortlisted':
         return 'success';
+      case 'interview':
       case 'interviewed':
         return 'info';
+      case 'offer':
+        return 'success';
       case 'under_review':
         return 'warning';
       case 'rejected':
@@ -220,16 +239,7 @@ export default function ApplicationsPage() {
     }
   };
 
-  const handleStatusChange = (id, newStatus) => {
-    setApplications(prev => 
-      prev.map(app => 
-        app.id === id 
-          ? { ...app, status: newStatus }
-          : app
-      )
-    );
-    handleClosePopover();
-  };
+  // (status updates use handleUpdateStatus which triggers API + local state update)
 
   const filteredApplications = applications.filter((application) =>
     application.applicant.name.toLowerCase().includes(filterName.toLowerCase()) ||
@@ -287,6 +297,12 @@ export default function ApplicationsPage() {
               }}
             />
           </Stack>
+
+          {loading && (
+            <Box sx={{ px: 3, py: 2 }}>
+              <Typography variant="body2" color="text.secondary">Loading applications...</Typography>
+            </Box>
+          )}
 
           <Scrollbar>
             <TableContainer sx={{ minWidth: 800 }}>
@@ -369,35 +385,55 @@ export default function ApplicationsPage() {
         </Card>
       </Container>
 
+      {/* Details dialog */}
+      <Dialog open={openDetails} onClose={handleCloseDetails} fullWidth maxWidth="sm">
+        <DialogTitle>Application Details</DialogTitle>
+        <DialogContent dividers>
+          {detailsApplication ? (
+            <Stack spacing={1} sx={{ pt: 1 }}>
+              <Typography variant="subtitle1">{detailsApplication.applicant?.name}</Typography>
+              <Typography variant="body2" color="text.secondary">{detailsApplication.applicant?.email}</Typography>
+              <Typography variant="body2">Phone: {detailsApplication.applicant?.phone}</Typography>
+              <Typography variant="body2">Job: {detailsApplication.job_title}</Typography>
+              <Typography variant="body2">Applied: {new Date(detailsApplication.applied_date).toLocaleString()}</Typography>
+              <Typography variant="body2">Experience: {detailsApplication.experience}</Typography>
+              <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>Cover Letter: {detailsApplication.cover_letter}</Typography>
+              <Box sx={{ mt: 1 }}>
+                {detailsApplication.resume_url ? (
+                  <Link href={getResumeUrl(detailsApplication.resume_url)} target="_blank" rel="noopener" underline="hover">Open Resume</Link>
+                ) : (
+                  <Typography variant="caption" color="text.secondary">No resume available</Typography>
+                )}
+              </Box>
+            </Stack>
+          ) : (
+            <Typography>Loading...</Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDetails}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
       <MenuPopover
         open={openPopover}
         onClose={handleClosePopover}
         arrow="right-top"
         sx={{ width: 180 }}
       >
-        <MenuItem
-          onClick={() => {
-            console.log('View application:', selectedApplication);
-            handleClosePopover();
-          }}
-        >
+        <MenuItem onClick={() => handleViewDetails(selectedApplication)}>
           <Iconify icon="eva:eye-fill" />
           View Details
         </MenuItem>
 
-        <MenuItem
-          onClick={() => {
-            console.log('Download resume:', selectedApplication);
-            handleClosePopover();
-          }}
-        >
+        <MenuItem onClick={() => handleDownloadResume(selectedApplication)}>
           <Iconify icon="eva:download-fill" />
           Download Resume
         </MenuItem>
 
-        {selectedApplication?.status === 'under_review' && (
+        {(selectedApplication?.status === 'applied' || selectedApplication?.status === 'screening' || selectedApplication?.status === 'under_review') && (
           <MenuItem
-            onClick={() => handleUpdateStatus(selectedApplication.id, 'shortlisted')}
+            onClick={() => handleUpdateStatus(selectedApplication.id, 'screening')}
             sx={{ color: 'success.main' }}
           >
             <Iconify icon="eva:checkmark-circle-2-fill" />
@@ -405,9 +441,9 @@ export default function ApplicationsPage() {
           </MenuItem>
         )}
 
-        {selectedApplication?.status === 'shortlisted' && (
+        {selectedApplication?.status === 'screening' && (
           <MenuItem
-            onClick={() => handleUpdateStatus(selectedApplication.id, 'interviewed')}
+            onClick={() => handleUpdateStatus(selectedApplication.id, 'interview')}
             sx={{ color: 'info.main' }}
           >
             <Iconify icon="eva:calendar-fill" />
@@ -415,7 +451,7 @@ export default function ApplicationsPage() {
           </MenuItem>
         )}
 
-        {selectedApplication?.status === 'interviewed' && (
+        {(selectedApplication?.status === 'interview' || selectedApplication?.status === 'screening') && (
           <MenuItem
             onClick={() => handleUpdateStatus(selectedApplication.id, 'hired')}
             sx={{ color: 'primary.main' }}
