@@ -3,6 +3,7 @@ const ContractTemplate = require('../models/ContractTemplate');
 const ContractAuditLog = require('../models/ContractAuditLog');
 const Employee = require('../models/Employee');
 const { Op } = require('sequelize');
+const notificationService = require('../services/notification.service');
 const contractEmailService = require('../services/contractEmailService');
 const pdfService = require('../services/pdfService');
 
@@ -284,6 +285,9 @@ exports.send = async (req, res) => {
 
     console.log('✅ Contract sent:', instance.contractNumber);
 
+    // Create notification for employee
+    await notificationService.notifyContractSent(instance);
+
     res.json({
       success: true,
       message: 'Contract sent successfully',
@@ -465,6 +469,9 @@ exports.complete = async (req, res) => {
 
     console.log('✅ Contract completed:', instance.contractNumber);
 
+    // Create notification for HR/Admin about signed contract
+    await notificationService.notifyContractSigned(instance, req.user?.id);
+
     // Send completion notification email
     const emailResult = await contractEmailService.sendCompletionNotification(instance.toJSON());
     
@@ -523,6 +530,9 @@ exports.decline = async (req, res) => {
     );
 
     console.log('✅ Contract declined:', instance.contractNumber);
+
+    // Create notification for HR/Admin about declined contract
+    await notificationService.notifyContractDeclined(instance);
 
     // TODO: Send declined notification email
 
