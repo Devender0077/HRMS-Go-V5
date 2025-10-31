@@ -1,5 +1,5 @@
 import { Helmet } from 'react-helmet-async';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSnackbar } from 'notistack';
 // @mui
 import {
@@ -15,6 +15,11 @@ import {
   Stack,
   Chip,
   Typography,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Box,
 } from '@mui/material';
 // routes
 import { PATH_DASHBOARD } from '../../routes/paths';
@@ -43,11 +48,7 @@ const TABLE_HEAD = [
   { id: '', label: 'Actions', align: 'right' },
 ];
 
-const MOCK_OFFERS = [
-  { id: 1, name: 'Lisa Anderson', job: 'HR Manager', salary: 75000, sentDate: '2024-12-15', validUntil: '2024-12-22', status: 'pending' },
-  { id: 2, name: 'Sarah Wilson', job: 'Marketing Lead', salary: 85000, sentDate: '2024-12-10', validUntil: '2024-12-17', status: 'accepted' },
-  { id: 3, name: 'David Chen', job: 'Software Engineer', salary: 95000, sentDate: '2024-12-05', validUntil: '2024-12-12', status: 'rejected' },
-];
+
 
 // ----------------------------------------------------------------------
 
@@ -65,20 +66,50 @@ export default function OffersPage() {
   const { themeStretch } = useSettingsContext();
   const { enqueueSnackbar } = useSnackbar();
   const [tableData, setTableData] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [openDetails, setOpenDetails] = useState(false);
+  const [detailsOffer, setDetailsOffer] = useState(null);
 
   // Fetch offers data
-  const fetchOffers = async () => {
+  const fetchOffers = useCallback(async () => {
     try {
-      setLoading(true);
-      const response = await recruitmentService.getJobApplications();
-      if (response.success && Array.isArray(response.data)) {
-        // Filter applications that have offers
-        const offersData = response.data.filter(app => 
-          app.status === 'offer_sent' || app.status === 'offer_accepted' || 
-          app.status === 'offer_rejected' || app.status === 'hired'
-        );
-        setTableData(offersData);
+      // Prefer a dedicated offers endpoint if available
+      const res = await recruitmentService.getOffers();
+      let payload = [];
+      if (res && res.success && Array.isArray(res.data)) payload = res.data;
+      else if (Array.isArray(res)) payload = res;
+
+      if (!payload.length) {
+        // Fallback: derive offers from applications
+        const appsRes = await recruitmentService.getJobApplications();
+        if (appsRes && appsRes.success && Array.isArray(appsRes.data)) {
+          payload = appsRes.data.filter((app) => {
+            const s = (app.status || '').toString().toLowerCase();
+            return s === 'offer' || s === 'offer_sent' || s === 'offer_accepted' || s === 'offer_rejected' || s === 'hired' || s === 'offered';
+          }).map((a) => ({
+            id: a.id || a._id,
+            name: a.candidate_name || a.name || a.applicant_name || a.email || 'Unknown',
+            job: (a.job && (a.job.title || a.job.name)) || a.job_title || '',
+            salary: a.offered_salary || a.salary || a.offer_salary || null,
+            sentDate: a.offer_sent_date || a.sent_date || a.updated_at || a.created_at || null,
+            validUntil: a.offer_valid_until || a.valid_until || null,
+            status: a.status || 'offer',
+          }));
+        }
+      }
+
+      if (Array.isArray(payload) && payload.length) {
+        // Normalize payload to expected table rows
+        const normalized = payload.map((it) => ({
+          id: it.id || it._id,
+          name: it.name || it.candidate || it.candidate_name || it.email || 'Unknown',
+          job: it.job?.title || it.job?.name || it.job || it.job_title || '',
+          salary: it.salary ?? it.offered_salary ?? it.offer_salary ?? null,
+          sentDate: it.sentDate || it.sent_date || it.offer_sent_date || it.updated_at || it.created_at || null,
+          validUntil: it.validUntil || it.valid_until || it.offer_valid_until || null,
+          status: (it.status || '').toString(),
+        }));
+
+        setTableData(normalized);
       } else {
         setTableData([]);
         enqueueSnackbar('No offers found', { variant: 'info' });
@@ -87,14 +118,22 @@ export default function OffersPage() {
       console.error('Error fetching offers:', error);
       setTableData([]);
       enqueueSnackbar('Failed to load offers', { variant: 'error' });
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [enqueueSnackbar]);
 
   useEffect(() => {
     fetchOffers();
-  }, []);
+  }, [fetchOffers]);
+
+  const handleOpenDetails = (row) => {
+    setDetailsOffer(row);
+    setOpenDetails(true);
+  };
+
+  const handleCloseDetails = () => {
+    setOpenDetails(false);
+    setDetailsOffer(null);
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -148,11 +187,11 @@ export default function OffersPage() {
                         <TableCell>{row.job}</TableCell>
                         <TableCell align="right">
                           <Typography variant="subtitle2" color="primary.main">
-                            ${row.salary.toLocaleString()}/year
+                            {row.salary != null ? `$${Number(row.salary).toLocaleString()}/year` : '-'}
                           </Typography>
                         </TableCell>
-                        <TableCell>{row.sentDate}</TableCell>
-                        <TableCell>{row.validUntil}</TableCell>
+                        <TableCell>{row.sentDate ? (isNaN(new Date(row.sentDate).getTime()) ? row.sentDate : new Date(row.sentDate).toLocaleDateString()) : '-'}</TableCell>
+                        <TableCell>{row.validUntil ? (isNaN(new Date(row.validUntil).getTime()) ? row.validUntil : new Date(row.validUntil).toLocaleDateString()) : '-'}</TableCell>
                         <TableCell align="center">
                           <Chip
                             label={row.status}
@@ -162,7 +201,7 @@ export default function OffersPage() {
                           />
                         </TableCell>
                         <TableCell align="right">
-                          <IconButton size="small">
+                          <IconButton size="small" onClick={() => handleOpenDetails(row)}>
                             <Iconify icon="eva:eye-fill" />
                           </IconButton>
                           <IconButton size="small">
@@ -189,6 +228,30 @@ export default function OffersPage() {
           />
         </Card>
       </Container>
+
+      {/* Offer Details dialog */}
+      <Dialog open={openDetails} onClose={handleCloseDetails} fullWidth maxWidth="sm">
+        <DialogTitle>Offer Details</DialogTitle>
+        <DialogContent dividers>
+          {detailsOffer ? (
+            <Stack spacing={1} sx={{ pt: 1 }}>
+              <Typography variant="subtitle1">{detailsOffer.name}</Typography>
+              <Typography variant="body2" color="text.secondary">{detailsOffer.job}</Typography>
+              <Typography variant="body2">Salary: {detailsOffer.salary != null ? `$${Number(detailsOffer.salary).toLocaleString()}/year` : '-'}</Typography>
+              <Typography variant="body2">Sent: {detailsOffer.sentDate ? (isNaN(new Date(detailsOffer.sentDate).getTime()) ? detailsOffer.sentDate : new Date(detailsOffer.sentDate).toLocaleString()) : '-'}</Typography>
+              <Typography variant="body2">Valid Until: {detailsOffer.validUntil ? (isNaN(new Date(detailsOffer.validUntil).getTime()) ? detailsOffer.validUntil : new Date(detailsOffer.validUntil).toLocaleDateString()) : '-'}</Typography>
+              <Box>
+                <Chip label={detailsOffer.status} size="small" color={getStatusColor(detailsOffer.status)} sx={{ textTransform: 'capitalize' }} />
+              </Box>
+            </Stack>
+          ) : (
+            <Typography>Loading...</Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDetails}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }

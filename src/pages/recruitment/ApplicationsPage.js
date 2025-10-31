@@ -204,6 +204,7 @@ export default function ApplicationsPage() {
 
   const handleFilterName = (event) => {
     setFilterName(event.target.value);
+    setPage(0);
   };
 
   const handleChangePage = (event, newPage) => {
@@ -241,11 +242,28 @@ export default function ApplicationsPage() {
 
   // (status updates use handleUpdateStatus which triggers API + local state update)
 
-  const filteredApplications = applications.filter((application) =>
-    application.applicant.name.toLowerCase().includes(filterName.toLowerCase()) ||
-    application.job_title.toLowerCase().includes(filterName.toLowerCase()) ||
-    application.applicant.email.toLowerCase().includes(filterName.toLowerCase())
-  );
+  const filteredApplications = applications.filter((application) => {
+    const term = (filterName || '').toString().trim().toLowerCase();
+    if (!term) return true;
+
+    const name = (application?.applicant?.name || application?.applicant_name || application?.name || '').toString().toLowerCase();
+    const email = (application?.applicant?.email || application?.email || '').toString().toLowerCase();
+    const phone = (application?.applicant?.phone || application?.phone || '').toString().toLowerCase();
+    const jobTitle = (application?.job_title || application?.job?.title || '').toString().toLowerCase();
+    const experience = (application?.experience || '').toString().toLowerCase();
+    const cover = (application?.cover_letter || application?.coverLetter || '').toString().toLowerCase();
+    const status = (application?.status || '').toString().toLowerCase();
+
+    return (
+      name.includes(term) ||
+      email.includes(term) ||
+      phone.includes(term) ||
+      jobTitle.includes(term) ||
+      experience.includes(term) ||
+      cover.includes(term) ||
+      status.includes(term)
+    );
+  });
 
   const isNotFound = !filteredApplications.length && !!filterName;
 

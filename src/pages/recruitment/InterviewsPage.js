@@ -45,13 +45,49 @@ export default function InterviewsPage() {
   const fetchInterviews = async () => {
     try {
       setLoading(true);
-      const response = await recruitmentService.getJobApplications();
-      if (response.success && Array.isArray(response.data)) {
-        // Filter applications that have interviews scheduled
-        const interviewData = response.data.filter(app => 
-          app.status === 'interviewed' || app.status === 'interview_scheduled'
-        );
-        setInterviews(interviewData);
+      // Prefer a dedicated interviews endpoint if available
+      const res = await recruitmentService.getInterviews();
+      let payload = [];
+      if (res && res.success && Array.isArray(res.data)) payload = res.data;
+      else if (Array.isArray(res)) payload = res;
+
+      if (!payload.length) {
+        // Fallback: derive interviews from applications (older API)
+        const appsRes = await recruitmentService.getJobApplications();
+        if (appsRes && appsRes.success && Array.isArray(appsRes.data)) {
+          payload = appsRes.data
+            .filter((app) => {
+              // consider records with interview info or interview-status-like values
+              const s = (app.status || '').toString().toLowerCase();
+              return s === 'interview' || s === 'interviewed' || s === 'interview_scheduled' || app.interview_date || app.interview_time || app.interviewer;
+            })
+            .map((a) => ({
+              id: a.id || a._id,
+              candidate: a.candidate_name || a.name || a.applicant_name || a.email || 'Unknown',
+              job: (a.job && (a.job.title || a.job.name)) || a.job_title || '',
+              date: a.interview_date || a.date || a.applied_date || null,
+              time: a.interview_time || a.time || null,
+              interviewer: a.interviewer || a.interviewers || null,
+              type: a.interview_type || a.type || null,
+              status: a.status || (a.interview_date ? 'interview_scheduled' : ''),
+            }));
+        }
+      }
+
+      if (Array.isArray(payload) && payload.length) {
+        // Normalize payload to expected interview objects
+        const normalized = payload.map((it) => ({
+          id: it.id || it._id,
+          candidate: it.candidate || it.candidate_name || it.name || it.applicant_name || it.email || 'Unknown',
+          job: it.job?.title || it.job?.name || it.job || it.job_title || '',
+          date: it.date || it.interview_date || it.scheduled_date || null,
+          time: it.time || it.interview_time || it.scheduled_time || null,
+          interviewer: it.interviewer || (Array.isArray(it.interviewers) ? it.interviewers.join(', ') : it.interviewers) || null,
+          type: it.type || it.interview_type || null,
+          status: (it.status || '').toString(),
+        }));
+
+        setInterviews(normalized);
       } else {
         setInterviews([]);
         enqueueSnackbar('No interviews found', { variant: 'info' });
@@ -67,6 +103,7 @@ export default function InterviewsPage() {
 
   useEffect(() => {
     fetchInterviews();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const todayInterviews = interviews.filter(i => i.status === 'interview_scheduled');
@@ -135,7 +172,7 @@ export default function InterviewsPage() {
             {todayInterviews.map((interview) => (
               <Paper key={interview.id} variant="outlined" sx={{ p: 2 }}>
                 <Stack direction="row" alignItems="center" spacing={2}>
-                  <Avatar>{interview.candidate.charAt(0)}</Avatar>
+              <Avatar>{interview.candidate ? interview.candidate.charAt(0) : '?'}</Avatar>
                   <Box sx={{ flex: 1 }}>
                     <Typography variant="subtitle2">{interview.candidate}</Typography>
                     <Typography variant="caption" color="text.secondary">

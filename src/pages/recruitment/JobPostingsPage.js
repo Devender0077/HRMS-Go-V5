@@ -165,7 +165,32 @@ export default function JobPostingsPage() {
           experience_required: j.experience_required || j.experience || '',
         }));
 
-        setJobPostings(normalized);
+        // Attempt to fetch applications to compute live counts per job
+        try {
+          const appsRes = await recruitmentService.getJobApplications();
+          let appsPayload = [];
+          if (appsRes && appsRes.success && Array.isArray(appsRes.data)) appsPayload = appsRes.data;
+          else if (Array.isArray(appsRes)) appsPayload = appsRes;
+
+          const counts = {};
+          appsPayload.forEach((a) => {
+            const key = a.job_id ?? a.jobId ?? (a.job && a.job.id) ?? a.job?.id ?? a.job;
+            if (key == null) return;
+            const k = String(key);
+            counts[k] = (counts[k] || 0) + 1;
+          });
+
+          const merged = normalized.map((j) => ({
+            ...j,
+            applications: counts[String(j.id)] ?? j.applications ?? 0,
+          }));
+
+          setJobPostings(merged);
+        } catch (err) {
+          // If fetching applications fails, fall back to normalized data
+          console.warn('Failed to fetch applications for counts:', err);
+          setJobPostings(normalized);
+        }
       } else {
         // Use mock data as fallback
         setJobPostings(MOCK_JOB_POSTINGS);
