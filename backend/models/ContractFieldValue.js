@@ -3,68 +3,53 @@ const sequelize = require('../config/database2');
 
 const ContractFieldValue = sequelize.define('ContractFieldValue', {
   id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
+    type: DataTypes.BIGINT.UNSIGNED,
     autoIncrement: true,
+    primaryKey: true,
   },
-  instanceId: {
-    type: DataTypes.INTEGER,
+  contractInstanceId: {
+    type: DataTypes.BIGINT.UNSIGNED,
     allowNull: false,
-    field: 'instance_id',
+    field: 'contract_instance_id',
   },
-  fieldId: {
-    type: DataTypes.INTEGER,
+  templateFieldId: {
+    type: DataTypes.BIGINT.UNSIGNED,
     allowNull: false,
-    field: 'field_id',
+    field: 'template_field_id',
   },
-  fieldName: {
-    type: DataTypes.STRING(255),
+  signerId: {
+    type: DataTypes.BIGINT.UNSIGNED,
     allowNull: true,
-    field: 'field_name',
+    field: 'signer_id',
   },
-  value: {
+  
+  // Field Data
+  fieldValue: {
     type: DataTypes.TEXT,
-    allowNull: true,
-    field: 'value',
-  },
-  signatureData: {
-    type: DataTypes.TEXT('long'),
-    allowNull: true,
-    field: 'signature_data',
+    field: 'field_value',
   },
   filledAt: {
     type: DataTypes.DATE,
-    allowNull: true,
     field: 'filled_at',
   },
-  filledBy: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-    field: 'filled_by',
+  filledByUserId: {
+    type: DataTypes.BIGINT.UNSIGNED,
+    field: 'filled_by_user_id',
   },
-  ipAddress: {
+  filledIp: {
     type: DataTypes.STRING(45),
-    allowNull: true,
-    field: 'ip_address',
+    field: 'filled_ip',
   },
-  userAgent: {
-    type: DataTypes.TEXT,
-    allowNull: true,
-    field: 'user_agent',
-  },
-  createdAt: {
-    type: DataTypes.DATE,
-    field: 'created_at',
-  },
-  updatedAt: {
-    type: DataTypes.DATE,
-    field: 'updated_at',
+  
+  // Verification
+  valueHash: {
+    type: DataTypes.STRING(255),
+    field: 'value_hash',
   },
 }, {
   tableName: 'contract_field_values',
   timestamps: true,
-  underscored: false,
+  underscored: true,
 });
 
 module.exports = ContractFieldValue;
-

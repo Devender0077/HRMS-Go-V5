@@ -1,9 +1,12 @@
 // Contract Management Model Associations
 const ContractTemplate = require('./ContractTemplate');
 const ContractInstance = require('./ContractInstance');
+const ContractSigner = require('./ContractSigner');
 const TemplateField = require('./TemplateField');
 const ContractFieldValue = require('./ContractFieldValue');
 const ContractAuditLog = require('./ContractAuditLog');
+const ContractCertificate = require('./ContractCertificate');
+const SignatureVerificationLog = require('./SignatureVerificationLog');
 const EmployeeOnboardingDocument = require('./EmployeeOnboardingDocument');
 const Employee = require('./Employee');
 const User = require('./User');
@@ -127,7 +130,84 @@ function setupContractAssociations() {
     as: 'performer',
   });
 
-  console.log('✅ Contract management model associations set up');
+  // ContractInstance <-> ContractSigner (One-to-Many) - Multi-signer support
+  ContractInstance.hasMany(ContractSigner, {
+    foreignKey: 'contractInstanceId',
+    as: 'signers',
+    onDelete: 'CASCADE',
+  });
+  ContractSigner.belongsTo(ContractInstance, {
+    foreignKey: 'contractInstanceId',
+    as: 'contractInstance',
+  });
+
+  // User <-> ContractSigner (One-to-Many)
+  User.hasMany(ContractSigner, {
+    foreignKey: 'userId',
+    as: 'signedContracts',
+    onDelete: 'SET NULL',
+  });
+  ContractSigner.belongsTo(User, {
+    foreignKey: 'userId',
+    as: 'user',
+  });
+
+  // ContractSigner <-> ContractFieldValue (One-to-Many)
+  ContractSigner.hasMany(ContractFieldValue, {
+    foreignKey: 'signerId',
+    as: 'filledFields',
+    onDelete: 'SET NULL',
+  });
+  ContractFieldValue.belongsTo(ContractSigner, {
+    foreignKey: 'signerId',
+    as: 'signer',
+  });
+
+  // ContractInstance <-> ContractCertificate (One-to-Many)
+  ContractInstance.hasMany(ContractCertificate, {
+    foreignKey: 'contractInstanceId',
+    as: 'certificates',
+    onDelete: 'CASCADE',
+  });
+  ContractCertificate.belongsTo(ContractInstance, {
+    foreignKey: 'contractInstanceId',
+    as: 'contractInstance',
+  });
+
+  // ContractSigner <-> ContractCertificate (One-to-Many)
+  ContractSigner.hasMany(ContractCertificate, {
+    foreignKey: 'signerId',
+    as: 'certificates',
+    onDelete: 'CASCADE',
+  });
+  ContractCertificate.belongsTo(ContractSigner, {
+    foreignKey: 'signerId',
+    as: 'signer',
+  });
+
+  // ContractInstance <-> SignatureVerificationLog (One-to-Many)
+  ContractInstance.hasMany(SignatureVerificationLog, {
+    foreignKey: 'contractInstanceId',
+    as: 'verificationLogs',
+    onDelete: 'CASCADE',
+  });
+  SignatureVerificationLog.belongsTo(ContractInstance, {
+    foreignKey: 'contractInstanceId',
+    as: 'contractInstance',
+  });
+
+  // User <-> SignatureVerificationLog (One-to-Many)
+  User.hasMany(SignatureVerificationLog, {
+    foreignKey: 'verifiedByUserId',
+    as: 'performedVerifications',
+    onDelete: 'SET NULL',
+  });
+  SignatureVerificationLog.belongsTo(User, {
+    foreignKey: 'verifiedByUserId',
+    as: 'verifier',
+  });
+
+  console.log('✅ Contract management model associations set up (including multi-signer & legal compliance)');
 }
 
 module.exports = { setupContractAssociations };
