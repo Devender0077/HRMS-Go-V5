@@ -257,7 +257,7 @@ export default function CompressPDFPage() {
               </>
             )}
 
-            {files.length === 0 && (
+            {!file && (
               <>
                 <Typography variant="subtitle2" sx={{ mt: 3 }}>
                   Features
