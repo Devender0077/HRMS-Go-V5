@@ -155,10 +155,6 @@ INSERT INTO permissions (name, slug, description, module, created_at, updated_at
 -- E-Signature
 ('Sign Contracts', 'contracts.sign', 'Sign contracts with e-signature', 'Contracts', NOW(), NOW()),
 ('View Signing Status', 'contracts.signing.view_status', 'View contract signing status', 'Contracts', NOW(), NOW()),
--- PDF Tools
-('Use PDF Tools', 'contracts.pdf_tools.use', 'Access PDF manipulation tools', 'Contracts', NOW(), NOW()),
-('Merge PDFs', 'contracts.pdf_tools.merge', 'Merge multiple PDF files', 'Contracts', NOW(), NOW()),
-('Compress PDFs', 'contracts.pdf_tools.compress', 'Compress PDF file size', 'Contracts', NOW(), NOW()),
 -- Onboarding
 ('View Onboarding', 'contracts.onboarding.view', 'View employee onboarding documents', 'Contracts', NOW(), NOW()),
 ('Manage Onboarding', 'contracts.onboarding.manage', 'Manage employee onboarding process', 'Contracts', NOW(), NOW())
