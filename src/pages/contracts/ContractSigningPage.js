@@ -322,10 +322,28 @@ export default function ContractSigningPage() {
                 variant="contained"
                 color="primary"
                 startIcon={<Iconify icon="eva:eye-fill" />}
-                onClick={() => {
-                  // Open PDF in new tab
-                  const pdfUrl = `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/api/contract-instances/${id}/download`;
-                  window.open(pdfUrl, '_blank');
+                onClick={async () => {
+                  try {
+                    enqueueSnackbar('Loading document...', { variant: 'info' });
+                    const response = await contractInstanceService.downloadSigned(id);
+                    
+                    if (response.success) {
+                      // Create blob URL and open in new tab
+                      const blob = new Blob([response.data], { type: 'application/pdf' });
+                      const url = window.URL.createObjectURL(blob);
+                      window.open(url, '_blank');
+                      
+                      // Clean up after a delay
+                      setTimeout(() => {
+                        window.URL.revokeObjectURL(url);
+                      }, 100);
+                    } else {
+                      enqueueSnackbar(response.message || 'Failed to load document', { variant: 'error' });
+                    }
+                  } catch (error) {
+                    console.error('View error:', error);
+                    enqueueSnackbar('Error loading document', { variant: 'error' });
+                  }
                 }}
               >
                 View Document
@@ -341,7 +359,8 @@ export default function ContractSigningPage() {
                     
                     if (response.success) {
                       // Create blob link to download
-                      const url = window.URL.createObjectURL(new Blob([response.data]));
+                      const blob = new Blob([response.data], { type: 'application/pdf' });
+                      const url = window.URL.createObjectURL(blob);
                       const link = document.createElement('a');
                       link.href = url;
                       link.setAttribute('download', `${contract.contractNumber}_signed.pdf`);
