@@ -312,24 +312,6 @@ export const SendContractPage = Loadable(lazy(() => import('../pages/contracts/S
 export const ContractSigningPage = Loadable(lazy(() => import('../pages/contracts/ContractSigningPage')));
 export const EmployeeOnboardingPage = Loadable(lazy(() => import('../pages/contracts/EmployeeOnboardingPage')));
 export const ManageAgreementsPage = Loadable(lazy(() => import('../pages/contracts/ManageAgreementsPage')));
-export const PDFToolsPage = Loadable(lazy(() => import('../pages/contracts/PDFToolsPage')));
-// PDF Tools - Organize
-export const MergePDFPage = Loadable(lazy(() => import('../pages/contracts/pdf-tools/MergePDFPage')));
-export const SplitPDFPage = Loadable(lazy(() => import('../pages/contracts/pdf-tools/SplitPDFPage')));
-export const RotatePagesPage = Loadable(lazy(() => import('../pages/contracts/pdf-tools/RotatePagesPage')));
-export const ReorderPagesPage = Loadable(lazy(() => import('../pages/contracts/pdf-tools/ReorderPagesPage')));
-export const ExtractPagesPage = Loadable(lazy(() => import('../pages/contracts/pdf-tools/ExtractPagesPage')));
-export const DeletePagesPage = Loadable(lazy(() => import('../pages/contracts/pdf-tools/DeletePagesPage')));
-// PDF Tools - Edit
-export const EditTextPage = Loadable(lazy(() => import('../pages/contracts/pdf-tools/EditTextPage')));
-export const AddCommentsPage = Loadable(lazy(() => import('../pages/contracts/pdf-tools/AddCommentsPage')));
-export const CropPagesPage = Loadable(lazy(() => import('../pages/contracts/pdf-tools/CropPagesPage')));
-export const NumberPagesPage = Loadable(lazy(() => import('../pages/contracts/pdf-tools/NumberPagesPage')));
-// PDF Tools - Secure
-export const ProtectPDFPage = Loadable(lazy(() => import('../pages/contracts/pdf-tools/ProtectPDFPage')));
-export const WatermarkPDFPage = Loadable(lazy(() => import('../pages/contracts/pdf-tools/WatermarkPDFPage')));
-export const CompressPDFPage = Loadable(lazy(() => import('../pages/contracts/pdf-tools/CompressPDFPage')));
-export const MetadataPage = Loadable(lazy(() => import('../pages/contracts/pdf-tools/MetadataPage')));
 export const AssetsListPage = Loadable(lazy(() => import('../pages/assets/AssetsListPage')));
 export const AssetNewPage = Loadable(lazy(() => import('../pages/assets/AssetNewPage')));
 export const AssetCategoriesPage = Loadable(lazy(() => import('../pages/assets/AssetCategoriesPage')));

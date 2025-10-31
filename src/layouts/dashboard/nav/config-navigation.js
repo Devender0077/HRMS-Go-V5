@@ -216,7 +216,6 @@ const navConfig = [
           { title: 'Manage Agreements', path: '/dashboard/contracts/agreements', permission: 'documents.view_all' },
           { title: 'Templates', path: '/dashboard/contracts/templates', permission: 'documents.view_all' },
           { title: 'Send for E-Signature', path: '/dashboard/contracts/send', permission: 'documents.create' },
-          { title: 'PDF Tools', path: '/dashboard/contracts/pdf-tools', permission: 'documents.view_all' },
         ],
       },
 
