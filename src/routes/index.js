@@ -64,6 +64,7 @@ import {
   Page404,
   HomePage,
   JobsLandingPage,
+  JobDetailsPage,
   FaqsPage,
   AboutPage,
   Contact,
@@ -485,6 +486,7 @@ export default function Router() {
       children: [
         { element: <HomePage />, index: true },
           { path: 'jobs', element: <JobsLandingPage /> },
+            { path: 'jobs/:id', element: <JobDetailsPage /> },
         { path: 'about-us', element: <AboutPage /> },
         { path: 'contact-us', element: <Contact /> },
         { path: 'faqs', element: <FaqsPage /> },

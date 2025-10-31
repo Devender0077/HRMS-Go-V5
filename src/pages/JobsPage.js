@@ -13,10 +13,10 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField,
   Box,
   Chip,
 } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 // services
 import recruitmentService from '../services/recruitmentService';
 // components
@@ -25,17 +25,17 @@ import { useSnackbar } from '../components/snackbar';
 
 export default function JobsPage() {
   const { enqueueSnackbar } = useSnackbar();
+  const navigate = useNavigate();
 
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const [openApply, setOpenApply] = useState(false);
+  
   const [openApps, setOpenApps] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
 
-  const [form, setForm] = useState({ candidate_name: '', email: '', phone: '', experience: '', current_company: '', cover_letter: '', resume: '' });
   const [applications, setApplications] = useState([]);
-  const [resumeFile, setResumeFile] = useState(null);
+  
   const [appCounts, setAppCounts] = useState({});
 
   useEffect(() => {
@@ -88,72 +88,7 @@ export default function JobsPage() {
     })();
   }, [enqueueSnackbar]);
 
-  const handleOpenApply = (job) => {
-    setSelectedJob(job);
-    setForm({ candidate_name: '', email: '', phone: '', experience: '', current_company: '', cover_letter: '', resume: '' });
-    setResumeFile(null);
-    setOpenApply(true);
-  };
-
-  const handleCloseApply = () => {
-    setOpenApply(false);
-    setSelectedJob(null);
-  };
-
-  const handleSubmitApplication = async () => {
-    if (!selectedJob) return;
-    try {
-      // helper to convert file to base64 data URL
-      const fileToDataUrl = (file) =>
-        new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = (err) => reject(err);
-          reader.readAsDataURL(file);
-        });
-
-      let res;
-      if (resumeFile) {
-        // Many backends don't accept multipart/form-data here; to be safer send JSON with base64 payload
-        const dataUrl = await fileToDataUrl(resumeFile);
-        const payload = {
-          job_id: selectedJob.id,
-          candidate_name: form.candidate_name,
-          email: form.email,
-          phone: form.phone,
-          experience: form.experience,
-          current_company: form.current_company,
-          cover_letter: form.cover_letter,
-          resume_path: resumeFile.name,
-          resume_base64: dataUrl,
-          status: 'submitted',
-        };
-        res = await recruitmentService.createJobApplication(payload);
-      } else {
-        const payload = {
-          job_id: selectedJob.id,
-          candidate_name: form.candidate_name,
-          email: form.email,
-          phone: form.phone,
-          experience: form.experience,
-          current_company: form.current_company,
-          cover_letter: form.cover_letter,
-          resume: form.resume,
-          status: 'submitted',
-        };
-        res = await recruitmentService.createJobApplication(payload);
-      }
-      if (res && res.success) {
-        enqueueSnackbar('Application submitted', { variant: 'success' });
-        handleCloseApply();
-      } else {
-        enqueueSnackbar(res?.message || 'Failed to submit application', { variant: 'error' });
-      }
-    } catch (error) {
-      console.error('Error submitting application:', error);
-      enqueueSnackbar('Failed to submit application', { variant: 'error' });
-    }
-  };
+  
 
   
 
@@ -206,11 +141,11 @@ export default function JobsPage() {
                       <Button
                         variant="contained"
                         size="medium"
-                        onClick={() => handleOpenApply(job)}
-                        startIcon={<Iconify icon="eva:checkmark-circle-2" />}
+                        onClick={() => navigate(`/jobs/${job.id}`, { state: { job } })}
+                        startIcon={<Iconify icon="eva:eye-fill" />}
                         sx={{ minWidth: 140 }}
                       >
-                        Apply
+                        View Details
                       </Button>
 
                       {/* buttons only in this row; employment type moved below description */}
@@ -223,49 +158,7 @@ export default function JobsPage() {
         </Grid>
       </Container>
 
-      <Dialog open={openApply} onClose={handleCloseApply} fullWidth maxWidth="sm">
-        <DialogTitle>Apply for: {selectedJob?.title}</DialogTitle>
-        <DialogContent>
-          <Stack spacing={2} sx={{ mt: 1 }}>
-            <TextField label="Full name" fullWidth value={form.candidate_name} onChange={(e) => setForm({ ...form, candidate_name: e.target.value })} />
-            <TextField label="Email" fullWidth value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-            <TextField label="Phone" fullWidth value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-            <TextField label="Years of experience" fullWidth value={form.experience} onChange={(e) => setForm({ ...form, experience: e.target.value })} />
-            <TextField label="Current company" fullWidth value={form.current_company} onChange={(e) => setForm({ ...form, current_company: e.target.value })} />
-
-            <TextField label="Cover letter" fullWidth multiline minRows={4} value={form.cover_letter} onChange={(e) => setForm({ ...form, cover_letter: e.target.value })} />
-
-            <Box>
-              <Button variant="outlined" component="label" startIcon={<Iconify icon="eva:attach-2-outline" />}>
-                Upload Resume (PDF)
-                <input
-                  hidden
-                  accept="application/pdf"
-                  type="file"
-                  onChange={(e) => {
-                    const file = e.target.files && e.target.files[0];
-                    if (file) {
-                      if (file.type !== 'application/pdf') {
-                        enqueueSnackbar('Only PDF files are allowed for resume', { variant: 'warning' });
-                        return;
-                      }
-                      setResumeFile(file);
-                      setForm((f) => ({ ...f, resume: file.name }));
-                    }
-                  }}
-                />
-              </Button>
-              {resumeFile && (
-                <Typography variant="caption" sx={{ ml: 1 }}>{resumeFile.name}</Typography>
-              )}
-            </Box>
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseApply}>Cancel</Button>
-          <Button variant="contained" onClick={handleSubmitApplication}>Submit Application</Button>
-        </DialogActions>
-      </Dialog>
+      
 
       <Dialog open={openApps} onClose={handleCloseApplications} fullWidth maxWidth="md">
         <DialogTitle>Applications for: {selectedJob?.title}</DialogTitle>
